@@ -1,0 +1,13 @@
+{{include "_header.bt.html"}}
+
+<h2>Recent Posts</h2>
+
+<ul>
+{{i = 0}}
+{{for file in sortFiles(listFiles("posts/", true), "date", false)}}
+	{{i = i + 1}}
+	<li>{{file.metadata["date"]}} - {{file.metadata["title"]}} {{file.metadata["description"]}}</li>
+{{end}}
+</ul>
+
+{{include "_footer.bt.html"}}
