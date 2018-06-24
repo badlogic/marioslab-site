@@ -2,6 +2,8 @@
 package io.marioslab;
 
 import java.security.MessageDigest;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.javalin.Javalin;
 import io.javalin.embeddedserver.Location;
@@ -46,11 +48,15 @@ public class MariosLab {
 		Javalin app = Javalin.create().enableDynamicGzip().enableStaticFiles("output", Location.EXTERNAL).port(8000).start();
 
 		app.post("/api/githook", ctx -> {
-			String password = ctx.formParam("payload");
-			System.out.println(password);
-			if (MessageDigest.isEqual(siteConfig.password.getBytes(), password.getBytes())) {
-				BasisSite.log("Got an update. Shutting down.");
-				System.exit(-1);
+			String json = ctx.formParam("payload");
+			Pattern pattern = Pattern.compile("\\\"secret\\\"\\:\\\"(.*)\\\"");
+			Matcher matcher = pattern.matcher(json);
+			if (matcher.matches()) {
+				String password = matcher.group(1);
+				if (MessageDigest.isEqual(siteConfig.password.getBytes(), password.getBytes())) {
+					BasisSite.log("Got an update. Shutting down.");
+					System.exit(-1);
+				}
 			}
 		});
 	}
