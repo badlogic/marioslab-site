@@ -59,6 +59,7 @@ public class MariosLab {
 			} else {
 				System.out.println("Fucking hell");
 			}
+			ctx.response().getWriter().println("OK");
 		});
 	}
 }
