@@ -1,5 +1,5 @@
 
-package io.marioslab.site;
+package io.marioslab;
 
 import io.javalin.Javalin;
 import io.javalin.embeddedserver.Location;
