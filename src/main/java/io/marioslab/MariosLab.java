@@ -52,6 +52,7 @@ public class MariosLab {
 			Pattern pattern = Pattern.compile("\\\"secret\\\"\\:\\\"(.*)\\\"");
 			Matcher matcher = pattern.matcher(json);
 			if (matcher.matches()) {
+				BasisSite.log("Match: " + matcher.group(1));
 				String password = matcher.group(1);
 				if (MessageDigest.isEqual(siteConfig.password.getBytes(), password.getBytes())) {
 					BasisSite.log("Got an update. Shutting down.");
