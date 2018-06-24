@@ -58,6 +58,8 @@ public class MariosLab {
 					BasisSite.log("Got an update. Shutting down.");
 					System.exit(-1);
 				}
+			} else {
+				System.out.println("Fucking hell");
 			}
 		});
 	}
