@@ -60,6 +60,7 @@ public class MariosLab {
 				}
 			} else {
 				System.out.println("Fucking hell");
+				System.out.println(json);
 			}
 		});
 	}
