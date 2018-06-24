@@ -49,7 +49,7 @@ public class MariosLab {
 
 		app.post("/api/githook", ctx -> {
 			String json = ctx.formParam("payload");
-			Pattern pattern = Pattern.compile("\\\"secret\\\"\\:\\\"(.*)\\\"");
+			Pattern pattern = Pattern.compile("\\\"secret\\\"\\: \\\"(.*)\\\"");
 			Matcher matcher = pattern.matcher(json);
 			if (matcher.matches()) {
 				BasisSite.log("Match: " + matcher.group(1));
