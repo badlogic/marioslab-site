@@ -1,9 +1,7 @@
 #!/bin/sh
-set -e
-
 while :
 do
 git pull
 mvn clean package
-java -jar target/marioslab.jar
+java -jar target/marioslab.jar -i site -o output -w -d -p $MARIOSLAB_PWD
 done
