@@ -51,13 +51,12 @@ public class MariosLab {
 			String json = ctx.formParam("payload");
 			int idx = json.indexOf("\"secret\":\"");
 			if (idx >= 0) {
-				String password = json.substring(idx, json.indexOf("\"", idx));
+				idx += "\"secret\":\"".length();
+				String password = json.substring(idx, json.indexOf("\"", idx + 1));
 				if (MessageDigest.isEqual(siteConfig.password.getBytes(), password.getBytes())) {
 					BasisSite.log("Got an update. Shutting down.");
 					System.exit(-1);
 				}
-			} else {
-				System.out.println("Fucking hell");
 			}
 			ctx.response().getWriter().println("OK");
 		});
