@@ -33,6 +33,23 @@
 		<developerConnection>scm:git:https://github.com/badlogic/marioslab-site.git</developerConnection>
 		<url>http://github.com/badlogic/marioslab-site</url>
 	</scm>
+	
+	<repositories>
+        <repository>
+            <id>oss-sonatype</id>
+            <name>oss-sonatype</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        
+        <repository>
+            <id>oss-sonatype-release</id>
+            <name>oss-sonatype-release</name>
+            <url>https://oss.sonatype.org/content/repositories/releases/</url>            
+        </repository>
+    </repositories>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
