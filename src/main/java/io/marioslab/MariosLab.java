@@ -47,18 +47,22 @@ public class MariosLab {
 
 		Javalin app = Javalin.create().enableDynamicGzip().enableStaticFiles("output", Location.EXTERNAL).port(8000).start();
 
-		app.post("/api/githook", ctx -> {
-			String json = ctx.formParam("payload");
-			int idx = json.indexOf("\"secret\":\"");
-			if (idx >= 0) {
-				idx += "\"secret\":\"".length();
-				String password = json.substring(idx, json.indexOf("\"", idx + 1));
-				if (MessageDigest.isEqual(siteConfig.password.getBytes(), password.getBytes())) {
-					BasisSite.log("Got an update. Shutting down.");
-					System.exit(-1);
-				}
+		app.get("/api/reloadhtml", ctx -> {
+			String password = ctx.queryParam("password");
+			if (MessageDigest.isEqual(siteConfig.password.getBytes(), password.getBytes())) {
+				new ProcessBuilder().command("git", "pull").start();
+				ctx.response().getWriter().println("OK.");
 			}
-			ctx.response().getWriter().println("OK");
+		});
+
+		app.get("/api/reload", ctx -> {
+			String password = ctx.queryParam("password");
+			if (MessageDigest.isEqual(siteConfig.password.getBytes(), password.getBytes())) {
+				ctx.response().getWriter().println("OK.");
+				ctx.response().getWriter().flush();
+				BasisSite.log("Got an update. Shutting down.");
+				System.exit(-1);
+			}
 		});
 	}
 }
