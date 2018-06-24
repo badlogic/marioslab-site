@@ -49,18 +49,15 @@ public class MariosLab {
 
 		app.post("/api/githook", ctx -> {
 			String json = ctx.formParam("payload");
-			Pattern pattern = Pattern.compile("\\\"secret\\\"\\: \\\"(.*)\\\"");
-			Matcher matcher = pattern.matcher(json);
-			if (matcher.matches()) {
-				BasisSite.log("Match: " + matcher.group(1));
-				String password = matcher.group(1);
+			int idx = json.indexOf("\"secret\":\"");
+			if (idx >= 0) {
+				String password = json.substring(idx, json.indexOf("\"", idx));
 				if (MessageDigest.isEqual(siteConfig.password.getBytes(), password.getBytes())) {
 					BasisSite.log("Got an update. Shutting down.");
 					System.exit(-1);
 				}
 			} else {
 				System.out.println("Fucking hell");
-				System.out.println(json);
 			}
 		});
 	}
