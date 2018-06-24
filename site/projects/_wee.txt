@@ -1,0 +1,6 @@
++++
+title: Wee
+description: Wee is a tiny educational programming environment, with an ISA and VM (Wee Machine), an assembly language (Wee Assembly), a higher level language (Wee Lang) and a browser-based development environment. That is at least the plan. Currently, only the ISA and assembler are complete. One of these days...
+link: https://github.com/badlogic/wee
+importance: 90
++++

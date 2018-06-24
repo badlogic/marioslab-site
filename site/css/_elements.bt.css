@@ -1,0 +1,74 @@
+{{contentWidth = "38em"}}
+
+ul {
+	padding: 2em;
+}
+
+.navbar {
+	display: flex;
+	align-items: center;
+	margin: auto;
+	margin-bottom: 1em;
+	padding: 0.5em;
+	border-bottom: 1px solid {{color_text}};
+	max-width: {{contentWidth}};
+}
+
+.navbar > .logo {
+	font-size: 180%;
+	font-weight: 700;
+	color: {{color_text}};
+	margin-left: 0;
+}
+
+.navbar > a {
+	margin-left: 0.5em;
+	color: {{color_text}};
+}
+
+.navbar > :nth-child(1) {
+	margin-right: auto;
+}
+
+.content {
+	margin: auto;
+	padding: 0 2em 2em 2em;
+	max-width: {{contentWidth}};
+}
+
+.content > h2:first-of-type {
+	margin-top: 0;
+}
+
+.content > h2 {
+	margin-top: 1.5em;
+}
+
+.posts {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+
+.posts li {
+	margin-bottom: 0.5em;
+	font-size: 120%;
+}
+
+.post_header h1 {
+	margin-bottom: 0.5em;
+	font-style: italic;
+}
+
+.post_header p {
+	margin-top: 0;
+	font-size: 70%;
+}
+
+.project {
+	margin-bottom: 1em;
+}
+
+.project > p {
+	margin-top: 0.5em;
+}

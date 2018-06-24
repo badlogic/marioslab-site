@@ -1,13 +1,36 @@
 {{include "_header.bt.html"}}
 
-<h2>Recent Posts</h2>
+<div class="content">
 
-<ul>
+<h2>About</h2>
+<p>Mario's Lab is my little experimental hide-out on the interwebs. I let my brain lose on technology and music, and summarize my findings here.</p>
+
+<h2>Recent Posts</h2>
+<ul class="posts">
 {{i = 0}}
-{{for file in sortFiles(listFiles("posts/", true), "date", false)}}
+{{for file in sortFiles(listFiles("posts/", true, true), "date", false)}}
 	{{i = i + 1}}
-	<li>{{file.metadata["date"]}} - {{file.metadata["title"]}} {{file.metadata["description"]}}</li>
+	{{if (i > 5) break end}}
+	{{if file.metadata["published"] == false continue end}}
+	<li>{{formatDate("MMM dd, yyyy", file.metadata["date"])}} - <a href="{{file.outputPath.replace("output", "") + '/'}}">{{file.metadata["title"]}}</a></li>
 {{end}}
 </ul>
+<p><h4><a href="posts/">View all posts &gt;</a></h4></p>
+
+<h2>Projects</h2>
+{{i = 0}}
+{{for file in sortFiles(listFiles("./", true, true), "importance", false)}}
+	{{i = i + 1}}
+	{{if (i > 5) break end}}
+	<div class="project">
+		<a href="{{file.metadata["link"]}}">{{file.metadata["title"]}}</a>
+		<p>{{file.metadata["description"]}}</p>
+	</div>
+{{end}}
+<p><h4><a href="projects/">View all projects &gt;</a></h4></p>
+
+<h2>Music</h2>
+
+</div>
 
 {{include "_footer.bt.html"}}

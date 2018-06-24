@@ -1,0 +1,6 @@
++++
+title: libimagequant-java
+description: libimagequant-java is a JNI wrapper for <a href="https://pngquant.org/lib/">libimagequant</a>, an insanely good image quantization library. While the project itself wasn't terribly challenging, it allowed me to explore Docker as a cross-compilation platform.
+link: https://github.com/badlogic/libimagequant-java
+importance: 70
++++

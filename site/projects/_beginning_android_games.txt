@@ -1,0 +1,6 @@
++++
+title: Beginning Android Games
+description: A book I wrote in 2011 on game development for Android. The book is now in its 3rd edition (though I bailed after the 2nd edition). For a while, it was the best-selling game programming book on Amazon.
+link: https://www.amazon.com/Beginning-Android-Games-Robert-Green/dp/1430246774/
+importance: 50
++++

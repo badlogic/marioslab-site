@@ -1,5 +1,17 @@
-{{include "_colors.css"}}
+/*
+{{include raw "_normalize.css"}}
+{{include raw "_androidstudio.css"}}
 
-* {
-	color: {{background}};
+{{include "_colors.bt.css"}}
+{{include "_fonts.bt.css"}}
+{{include "_elements.bt.css"}}
+*/
+
+/* Use border-box box sizing everywhere */
+html {
+	box-sizing: border-box;
+}
+
+*, *:before, *:after {
+	box-sizing: inherit;
 }

@@ -1,0 +1,6 @@
++++
+title: basis-template
+description: A templating engine for the JVM. Similar to Jtwig, but a lot faster, more hackable, and with zero dependencies. Want to shoot yourself in the foot with a general purpose scripting language in your templates? Basis-template is for you!
+link: https://github.com/badlogic/basis-template
+importance: 110
++++

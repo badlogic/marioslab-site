@@ -1,0 +1,6 @@
++++
+title: Quantum
+description: Quantum is a real-time strategy game in the spirit of Galcon and Eufloria. It features thousands of units, network play, scriptable AI, a map editor, and even supports IRC for chat! This was my first foray into game development with Java, so the code quality might not be the best.
+link: https://github.com/badlogic/quantum
+importance: 60
++++

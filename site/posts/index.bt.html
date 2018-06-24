@@ -1,0 +1,17 @@
+{{include "../_header.bt.html"}}
+
+<div class="content">
+
+<h2>Posts</h2>
+<p>Things my brain told me to scream into the void.</p>
+
+<ul class="posts">
+{{for file in sortFiles(listFiles("./", true, true), "date", false)}}
+	{{if file.metadata["published"] == false continue end}}
+	<li>{{formatDate("MMM dd, yyyy", file.metadata["date"])}} - <a href="{{'/' + file.outputPath + '/'}}">{{file.metadata["title"]}}</a></li>
+{{end}}
+</ul>
+
+</div>
+
+{{include "../_footer.bt.html"}}

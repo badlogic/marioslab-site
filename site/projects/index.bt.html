@@ -1,0 +1,15 @@
+{{include "../_header.bt.html"}}
+
+<div class="content">
+
+<h2>Projects</h2>
+{{for file in sortFiles(listFiles("./", true, true), "importance", false)}}
+	<div class="project">
+		<a href="{{file.metadata["link"]}}">{{file.metadata["title"]}}</a>
+		<p>{{file.metadata["description"]}}</p>
+	</div>
+{{end}}
+
+</div>
+
+{{include "../_footer.bt.html"}}
