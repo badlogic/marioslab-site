@@ -2,8 +2,6 @@
 package io.marioslab;
 
 import java.security.MessageDigest;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import io.javalin.Javalin;
 import io.javalin.embeddedserver.Location;
@@ -30,6 +28,11 @@ public class MariosLab {
 		public void validate () {
 			if (password == null) BasisSite.fatalError("Expected a password via -p <password>", false);
 			if (password.isEmpty()) BasisSite.fatalError("Password must not be empty", false);
+		}
+
+		@Override
+		public void printHelp () {
+			System.out.println("-p <password>           The password for the reload endpoints.");
 		}
 
 		public String getPassword () {
