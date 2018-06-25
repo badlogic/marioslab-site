@@ -33,23 +33,23 @@
 		<developerConnection>scm:git:https://github.com/badlogic/marioslab-site.git</developerConnection>
 		<url>http://github.com/badlogic/marioslab-site</url>
 	</scm>
-	
+
 	<repositories>
-        <repository>
-            <id>oss-sonatype</id>
-            <name>oss-sonatype</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        
-        <repository>
-            <id>oss-sonatype-release</id>
-            <name>oss-sonatype-release</name>
-            <url>https://oss.sonatype.org/content/repositories/releases/</url>            
-        </repository>
-    </repositories>
+		<repository>
+			<id>oss-sonatype</id>
+			<name>oss-sonatype</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+
+		<repository>
+			<id>oss-sonatype-release</id>
+			<name>oss-sonatype-release</name>
+			<url>https://oss.sonatype.org/content/repositories/releases/</url>
+		</repository>
+	</repositories>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -60,6 +60,7 @@
 
 		<basissite.version>1.2-SNAPSHOT</basissite.version>
 		<javalin.version>1.7.0</javalin.version>
+		<slf4jsimple.version>1.7.25</slf4jsimple.version>
 	</properties>
 
 	<dependencies>
@@ -74,6 +75,12 @@
 			<artifactId>javalin</artifactId>
 			<version>${javalin.version}</version>
 		</dependency>
+
+<!-- 		<dependency> -->
+<!-- 			<groupId>org.slf4j</groupId> -->
+<!-- 			<artifactId>slf4j-simple</artifactId> -->
+<!-- 			<version>${slf4jsimple.version}</version> -->
+<!-- 		</dependency> -->
 	</dependencies>
 
 	<build>
@@ -103,7 +110,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			
+
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
