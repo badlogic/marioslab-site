@@ -4,6 +4,17 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+	{{ if file.metadata != null }}
+	<meta name="twitter:card" content="{{file.metadata["summary"]}}" />
+	<meta name="twitter:site" content="@badlogicgames" />
+	<meta name="twitter:creator" content="@badlogicgames" />
+	<meta property="og:url" content="https://marioslab.io/{{file.outputPath.replace("output/", "")}}" />
+	<meta property="og:title" content="{{file.metadata["title"]}}" />
+	<meta property="og:description" content="{{file.metadata["summary"]}}" />
+	<meta property="og:image" content="https://marioslab.io/{{file.outputPath.replace("output/", "")}}" />
+	{{ end }}
+
 	<title>Mario's Lab</title>
 
 	<link href="/css/style.css" rel="stylesheet">
