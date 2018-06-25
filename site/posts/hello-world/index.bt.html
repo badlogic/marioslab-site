@@ -5,13 +5,40 @@ date: 2018/06/24 21:00
 published: true
 +++
 
-{{include "../_post_header.bt.html"}}
-{{include "../_post_header.bt.html" as post}}
+{{include "../../_templates/_post_header.bt.html"}}
+{{include "../../_templates/_post_header.bt.html" as post}}
+
+{{post.figure("tiles.jpg", "A fine selection out of 750kg of artisan, hand chiseled tiles.")}}
 
 <p>
 Hi, long time no see. You may be wondering why I've started a new site, instead of revamping <a href="https://badlogicgames.com">badlogicgames.com</a>. Welp, it's a long story.
 </p>
 
-{{post.figure("tiles.jpg", "750kg of artisan, handchizzle tiles.")}}
+<p>As you may know, I've been involved in an OSS project turned startup called RoboVM. RoboVM brought Java to iOS, enabling cross-platform mobile development similar to <a href="https://xamarin.com">Xamarin</a>. As fate would have it, RoboVM got bought by Xamarin. Naturally, Xamarin got bought by Microsoft. Then RoboVM was shut down.</p>
 
-{{include "../_post_footer.bt.html"}}
+<p>When <a href="https://www.badlogicgames.com/wordpress/?p=3925">RoboVM got shut down in 2016</a>, I had spent 7 years of my free time on libGDX, and 2 years of my "professional" time on RoboVM. Both were a work of love and passion, as cliché as that may sound. The shutdown of RoboVM, and the resulting turmoil in libGDX land were quite the gut punch.</p>
+
+<p>Right after the shutdown, Microsoft offered everyone on the RoboVM team to work for them on Mono under the Xamarin umbrella. We visited Boston to get to know the Mono team and discuss ideas and problems we, the old RoboVM team, could work on.</p>
+
+<p>Back home in Europe, we collectively decided to give this Mono thing a try. Over the two years we worked on RoboVM, we grew into a pretty excellent team, and everyone felt it'd be a shame to disband.</p>
+
+<p>We were tasked with getting Mono to work on Xbox One, a then secret project. This checked quite a few of our geek boxes: work on a compiler, access to a new platform, and gaming related! </p>
+
+<p>Alas, it didn't work out for me. While the rest of the band dove head first into the gory bits of Mono, I struggled to get into the groove. The .NET ecosystem and Mono's code base simply weren't for me.</p>
+
+<p>Eventually, Microsoft sent us the employment contracts. I did not sign my contract, and left the team, Xamarin, Microsoft and Mono behind.</p>
+
+<p>In the almost 2 years since, I went back into self employment, started to help out with Nate's excellent <a href="https://esotericsoftare.com">Spine</a>, lectured at university, renovated a flat, and got back into sports, music, and, lo and behold, some (light) gaming.</p>
+
+<p>What I did not do in those 2 years: work on libGDX. Or any meaningful side project really. I did help out with a handful of libGDX releases, and did the occassional sunday afternoon hack. But my spare time was almost entirely programming free. And it was good.</p>
+
+<p>Tomski, Xoppa, Nex, Nate and the rest of the libGDX team easily compensated for my absence. And apart from ensuring the servers are running, I do not intend on making any more large contributions to libGDX and related projects. Which brings me to the reason for this post.</p>
+
+<p>In the past 2 months I rediscovered my knack for doing stupid things with computers. I've dabbled in Docker to revamp the libGDX infrastructure (¯\_(ツ)_/¯), built a silly <a href="https://github.com/basis-template">templating engine</a> as an exercise in compiler construction, and wrote a few tiny (unpublished) tools for personal use.</p>
+
+<p>It has been a somewhat freeing experience. No "users" to worry about, no issue tracker guilt, no responsibilities. All of that reminded me of why I started libGDX in the first place: to learn and share the fun I'm having.</p>
+
+<p>To facilitate this new found freedom and peace of mind, I've decided to cleanly separate the old from the new. This site will be where things happen going forward. All future JVM-based projects will be found under the group id <code>io.marioslab</code>. The old site will remain in tact, but will only be used to publish libGDX release announcements.</p>
+
+
+{{include "../../_templates/_post_footer.bt.html"}}

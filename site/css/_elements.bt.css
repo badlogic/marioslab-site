@@ -10,7 +10,7 @@ ul {
 	margin: auto;
 	margin-bottom: 1em;
 	padding: 0.5em;
-	border-bottom: 1px solid {{color_text}};
+	border-bottom: 1px solid #55555538;
 	max-width: {{contentWidth}};
 }
 
@@ -64,18 +64,44 @@ ul {
 }
 
 .post_header h1 {
-	margin-bottom: 0.5em;
-	font-style: italic;
+	font-weight: 300;
 }
 
 .post_header p {
 	margin-top: 0;
-	font-size: 70%;
+	font-size: 80%;
+	font-style: italic;
+}
+
+.post_content p {
+	margin-top: 0;
+}
+
+.post_content h1 {
+	font-weight: 300;
+}
+
+.post_content h2 {
+	font-weight: 300;
+}
+
+.post_content h3 {
+	font-weight: 300;
+}
+
+.post_content h4 {
+	font-weight: 300;
+}
+
+.post_content .figure {
+	margin-top: 1em;
+	margin-bottom: 1em;
 }
 
 .post_content .figure img {
 	display: block;
 	max-width: 100%;
+	width: 100%;
 	height: auto;
 	border-radius: 5px;
 }
@@ -84,6 +110,14 @@ ul {
 	display: block;
 	font-size: 80%;
 	font-style: italic;
-	margin-top: 0.2em;
-	text-align: right;
+	margin-top: 0.5em;
+}
+
+.post_content code {
+	padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: rgba(27,31,35,0.05);
+	border-radius: 3px;
+	font-family: "SFMono-Regular",Consolas,"Liberation Mono",Menlo,Courier,monospace;
 }
