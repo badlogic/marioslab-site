@@ -12,7 +12,7 @@
 	<meta property="og:url" content="https://marioslab.io/{{file.outputPath.replace("output/", "")}}" />
 	<meta property="og:title" content="{{file.metadata["title"]}}" />
 	<meta property="og:description" content="{{file.metadata["summary"]}}" />
-	<meta property="og:image" content="https://marioslab.io/{{file.outputPath.replace("output/", "")}}" />
+	<meta property="og:image" content="https://marioslab.io/{{file.outputPath.replace("output/", "") + '/' + file.metadata["image"]}}" />
 	{{ end }}
 
 	<title>Mario's Lab</title>
