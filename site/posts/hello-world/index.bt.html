@@ -4,12 +4,14 @@ description: Why a new blargh?
 date: 2018/06/24 21:00
 published: true
 +++
+
 {{include "../_post_header.bt.html"}}
+{{include "../_post_header.bt.html" as post}}
 
 <p>
 Hi, long time no see. You may be wondering why I've started a new site, instead of revamping <a href="https://badlogicgames.com">badlogicgames.com</a>. Welp, it's a long story.
 </p>
 
-<img src="tiles.jpg">
+{{post.figure("tiles.jpg", "750kg of artisan, handchizzle tiles.")}}
 
 {{include "../_post_footer.bt.html"}}

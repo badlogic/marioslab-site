@@ -55,6 +55,14 @@ ul {
 	font-size: 120%;
 }
 
+.project {
+	margin-bottom: 1em;
+}
+
+.project > p {
+	margin-top: 0.5em;
+}
+
 .post_header h1 {
 	margin-bottom: 0.5em;
 	font-style: italic;
@@ -65,17 +73,17 @@ ul {
 	font-size: 70%;
 }
 
-.post_content img {
+.post_content .figure img {
 	display: block;
-	margin-left: auto;
-	margin-right: auto;
+	max-width: 100%;
+	height: auto;
 	border-radius: 5px;
 }
 
-.project {
-	margin-bottom: 1em;
-}
-
-.project > p {
-	margin-top: 0.5em;
+.post_content .figure span {
+	display: block;
+	font-size: 80%;
+	font-style: italic;
+	margin-top: 0.2em;
+	text-align: right;
 }
