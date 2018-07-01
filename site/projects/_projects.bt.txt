@@ -7,9 +7,9 @@ projects = [
 		url: "https://github.com/badlogic/basis-template",
 	},
 	{
-		title: "Beginning Android Games",
-		description: "A book I wrote in 2011 on game development for Android. The book is now in its 3rd edition (though I bailed after the 2nd edition). For a while, it was the best-selling game programming book on Amazon.",
-		url: "https://www.amazon.com/Beginning-Android-Games-Robert-Green/dp/1430246774/",
+		title: "libGDX",
+		description: "libGDX is a Java cross-platform game development framework for Windows, Linux, macOS, Android, iOS and HTML5-enabled browsers. I started it in 2010 as an innocent side project. Eventually it grew to one of the biggest OSS game development frameworks. And all of that in Java ¯\_(ツ)_/¯.",
+		url: "https://libgdx.badlogicgames.com"
 	},
 	{
 		title: "gifski-java",
@@ -17,14 +17,19 @@ projects = [
 		url: "https://github.com/badlogic/gifski-java"
 	},
 	{
-		title: "libGDX",
-		description: "libGDX is a Java cross-platform game development framework for Windows, Linux, macOS, Android, iOS and HTML5-enabled browsers. I started it in 2010 as an innocent side project. Eventually it grew to one of the biggest OSS game development frameworks. And all of that in Java ¯\_(ツ)_/¯.",
-		url: "https://libgdx.badlogicgames.com"
-	},
-	{
 		title: "libimagequant-java",
 		description: "libimagequant-java is a JNI wrapper for <a href=\"https://pngquant.org/lib/\">libimagequant</a>, an insanely good image quantization library. While the project itself wasn't terribly challenging, it allowed me to explore Docker as a cross-compilation platform.",
 		url: "https://github.com/badlogic/libimagequant-java"
+	},
+	{
+		title: "RoboVM",
+		description: "RoboVM is/was a JVM byte code to native code compiler by <a href=\"https://twitter.com/ntherning\">Niklas Therning</a>. I had the good fortune to work with him on it in a commercial capacity and was responsible for the debugger (super fun!), lambdas (fun!) and IDE integrations (not so fun), among general start-up-y things. RoboVM was eventually bought by Xamarin, who got swallowed by Microsoft, who shut the project down. Thankfully, the libGDX community has taken it on.",
+		url: "https://robovm.mobidevelop.com"
+	},
+	{
+		title: "Beginning Android Games",
+		description: "A book I wrote in 2011 on game development for Android. The book is now in its 3rd edition (though I bailed after the 2nd edition). For a while, it was the best-selling game programming book on Amazon.",
+		url: "https://www.amazon.com/Beginning-Android-Games-Robert-Green/dp/1430246774/",
 	},
 	{
 		title: "Quantum",
