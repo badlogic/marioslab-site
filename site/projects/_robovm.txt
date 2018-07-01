@@ -1,6 +1,0 @@
-+++
-title: RoboVM
-description: RoboVM is/was a JVM byte code to native code compiler by <a href="https://twitter.com/ntherning">Niklas Therning</a>. I had the good fortune to work with him on it in a commercial capacity and was responsible for the debugger (super fun!), lambdas (fun!) and IDE integrations (not so fun), among general start-up-y things. RoboVM was eventually bought by Xamarin, who got swallowed by Microsoft, who shut the project down. Thankfully, the libGDX community has taken it on.
-link: https://robovm.mobidevelop.com
-importance: 91
-+++

@@ -1,0 +1,51 @@
+{{
+
+projects = [
+	{
+		title: "basis-template",
+		description: "A templating engine for the JVM. Similar to Jtwig, but a lot faster, more hackable, and with zero dependencies. Want to shoot yourself in the foot with a general purpose scripting language in your templates? Basis-template is for you!",
+		url: "https://github.com/badlogic/basis-template",
+	},
+	{
+		title: "Beginning Android Games",
+		description: "A book I wrote in 2011 on game development for Android. The book is now in its 3rd edition (though I bailed after the 2nd edition). For a while, it was the best-selling game programming book on Amazon.",
+		url: "https://www.amazon.com/Beginning-Android-Games-Robert-Green/dp/1430246774/",
+	},
+	{
+		title: "gifski-java",
+		description: "gifski-java is a JNI wrapper around the C API for <a href=\"https://gif.ski/\">Gifski</a>, a most excellent animated GIF encoding library. As with libimagequant-java, this was more of an exercise in using Docker as a cross-compilation platform than a coding challenge.",
+		url: "https://github.com/badlogic/gifski-java"
+	},
+	{
+		title: "libGDX",
+		description: "libGDX is a Java cross-platform game development framework for Windows, Linux, macOS, Android, iOS and HTML5-enabled browsers. I started it in 2010 as an innocent side project. Eventually it grew to one of the biggest OSS game development frameworks. And all of that in Java ¯\_(ツ)_/¯.",
+		url: "https://libgdx.badlogicgames.com"
+	},
+	{
+		title: "libimagequant-java",
+		description: "libimagequant-java is a JNI wrapper for <a href=\"https://pngquant.org/lib/\">libimagequant</a>, an insanely good image quantization library. While the project itself wasn't terribly challenging, it allowed me to explore Docker as a cross-compilation platform.",
+		url: "https://github.com/badlogic/libimagequant-java"
+	},
+	{
+		title: "Quantum",
+		description: "Quantum is a real-time strategy game in the spirit of Galcon and Eufloria. It features thousands of units, network play, scriptable AI, a map editor, and even supports IRC for chat! This was my first foray into game development with Java, so the code quality might not be the best.",
+		url: "https://github.com/badlogic/quantum"
+	},
+	{
+		title: "RoboVM",
+		description: "RoboVM is/was a JVM byte code to native code compiler by <a href=\"https://twitter.com/ntherning\">Niklas Therning</a>. I had the good fortune to work with him on it in a commercial capacity and was responsible for the debugger (super fun!), lambdas (fun!) and IDE integrations (not so fun), among general start-up-y things. RoboVM was eventually bought by Xamarin, who got swallowed by Microsoft, who shut the project down. Thankfully, the libGDX community has taken it on.",
+		url: "https://robovm.mobidevelop.com"
+	},
+	{
+		title: "Spine",
+		description: "Spine is 2D skeletal animation software, created by my super best friend Nathan Sweet (who's also the co-creator of libGDX, at least I'm legally required to tell the story like that). I help out on the Spine Runtimes, the code that animates and renders your beautiful skeletons in your game engine of choice. My by far biggest contribution to Spine was tolera^H^H^H hosting Nate for 6 months in my flat. While he was working on the first iteration, I was cheering him on by telling him what a stupid idea it was.",
+		url: "http://esotericsoftware.com/"
+	},
+	{
+		title: "Wee",
+		description: "Wee is a tiny educational programming environment, with an ISA and VM (Wee Machine), an assembly language (Wee Assembly), a higher level language (Wee Lang) and a browser-based development environment. That is at least the plan. Currently, only the ISA and assembler are complete. One of these days...",
+		url: "https://github.com/badlogic/wee"
+	}
+]
+
+}}

@@ -3,67 +3,62 @@ package io.marioslab;
 
 import java.security.MessageDigest;
 
+import com.esotericsoftware.minlog.Log;
+
 import io.javalin.Javalin;
 import io.javalin.embeddedserver.Location;
+import io.marioslab.basis.arguments.ArgumentWithValue.StringArgument;
+import io.marioslab.basis.arguments.Arguments;
+import io.marioslab.basis.arguments.Arguments.ParsedArguments;
 import io.marioslab.basis.site.BasisSite;
-import io.marioslab.basis.site.Configuration;
-import io.marioslab.basis.site.Configuration.ConfigurationExtension;
 
 public class MariosLab {
-	public static class MariosLabConfiguration implements ConfigurationExtension {
-		private String password;
+	public static void main (String[] cliArgs) {
+		Arguments args = BasisSite.createDefaultArguments();
+		StringArgument passwordArg = args.addArgument(new StringArgument("-p", "Password that must be provided for reload endpoints.", "<password>", false));
 
-		@Override
-		public int parseArgument (String[] args, int index) {
-			if ("-p".equals(args[index])) {
-				index++;
-				if (args.length == index) BasisSite.fatalError("Expected an password via -p <password>", false);
-				password = args[index];
-				return index;
-			}
-			return -1;
+		ParsedArguments parsed = null;
+		byte[] password = null;
+		BasisSite site = null;
+		try {
+			parsed = args.parse(cliArgs);
+			password = parsed.getValue(passwordArg).getBytes("UTF-8");
+			site = new BasisSite(parsed);
+		} catch (Throwable e) {
+			Log.error(e.getMessage());
+			Log.debug("Exception", e);
+			args.printHelp();
+			System.exit(-1);
 		}
 
-		@Override
-		public void validate () {
-			if (password == null) BasisSite.fatalError("Expected a password via -p <password>", false);
-			if (password.isEmpty()) BasisSite.fatalError("Password must not be empty", false);
-		}
-
-		@Override
-		public void printHelp () {
-			System.out.println("-p <password>           The password for the reload endpoints.");
-		}
-
-		public String getPassword () {
-			return password;
-		}
-	}
-
-	public static void main (String[] args) {
-		MariosLabConfiguration siteConfig = new MariosLabConfiguration();
-		Configuration config = Configuration.parse(args, siteConfig);
-
+		BasisSite finalSite = site;
+		byte[] finalPassword = password;
 		new Thread((Runnable) () -> {
-			new BasisSite(config);
+			try {
+				finalSite.generate();
+			} catch (Throwable t) {
+				Log.error(t.getMessage());
+				Log.debug("Exception", t);
+			}
 		}).start();
 
 		Javalin app = Javalin.create().enableDynamicGzip().enableStaticFiles("output", Location.EXTERNAL).port(8000).start();
 
 		app.get("/api/reloadhtml", ctx -> {
-			String password = ctx.queryParam("password");
-			if (MessageDigest.isEqual(siteConfig.password.getBytes(), password.getBytes())) {
+			String pwd = ctx.queryParam("password");
+			if (MessageDigest.isEqual(pwd.getBytes(), finalPassword)) {
 				new ProcessBuilder().command("git", "pull").start();
+				Log.info("Got new static content.");
 				ctx.response().getWriter().println("OK.");
 			}
 		});
 
 		app.get("/api/reload", ctx -> {
-			String password = ctx.queryParam("password");
-			if (MessageDigest.isEqual(siteConfig.password.getBytes(), password.getBytes())) {
+			String pwd = ctx.queryParam("password");
+			if (MessageDigest.isEqual(pwd.getBytes(), finalPassword)) {
 				ctx.response().getWriter().println("OK.");
 				ctx.response().getWriter().flush();
-				BasisSite.log("Got an update. Shutting down.");
+				Log.info("Got an update. Shutting down.");
 				System.exit(-1);
 			}
 		});

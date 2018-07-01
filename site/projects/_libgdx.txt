@@ -1,6 +1,0 @@
-+++
-title: libGDX
-description: libGDX is a Java cross-platform game development framework for Windows, Linux, macOS, Android, iOS and HTML5-enabled browsers. I started it in 2010 as an innocent side project. Eventually it grew to one of the biggest OSS game development frameworks. And all of that in Java ¯\_(ツ)_/¯.
-link: https://libgdx.badlogicgames.com
-importance: 100
-+++

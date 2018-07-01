@@ -11,20 +11,21 @@
 {{for file in sortFiles(listFiles("posts/", true, true), "date", false)}}
 	{{i = i + 1}}
 	{{if (i > 5) break end}}
-	{{if file.metadata["published"] == false continue end}}
-	<li>{{formatDate("MMM dd, yyyy", file.metadata["date"])}} - <a href="{{file.outputDirectory + '/'}}">{{file.metadata["title"]}}</a></li>
+	{{if file.metadata.published == false continue end}}
+	<li>{{formatDate("MMM dd, yyyy", file.metadata["date"])}} - <a href="{{ "/" + file.getUrl() + "/" }}">{{file.metadata.title}}</a></li>
 {{end}}
 </ul>
 <p><h4><a href="posts/">View all posts &gt;</a></h4></p>
 
 <h2>Projects</h2>
 {{i = 0}}
-{{for file in sortFiles(listFiles("./", true, true), "importance", false)}}
+{{include "projects/_projects.bt.txt"}}
+{{for project in projects}}
 	{{i = i + 1}}
 	{{if (i > 5) break end}}
 	<div class="project">
-		<a href="{{file.metadata["link"]}}">{{file.metadata["title"]}}</a>
-		<p>{{file.metadata["description"]}}</p>
+		<a href="{{project.url}}">{{project.title}}</a>
+		<p>{{project.description}}</p>
 	</div>
 {{end}}
 <p><h4><a href="projects/">View all projects &gt;</a></h4></p>

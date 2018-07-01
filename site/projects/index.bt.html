@@ -3,10 +3,11 @@
 <div class="content">
 
 <h2>Projects</h2>
-{{for file in sortFiles(listFiles("./", true, true), "importance", false)}}
+{{include "_projects.bt.txt"}}
+{{for project in projects}}
 	<div class="project">
-		<a href="{{file.metadata["link"]}}">{{file.metadata["title"]}}</a>
-		<p>{{file.metadata["description"]}}</p>
+		<a href="{{project.url}}">{{project.title}}</a>
+		<p>{{project.description}}</p>
 	</div>
 {{end}}
 

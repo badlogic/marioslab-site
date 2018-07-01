@@ -1,10 +1,13 @@
-+++
-title: Hello world
-summary: Why a new blargh?
-image: tiles.jpg
-date: 2018/06/24 21:00
-published: true
-+++
+{{
+metadata = {
+	title: "Hello world",
+	summary: "Why a new blargh?",
+	image: "tiles.jpg",
+	date: parseDate("2018/06/24 21:00"),
+	published: true,
+}
+}}
+
 {{include "../../_templates/post_header.bt.html"}}
 {{include "../../_templates/post_header.bt.html" as post}}
 

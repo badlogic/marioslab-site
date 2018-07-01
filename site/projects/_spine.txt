@@ -1,6 +1,0 @@
-+++
-title: Spine
-description: Spine is 2D skeletal animation software, created by my super best friend Nathan Sweet (who's also the co-creator of libGDX, at least I'm legally required to tell the story like that). I help out on the Spine Runtimes, the code that animates and renders your beautiful skeletons in your game engine of choice. My by far biggest contribution to Spine was tolera^H^H^H hosting Nate for 6 months in my flat. While he was working on the first iteration, I was cheering him on by telling him what a stupid idea it was.
-link: http://esotericsoftware.com/
-importance: 103
-+++

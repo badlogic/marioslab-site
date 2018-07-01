@@ -1,6 +1,0 @@
-+++
-title: gifski-java
-description: gifski-java is a JNI wrapper around the C API for <a href="https://gif.ski/">Gifski</a>, a most excellent animated GIF encoding library. As with libimagequant-java, this was more of an exercise in using Docker as a cross-compilation platform than a coding challenge.
-link: https://github.com/badlogic/gifski-java
-importance: 102
-+++
