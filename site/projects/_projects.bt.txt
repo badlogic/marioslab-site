@@ -2,10 +2,20 @@
 
 projects = [
 	{
+		title: "basis-arguments",
+		description: "A static website generator based on basis-template.",
+		url: "https://github.com/badlogic/basis-arguments",
+	},
+	{
 		title: "basis-template",
 		description: "A templating engine for the JVM. Similar to Jtwig, but a lot faster, more hackable, and with zero dependencies. Want to shoot yourself in the foot with a general purpose scripting language in your templates? Basis-template is for you!",
 		url: "https://github.com/badlogic/basis-template",
 	},
+	{
+		title: "basis-arguments",
+		description: "A zero-dependency, magic free command line argument parsing and help text printing library for Java and other JVM languages.",
+		url: "https://github.com/badlogic/basis-arguments",
+	}
 	{
 		title: "libGDX",
 		description: "libGDX is a Java cross-platform game development framework for Windows, Linux, macOS, Android, iOS and HTML5-enabled browsers. I started it in 2010 as an innocent side project. Eventually it grew to one of the biggest OSS game development frameworks. And all of that in Java ¯\_(ツ)_/¯.",
