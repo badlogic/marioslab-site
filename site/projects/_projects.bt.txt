@@ -3,7 +3,7 @@
 projects = [
 	{
 		title: "basis-arguments",
-		description: "A static website generator based on basis-template.",
+		description: "A static website generator based on basis-template. This site was built with basis-site. You can find the source code of this site on <a href='https://github.com/badlogic/marioslab-site'>GitHub</a>.",
 		url: "https://github.com/badlogic/basis-arguments",
 	},
 	{
