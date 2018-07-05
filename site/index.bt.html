@@ -12,7 +12,7 @@
 	{{i = i + 1}}
 	{{if (i > 5) break end}}
 	{{if file.metadata.published == false continue end}}
-	<li>{{formatDate("MMM dd, yyyy", file.metadata["date"])}} - <a href="{{ "/" + file.getUrl() + "/" }}">{{file.metadata.title}}</a></li>
+	<li>{{formatDate("MMM dd, yyyy", file.metadata["date"])}} - <a href="{{ "/" + file.getOutputDirectory() + "/" }}">{{file.metadata.title}}</a></li>
 {{end}}
 </ul>
 <p><h4><a href="posts/">View all posts &gt;</a></h4></p>

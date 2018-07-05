@@ -8,7 +8,7 @@
 <ul class="posts">
 {{for file in sortFiles(listFiles("./", true, true), "date", false)}}
 	{{if file.metadata.published == false continue end}}
-	<li>{{formatDate("MMM dd, yyyy", file.metadata.date)}} - <a href="{{ "/" + file.getUrl() + "/" }}">{{file.metadata["title"]}}</a></li>
+	<li>{{formatDate("MMM dd, yyyy", file.metadata.date)}} - <a href="{{ "/" + file.getOutputDirectory() + "/" }}">{{file.metadata["title"]}}</a></li>
 {{end}}
 </ul>
 
