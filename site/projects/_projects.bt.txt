@@ -47,11 +47,6 @@ projects = [
 		url: "https://github.com/badlogic/quantum"
 	},
 	{
-		title: "RoboVM",
-		description: "RoboVM is/was a JVM byte code to native code compiler by <a href=\"https://twitter.com/ntherning\">Niklas Therning</a>. I had the good fortune to work with him on it in a commercial capacity and was responsible for the debugger (super fun!), lambdas (fun!) and IDE integrations (not so fun), among general start-up-y things. RoboVM was eventually bought by Xamarin, who got swallowed by Microsoft, who shut the project down. Thankfully, the libGDX community has taken it on.",
-		url: "https://robovm.mobidevelop.com"
-	},
-	{
 		title: "Spine",
 		description: "Spine is 2D skeletal animation software, created by my super best friend Nathan Sweet (who's also the co-creator of libGDX, at least I'm legally required to tell the story like that). I help out on the Spine Runtimes, the code that animates and renders your beautiful skeletons in your game engine of choice. My by far biggest contribution to Spine was tolera^H^H^H hosting Nate for 6 months in my flat. While he was working on the first iteration, I was cheering him on by telling him what a stupid idea it was.",
 		url: "http://esotericsoftware.com/"
