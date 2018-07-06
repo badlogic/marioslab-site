@@ -11,11 +11,13 @@ import io.marioslab.basis.arguments.ArgumentWithValue.StringArgument;
 import io.marioslab.basis.arguments.Arguments;
 import io.marioslab.basis.arguments.Arguments.ParsedArguments;
 import io.marioslab.basis.site.BasisSite;
+import io.marioslab.processors.ImageCropProcessor;
 
 public class MariosLab {
 	public static void main (String[] cliArgs) {
 		Arguments args = BasisSite.createDefaultArguments();
-		StringArgument passwordArg = args.addArgument(new StringArgument("-p", "Password that must be provided for reload endpoints.", "<password>", false));
+		StringArgument passwordArg = args
+			.addArgument(new StringArgument("-p", "Password that must be provided for reload endpoints.", "<password>", false));
 
 		ParsedArguments parsed = null;
 		byte[] password = null;
@@ -24,6 +26,7 @@ public class MariosLab {
 			parsed = args.parse(cliArgs);
 			password = parsed.getValue(passwordArg).getBytes("UTF-8");
 			site = new BasisSite(parsed);
+			site.addProcessor(new ImageCropProcessor());
 		} catch (Throwable e) {
 			Log.error(e.getMessage());
 			Log.debug("Exception", e);

@@ -1,0 +1,16 @@
+{{
+metadata = {
+	title: "Basis - Rewriting the world",
+	summary: "Wherein I describe how I've assembled a new home from many pieces.",
+	image: "construction.jpg",
+	date: parseDate("2018/07/06 12:10"),
+	published: true,
+}
+}}
+
+{{include "../../_templates/post_header.bt.html"}}
+{{include "../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("construction.jpg", "Assembling a new home from many pieces.")}}
+
+{{include "../../_templates/post_footer.bt.html"}}
