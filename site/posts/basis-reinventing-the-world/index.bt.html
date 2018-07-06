@@ -1,0 +1,38 @@
+{{
+metadata = {
+	title: "Basis - Reinventing the world",
+	summary: "Wherein I describe how I've assembled a new home from many pieces.",
+	image: "construction.jpg",
+	date: parseDate("2018/07/06 12:10"),
+	published: true,
+}
+}}
+
+{{include "../../_templates/post_header.bt.html"}}
+{{include "../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("construction.jpg", "Assembling a new home from many pieces.")}}
+
+<p>When I decided to <a href="../hello-world/">throw everything away</a> and start from scratch, I was looking through available options for building a (mostly) static site. My requirements for the new site:</p>
+
+<ul>
+	<li>All of the content must be editable via any text editor.</li>
+	<li>I must be able to freely choose the structure of the content.</li>
+	<li>Must provide an expressive templating engine so I can stay in text files for the most part.</li>
+	<li>Allow me to extend the functionality of the templating engine with code in a typed language.</li>
+	<li>Don't force some theming format on me. I want to control all of the CSS and keep it minimal.</li>
+	<li>Let me stuff everything in a Git repository.</li>
+	<li>Bonus points if I can add a HTTP RPC web service for dynamic content such as comments, preferably in the same typed language with which I can extend the template engine.</li>
+</ul>
+
+<p>As a first step, I checked out the solutions my peers went with.
+<a href="https://floooh.github.io/">Andre</a> is using <a href="https://jekyllrb.com/">Jekyll</a>. <a href="https://samskivert.com/">Michael</a> used to use Jekyll for his site, but recently switch to <a href="https://gohugo.io/">Hugo</a>. I'll refrain from citing specific reasons. Suffice it to say that a lot of swearing and phrases like "bit rot" were involved.</p>
+
+<p>I went to check out both Jekyll and Hugo. Jekyll is built on Ruby, uses <a href="https://shopify.github.io/liquid/">Liquid</a> as its (capable) templating engine, and dictates a very <a href="https://jekyllrb.com/docs/structure/">rigid directory structure</a>. I'm not a big fan of Ruby (fight me), and while Jekyll let's you do a lot, I felt I'd probably be fighting it's rigidity. Jekyll's documentation was fantastic though!</p>
+
+<p>Hugo comes off as a more enterprise-y version of Jekyll. That also expresses itself in its documentation. There's a lot of it, including videos. Why people think videos are a great source of documentation I'll never understand. Hugo is built on Go and uses Go's not very expressive, <a href="https://golang.org/pkg/html/template/">built-in templating engine</a>. Just based on the overwhelming documentation, Hugo seemed to complex to me, so I abandoned it as well.</p>
+
+<h2>How hard can it be?</h2>
+
+
+{{include "../../_templates/post_footer.bt.html"}}

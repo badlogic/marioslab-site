@@ -146,6 +146,11 @@ ul {
 	font-weight: 300;
 }
 
+.post_content ul {
+	padding: 0 2em 0 2em;
+	margin: 0 0 1em 0;
+}
+
 .post_content .figure {
 	margin-top: 1em;
 	margin-bottom: 1em;
