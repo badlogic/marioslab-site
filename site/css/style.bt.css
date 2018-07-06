@@ -1,9 +1,5 @@
-/*
-Normalize CSS and highlight.js theme
-
 {{include raw "_normalize.css"}}
 {{include raw "_androidstudio.css"}}
-*/
 
 /* Defines **/
 {{
@@ -11,7 +7,7 @@ Normalize CSS and highlight.js theme
 	color_text = "#555"
 	color_link = "#00bcd4"
 	font_size = "18px"
-	content_width = "38em"
+	content_width = "45em"
 }}
 
 body {
@@ -50,6 +46,8 @@ div, p, li, a {
 
 pre > code {
 	font-size: 80%;
+	line-height: initial;
+	border-radius: 3px;
 }
 
 /* Elements */
@@ -136,14 +134,17 @@ ul {
 
 .post_content h2 {
 	font-weight: 300;
+	margin-top: 1.5em;
 }
 
 .post_content h3 {
 	font-weight: 300;
+	margin-top: 1.5em;
 }
 
 .post_content h4 {
 	font-weight: 300;
+	margin-top: 1.5em;
 }
 
 .post_content ul {
@@ -172,7 +173,7 @@ ul {
 	line-height: 1.2em;
 }
 
-.post_content code {
+.post_content p code, .post_content ul code {
 	padding: 0.2em 0.4em;
     margin: 0;
     font-size: 85%;
