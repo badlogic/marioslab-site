@@ -4,7 +4,7 @@ metadata = {
     summary: "Wherein I describe why and how I've assembled a new home from many pieces.",
     image: "construction.jpg",
     date: parseDate("2018/07/06 12:10"),
-    published: false,
+    published: true,
 }
 }}
 
@@ -16,45 +16,45 @@ metadata = {
 <p>When I decided to <a href="../hello-world/">throw everything away</a> and start from scratch, I was looking through available options for building a (mostly) static site. My requirements for the new site:</p>
 
 <ul>
-    <li>All of the content must be editable via any text editor.</li>
-    <li>I must be able to freely choose the structure of the content.</li>
+    <li>All of the content must be editable with any text editor.</li>
+    <li>Let's me freely choose the structure of the content.</li>
     <li>Must provide an expressive templating engine so I can stay in text files for the most part.</li>
-    <li>Allow me to extend the functionality of the templating engine with code in a typed language.</li>
-    <li>Don't force some theming format on me. I want to control all of the CSS and keep it minimal.</li>
-    <li>Let me stuff everything in a Git repository.</li>
+    <li>Allows me to extend the functionality of the templating engine with code in a typed language.</li>
+    <li>Doesn't force some themeing format on me. I want to control all of the CSS and keep it minimal.</li>
+    <li>Lets me stuff everything in a Git repository.</li>
     <li>Bonus points if I can add a HTTP RPC web service for dynamic content such as comments, preferably in the same typed language with which I can extend the template engine.</li>
 </ul>
 
-<p>As a first step, I checked out the solutions my peers went with.
-<a href="https://floooh.github.io/">Andre</a> is using <a href="https://jekyllrb.com/">Jekyll</a>. <a href="https://samskivert.com/">Michael</a> used to use Jekyll for his site, but recently switch to <a href="https://gohugo.io/">Hugo</a>. I'll refrain from citing specific reasons. Suffice it to say that a lot of swearing and phrases like "bit rot" were involved.</p>
+<p>As a first step, I checked out the solutions my peers use.
+<a href="https://floooh.github.io/">Andre</a> is using <a href="https://jekyllrb.com/">Jekyll</a>. <a href="https://samskivert.com/">Michael</a> used to use Jekyll, but recently switch to <a href="https://gohugo.io/">Hugo</a>. I'll refrain from citing specific reasons. Suffice it to say that a lot of swearing and phrases like "bit rot" were involved.</p>
 
-<p>I went to check out both Jekyll and Hugo. Jekyll is built on Ruby, uses <a href="https://shopify.github.io/liquid/">Liquid</a> as its (capable) templating engine, and dictates a very <a href="https://jekyllrb.com/docs/structure/">rigid directory structure</a>. I'm not a big fan of Ruby (fight me), and while Jekyll let's you do a lot, I felt I'd probably be fighting it's rigidity. Jekyll's documentation was fantastic though!</p>
+<p>Jekyll is built on Ruby, uses <a href="https://shopify.github.io/liquid/">Liquid</a> as its (capable) templating engine, and dictates a very <a href="https://jekyllrb.com/docs/structure/">rigid directory structure</a>. I'm not a big fan of Ruby (fight me), and while Jekyll let's you do a lot, I felt I'd probably get annoyed by it's rigidity. Jekyll's documentation is fantastic though!</p>
 
-<p>Hugo comes off as a more enterprise-y version of Jekyll. That also expresses itself in its documentation. There's a lot of it, including videos. Why people think videos are a great source of documentation I'll never understand. Hugo is built on Go and uses Go's not very expressive, <a href="https://golang.org/pkg/html/template/">built-in templating engine</a>. Just based on the overwhelming documentation, Hugo seemed to complex to me, so I abandoned it as well.</p>
+<p>Hugo comes off as a more enterprise-y version of Jekyll. That also expresses itself in its documentation. There's a lot of it, including videos. Why people think videos are a great source of documentation I'll never understand. Hugo is built on Go and uses Go's not very expressive <a href="https://golang.org/pkg/html/template/">built-in templating engine</a>. Just based on the overwhelming documentation, Hugo seemed too complex to me, so I abandoned it as well.</p>
 
 <p>At this point I decided not to look any futher, because ...</p>
 
-{{post.figure("finger.jpg", "Scratching an itch.")}}
+{{post.figure("finger.jpg", "The human body contains 8 liters of blood. All of which can exit through a little tile wound.")}}
 
 <h2>How hard can it be?</h2>
-<p>What do I need to build my own static site generator? It's going to be a command line application, so I need to parse command line arguments. A templating engine is needed to do more complex things like listing published blog posts. Finally, I need a driver that assembles all these pieces and packs it up in a command line app and marries it with a file system watcher. Bonus points for making that driver easy to embed in a web service that serves the static files and provides end points for dynamic content like comments.</p>
+<p>The static site generator is going to be a command line application, so I need to parse command line arguments. A templating engine is needed to do more complex things like listing published blog posts. Finally, I need a driver that assembles all these pieces it with a file system watcher. Bonus points for making that driver easy to embed in a web service that serves the static files and provides end points for dynamic content like comments.</p>
 
-<p>I'm familar with the JVM. It's proven technology for web backends, and its tooling is pretty good. And while Kotlin or Scala would be fun to (re-)try in production, Java 8+ has enough creature comforts to make it painless enough.</p>
+<p>I'm familar with the JVM. It's proven technology for web backends. Its tooling is pretty good to superb. And while Kotlin or Scala would be fun to (re-)try in production, Java 8+ has enough creature comforts to ease most of my pain.</p>
 
-<p>With the JVM as the target platform, I could surely find existing OSS components, fumble them together and call it a day. But where is the fun in that? All of the pieces will be hand-crafted, artisan products of love, with zero external dependencies except for what the Java standard library provides.</p>
+<p>With the JVM as the target platform, I could surely find existing OSS components, duct-tape them together and call it a day. But where is the fun in that? All of the pieces will be hand-crafted, artisan products of love, with zero external dependencies except for what the Java standard library provides.</p>
 
-<p>I like re-usable components, so the three pieces each go into a separate project and build on top of each other. Since I prefer declarative builds, I'll be going with Maven as the build and dependency management system pulling everything together. I've used Gradle in anger, and its mix of Ant like free-form-ness and use of Groovy make me dislike it more than Maven. Also, it's still a pain to deploy to Maven Central.</p>
+<p>I like re-usable components, so each of the three pieces will go into a separate project. Since I prefer declarative builds, I'll be going with Maven as the build and dependency management system. I've used Gradle in anger, but its mix of Ant like free-form style and all that Groovy make me dislike it more than Maven. Also, it's still a pain to deploy to Maven Central.</p>
 
-<p>Speaking of Maven Central: all components will be BSD licensed OSS. This forces me to keep everything somewhat clean and tested, with OK documentation. I wouldn't want a LinkedIn recruiter not spam call me because of a poor quality public repository.</p>
+<p>Speaking of Maven Central: all components will be BSD licensed OSS. This forces me to keep everything somewhat clean and tested, with OK documentation. I wouldn't want scare away poor LinkedIn recruiters because of poor quality public GitHub repositories!</p>
 
-<p>All of these and future components need an umbrella. And thus <strong>Basis</strong> was born.</p>
+<p>All of these and future components need an umbrella. And thus <strong>Basis</strong> is born.</p>
 
 <h2>Basis-arguments</h2>
-<p>Robust command line parsing can be more involved than one might think. A single argument may have multiple forms, e.g. <code>-i</code> and <code>--input</code>, may be optional, and may expect a value of a specific type that needs validation and must be converted to a corresponding type of the programming language of choice.</p>
+<p>Robust command line parsing is more involved than one might think. A single argument may have multiple forms, e.g. <code>-i</code> and <code>--input</code>, may be optional, and may expect a value of a specific type that needs validation.</p>
 
-<p>But that's not all. You also want a way to generate nicely formatted help and error messages, so the user can explore the options your program offers, or figure out which parameter was incorrect or missing.</p>
+<p>But that's not all. You also want a way to generate nicely formatted help and error messages, so the user can explore the options your program offers, or figure out which parameters were incorrect or missing.</p>
 
-<p>With <a href="https://github.com/badlogic/basis-arguments">basis-arguments</a>, I tried to code up all these requirements, with a minimal API and in the most type-safe way Java allows me to do it. Here's what that looks like:</p>
+<p>With <a href="https://github.com/badlogic/basis-arguments">basis-arguments</a>, I tried to code up all these requirements, with a minimal API and zero magic. It also tries to be as type-safe as Java allows. Here's what that looks like:</p>
 
 <pre><code class="java">public static void main (String[] argv) {
     Arguments args = new Arguments();
@@ -115,21 +115,21 @@ metadata = {
 }
 </code></pre>
 
-<p>If this is not self-explanatory enough, I've failed my mission statement. I also hope you can excuse the wonky formatting. I use a 120 character wide line length, because I have a monitor that is made for humans, and not for ants (> 640x480). What can I say, works for me!</p>
+<p>Excuse the wonky formatting. I use a 120 character wide line length. My monitor is made for humans (> 640x480), not for ants. Read the <a href="https://github.com/badlogic/basis-arguments/blob/master/README.md">documentation</a> for the full monty.</p>
 
 <h2>Basis-template</h2>
-<p>Template engines are a dime a dozen on pretty much all platforms. On the JVM, they range from <a href="https://github.com/samskivert/jmustache">not very expressive</a>, to full blown <a href="http://mitchellbosecke.com/pebble/home">scripting languages</a>. I'm in the "expressive" camp and think that if you are using a template engine at all, it might as well allow you to shoot yourself in the foot with a bazooka.</p>
+<p>Template engines are a dime a dozen on pretty much all platforms. On the JVM, they range from <a href="https://github.com/samskivert/jmustache">not so expressive</a>, to full blown <a href="http://mitchellbosecke.com/pebble/home">scripting languages</a>. I'm in the "expressive" camp. If you are have to use a template engine, it might as well allow you to shoot yourself in the foot with a bazooka.</p>
 
-<p>As I'm a bit of a compiler geek, and since it's been almost 2 years since I touched compiler code, I ignored everything that's already available, and wrote my own little templating engine called <a href="https://github.com/badlogic/basis-template">basis-template</a>.</p>
+<p>As a compiler geek, I'm a bit saddened by the fact that I haven't touched any compiler code in 2 years. Naturally, I ignored everything that's available out there, and wrote my own little template engine called <a href="https://github.com/badlogic/basis-template">basis-template</a>. It's a bazooka-grade foot gun!</p>
 
-<p>There's a lot of functionality cramed into the little thing, so I recommend to read its <a href="https://github.com/badlogic/basis-template/blob/master/README.md">extensive documentation</a>. Here, we just want to get a taste of it, and highlight some interesting features and implementation details.</p>
+<p>There's a lot of functionality cramed into the little thing, so I recommend to read its <a href="https://github.com/badlogic/basis-template/blob/master/README.md">extensive documentation</a>. Here, we just want to get a little taste and highlight some interesting features and implementation details.</p>
 
 <h3>What's in a template?</h3>
-<p>Basis-template is inspired by <a href="http://jtwig.org/">Jtwig</a>, which itself is a sort of JVM port of PHP's <a href="https://twig.symfony.com/">Twig</a>. A template consists of text and code spans, the latter delimited by <code>\{\{</code> and <code>\}\}</code>. Anything found in a code span is interpreted by the templating engine according to the syntax and semantics of the template language.</p>
+<p>Basis-template is inspired by <a href="http://jtwig.org/">Jtwig</a>, which itself is a sort of JVM port of PHP's <a href="https://twig.symfony.com/">Twig</a>. Great ancestry! A template consists of text and code spans, the latter delimited by <code>\{\{</code> and <code>\}\}</code>. Anything found in a code span is interpreted by the template engine according to the syntax and semantics of the template language.</p>
 
 <pre><code class="html">Hello \{\{name\}\}.</code></pre>
 
-<p>This simple template has 2 text spans (<code>"Hello "</code> and <code>.</code>) that will be output verbatim, and one code span (<code>\{\{name\}\}</code>) that will be evaluated to some value by the template engine. The value then replaces the code span in the final output.</p>
+<p>This template has 2 text spans (<code>"Hello "</code> and <code>.</code>) that will be emitted verbatim. The code span (<code>\{\{name\}\}</code>) will be evaluated to some value by the template engine. The value then replaces the code span in the final output.</p>
 
 <p>The driver on the Java side looks like this:</p>
 
@@ -140,26 +140,26 @@ context.set("name", "Hotzenplotz");
 System.out.println(template.render(context));
 </code></pre>
 
-Yielding the output:
+It yields this output:
 
 <pre><code class="html">Hello Hotzenplotz.</code></pre>
 
 <p>Basis-template's language features almost everything the programmer heart desires:</p>
 
 <ul>
-    <li>Literals for booleans, numbers, characters, strings as well as maps and arrays.</li>
+    <li>Literals for booleans, numbers, characters, strings as well as maps and arrays. And <code>null</code>. Because Java.</li>
     <li>All sorts of unary, binary an ternary operators.</li>
-    <li>Control flow statements like <code>for</code>, <code>while</code>, <code>if</code>, <code>continue</code>, <code>break</code>, or <code>return</code>.</li>
-    <li>Assignments to block scoped variables.</li>
+    <li>Control flow statements like <code>for</code>, <code>while</code>, <code>if</code>, <code>continue</code>, <code>break</code>, and <code>return</code>.</li>
+    <li>Assignments to block scoped variables (but not injected JVM objects, that'd be crazy).</li>
     <li>Access to fields and methods of injected Java objects and classes.</li>
-    <li>Functions as first class citizens.</li>
+    <li>Functions as first class citizens through the magic of <code>FunctionalInterface</code></li>
     <li>Includes of various forms.</li>
-    <li>Maros.</li>
+    <li>Macros.</li>
 </ul>
 
-<p>You can not define your own data types in basis-template, though you can come close by using <a href="https://github.com/badlogic/basis-template#literals">map and array literals</a>.</p>
+<p>You can not define your own data types in basis-template. You can come close by using <a href="https://github.com/badlogic/basis-template#literals">map and array literals</a> though.</p>
 
-<p>The power of basis-template stems from the fact, that you can inject any JVM type into the template via the <code>TemplateContext</code>. Need <code>Math.cos()</code> in your code?</p>
+<p>The power of basis-template comes from injecting JVM objects into the template via the <code>TemplateContext</code>. Need <code>Math.cos()</code> in your template?</p>
 
 <pre><code class="html">\{\{cos(3.14)\}\}</code></pre>
 
@@ -169,14 +169,14 @@ System.out.println(template.render(context));
 
 <pre><code>-0.9999987317275395</code></pre>
 
-<p>The interpreter responsible for evaluating templates is also smart enough to ensure the proper types are used when interacting with JVM objects, and will even resolve overloaded methods and functions. Speaking of interpretation!</p>
+<p>The interpreter evaluating templates is also smart enough to ensure the proper types are used when interacting with JVM objects. It will even resolve overloaded methods and functions. Speaking of interpretation.</p>
 
 <h3>Parsing, error reporting and interpretation</h3>
-<p>A lot of template engines and other compiler-like projects rely on parser generators like <a href="http://www.antlr.org/">ANTLR</a>. You usually provide a grammar in some <a href="https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form">(extended) Backus-Naur form</a> flavor, fight against the peculiarities of an LR(k) or Peg parser, until the whole thing is not maintainable anymore, and error handling becomes a major pain.</p>
+<p>A lot of template engines and other compiler-like projects rely on parser generators like <a href="http://www.antlr.org/">ANTLR</a>. You provide a grammar in some <a href="https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form">(extended) Backus-Naur form</a> flavor, fight against the peculiarities of an LR(k) or Peg parser, until the whole thing becomes an unmaintainable mess, and error reporting gives you an ulcer.</p>
 
-<p>Since I'm in full control of all aspects of the template language, I can also define its syntax in such a way, that hand-writing a <a>recursive descent LL(1) parser</a> is trivial. In fact, the <a href="https://github.com/badlogic/basis-template/blob/master/src/main/java/io/marioslab/basis/template/parsing/Parser.java">entire parser is less than 450 LOC</a>. While small, it supports syntax comparable in complexity to Lua and JavaScript.</p>
+<p>Since I'm in full control of all aspects of the template language, I can also define its syntax in such a way, that hand-writing a <a>recursive descent LL(1) parser</a> is trivial. In fact, the <a href="https://github.com/badlogic/basis-template/blob/master/src/main/java/io/marioslab/basis/template/parsing/Parser.java">entire parser is less than 450 LOC</a>. While small, it supports syntax comparable in complexity to that of Lua and JavaScript.</p>
 
-<p>The error reporting of many template engines is also more than lack luster, with some not even reporting the line where the error happened. While no error reporting is perfect, I think basis-templates error reporting is pretty OK given its scope:</p>
+<p>The error reporting of many template engines is also a tad lack luster, with some not even reporting the line on which an error occured. While no error reporting is perfect, I think basis-templates error reporting is pretty OK given its scope:</p>
 
 <pre><code class="markdown">Error (site/posts/hello-world/index.bt.html:12): Error in included file.
 Error (site/posts/hello-world/../../_templates/post_header.bt.html:1): Error in included file.
@@ -187,46 +187,46 @@ Couldn't find method 'omg' for object of type 'SiteFile'.
                                   ^^^^^
 </code></pre>
 
-<p>Basis-template is essentially an <a href="https://en.wikipedia.org/wiki/Interpreter_(computing)#Abstract_syntax_tree_interpreters">abstract syntax tree interpreter</a>, an evaluation strategy that's commonly known to be slow, but easy to implement. Even some mature languages like Ruby have used AST interpretation for a long time, before switching to a byte code virtual machine.</p>
+<p>Basis-template is essentially an <a href="https://en.wikipedia.org/wiki/Interpreter_(computing)#Abstract_syntax_tree_interpreters">abstract syntax tree interpreter</a>. AST interpreters are commonly known to be slow, but easy to implement. Even some mature languages like Ruby used AST interpretation for a long time, before switching to a byte code virtual machine or other evaluation strategies.</p>
 
-<p>How slow is slow? To answer this question, I forked <a href="https://github.com/badlogic/template-benchmark">template-benchmark</a>, a <a href="http://openjdk.java.net/projects/code-tools/jmh/">JMH-based</a> micro-benchmark suite, that pits popular JVM template engines against each other. Results:</p>
+<p>How slow is slow? To answer this question, I forked <a href="https://github.com/badlogic/template-benchmark">template-benchmark</a>, a <a href="http://openjdk.java.net/projects/code-tools/jmh/">JMH-based</a> micro-benchmark suite that pits popular JVM template engines against each other. Results:</p>
 
-<pre><code class="markdown">BasisTemplate.benchmark         thrpt   10  39906.867 ±  513.546  ops/s
+<pre><code class="markdown">Rocker.benchmark                thrpt   10  70602.199 ±  768.252  ops/s
+BasisTemplate.benchmark         thrpt   10  39906.867 ±  513.546  ops/s
 BasisTemplateGetters.benchmark  thrpt   10  36745.616 ± 1389.334  ops/s
-Freemarker.benchmark            thrpt   10  20429.272 ±  394.242  ops/s
-Handlebars.benchmark            thrpt   10  21507.412 ±  242.507  ops/s
-JMustache.benchmark             thrpt   10  14235.609 ±  105.795  ops/s
-JTwig.benchmark                 thrpt   10   4327.615 ±  322.175  ops/s
-JavaMustache.benchmark          thrpt   10  19954.687 ± 4233.619  ops/s
 Pebble.benchmark                thrpt   10  28430.695 ±  807.715  ops/s
-Rocker.benchmark                thrpt   10  70602.199 ±  768.252  ops/s
-Thymeleaf.benchmark             thrpt   10   1495.825 ±   34.195  ops/s
 Trimou.benchmark                thrpt   10  25983.174 ±  558.236  ops/s
 Velocity.benchmark              thrpt   10  23083.624 ±  139.350  ops/s
+Handlebars.benchmark            thrpt   10  21507.412 ±  242.507  ops/s
+Freemarker.benchmark            thrpt   10  20429.272 ±  394.242  ops/s
+JavaMustache.benchmark          thrpt   10  19954.687 ± 4233.619  ops/s
+JMustache.benchmark             thrpt   10  14235.609 ±  105.795  ops/s
+JTwig.benchmark                 thrpt   10   4327.615 ±  322.175  ops/s
+Thymeleaf.benchmark             thrpt   10   1495.825 ±   34.195  ops/s
 </code></pre>
 
-<p>Basis-template is in second place, behind <a href="https://github.com/fizzed/rocker">Rocker</a>. The interesting part: Rocker compiles its templates to Java code, which then gets JIT compiled by the JVM. I think it's fair to say that at 55% of the speed of a JVM JIT compiled solution, basis-template is pretty fast.</p>
+<p>Basis-template comes in second place behind <a href="https://github.com/fizzed/rocker">Rocker</a>. Rocker compiles its templates to Java code, which is then JIT compiled by the JVM. I think it's fair to say that at 55% of the speed of a JVM JIT compiled solution, basis-template is pretty fast.</p>
 
-<p>I spent quite some time on optimizing basis-template. You can view my optimization steps in <a href="https://github.com/badlogic/basis-template/commits/master?after=2770422016a0c2cefa17292f19995d13da4b26a9+34">these commits</a>. The optimizations where driven by a healthy dose of <a href="https://www.ej-technologies.com/products/jprofiler/overview.html">JProfiler</a> and observing changes in the JMH benchmark.</p>
+<p>I spent quite some time optimizing basis-template. You can view my optimization steps in <a href="https://github.com/badlogic/basis-template/commits/master?after=2770422016a0c2cefa17292f19995d13da4b26a9+34">these commits</a>. The optimizations where driven by a healthy dose of <a href="https://www.ej-technologies.com/products/jprofiler/overview.html">JProfiler</a> and observing changes in the JMH benchmark timing results.</p>
 
-<p>The biggest speed up was achieved by moving from interpretation from <a href="https://github.com/badlogic/basis-template/blob/9a0be172ae216a1830b0766778872748358a6fd9/src/main/java/io/marioslab/basis/template/AstInterpreter.java">a set of big, static methods</a> that used <code>instanceof</code> to, <a href="https://github.com/badlogic/basis-template/commit/a9f17629f802548c4ff956e6d7f4bd751d2bfbc0#diff-ac5f79d86b3314790b8fcc3de9b26d14">plain old virtual dispatch</a>. Turns out its really hard beating the JVM at its own game.</p>
+<p>The biggest speed up was achieved by moving interpretation from <a href="https://github.com/badlogic/basis-template/blob/9a0be172ae216a1830b0766778872748358a6fd9/src/main/java/io/marioslab/basis/template/AstInterpreter.java">a set of big, static methods</a> that used <code>instanceof</code> to, <a href="https://github.com/badlogic/basis-template/commit/a9f17629f802548c4ff956e6d7f4bd751d2bfbc0#diff-ac5f79d86b3314790b8fcc3de9b26d14">plain old virtual dispatch</a>. Turns out its really hard beating the JVM at its own game.</p>
 
-<p>The curious can find the entire interpreter code in the <a href="https://github.com/badlogic/basis-template/blob/master/src/main/java/io/marioslab/basis/template/parsing/Ast.java"><code>Ast</code> class</a>. It pains me to have that code intermingled with the type definitions, but that is the price to pay for good performance.</p>
+<p>The curious among you can find the entire interpreter code in the <a href="https://github.com/badlogic/basis-template/blob/master/src/main/java/io/marioslab/basis/template/parsing/Ast.java"><code>Ast</code> class</a>. It pains me to have that code intermingled with the type definitions, but that is the price to pay for acceptable performance.</p>
 
 <h2>Basis-site</h2>
 <p>With the exciting part out of the way, it is time to speak about the boring part: <a href="https://github.com/badlogic/basis-site">basis-site</a>, the actual site generator.</p>
 
-<p>Basis-site operates like this: you give it an input directory, it process each encountered file, and writes the result to an output directory. That's it.</p>
+<p>You give basis-site an input directory, it process each encountered file, and writes the result to an output directory. That's it.</p>
 
-<p>The magic happens in the processing step. It is performed by a configurable list of processors. An input file is passed through this list of processor. Each processor can modify the file content and final output file name. The output of one processor is the input of the next processor in the list.</p>
+<p>The magic happens in the processing step. Each input file is passed through a list of (configurable) processors. Each processor can modify the file content and final output file name. The output of one processor is the input of the next processor.</p>
 
-<p>Out-of-the-box basis-site comes with a single processor that will evaluate every file containing the infix <code>.bt.</code> in its file name via basis-template, and strip the infix from the output file name. The processor will not touch files without the infix. These files will be copied verbatim (or processed by a user defined processor if that processor so desires).</p>
+<p>Out-of-the-box basis-site comes with a single processor that evaluates files containing the infix <code>.bt.</code> in their file names via basis-template. It also strips the infix from the output file names. The processor will not touch files without the infix. These files are copied verbatim or processed by a user defined processor if that processor so desires.</p>
 
-<p>The template file processor will also inject a handful of functions into each template for formating dates and listing other input files and their metadata, which is defined in a code span. This is similar to Jekyll's and Hugo's front matter, except that it's also defined in the template language.</p>
+<p>The template file processor will also inject a handful of functions into each template for formating dates and listing other input files and their metadata. The metadata is similar to Jekyll's and Hugo's front matter, except that it's also defined in the template language.</p>
 
-<p>The only other rule is that files and folders starting with <code>_</code> are not processed.</p>
+<p>Files and folders starting with <code>_</code> in their name will not be passed to processors, and will not be copied to the output directory. They are however accessible to templated files, e.g. via an <code>include</code> statement.</p>
 
-<p>The most basic site with a landing page, about page and shared header and footer would look like this:</p>
+<p>The most basic site with a landing page, an about page, and shared header and footer could look like this:</p>
 
 <pre><code>input/
     _templates/
@@ -274,12 +274,12 @@ The output would look like this:
     about.html
 </code></pre>
 
-<p>Basis-site can be used either as a command line application, or embedded in a JVM application. This very site uses the latter approach, so I can add additional processors for tasks like <a href="https://github.com/badlogic/marioslab-site/blob/master/src/main/java/io/marioslab/processors/ImageCropProcessor.java">image resizing and cropping</a>, or provide more functionality to templates. It also allows me to serve dynamic content like comments via a tiny web service based on the excellent <a href="https://javalin.io/">Javalin</a> (which I have no intention of re-inventing).</p>
+<p>Basis-site can be used either as a command line application, or embedded in a JVM application. This very site uses the latter approach. It allows me to add additional processors for tasks like <a href="https://github.com/badlogic/marioslab-site/blob/master/src/main/java/io/marioslab/processors/ImageCropProcessor.java">image resizing and cropping</a>, and lets me provide more functionality to templates by injecting functions. I can also serve dynamic content like comments via a tiny web service based on the excellent <a href="https://javalin.io/">Javalin</a> (which I have no intention of re-inventing).</p>
 
-<p>This only scratches the surface of this particular foot gun. Read the <a href="https://github.com/badlogic/basis-site/blob/master/README.md">documentation</a> and explore <a href="https://github.com/badlogic/marioslab-site">this site's source code</a> for a site in production.</p>
+<p>This only scratches the surface of this particular foot gun. Read the <a href="https://github.com/badlogic/basis-site/blob/master/README.md">documentation</a> and explore <a href="https://github.com/badlogic/marioslab-site">this site's source code</a> to see basis-site in production.</p>
 
 <h2>Moving on</h2>
-<p>There are a handful of NIH projects still to be done. What's a blog without comments? What are comments without captcha? Also, I'd like to track some basic site visit stats without having to turn over all of our data to Google. All perfectly scoped little things for me to reinvent badly!</p>
+<p>There are a handful of NIH projects that still require doing. What's a blog without comments? What are comments without captchas? Also, I'd like to track some basic site visit stats without having to turn over all of our data to Google. All perfectly scoped little things for me to reinvent badly!</p>
 
 <p>How many cool points do it get when I tell you that this site is managed by <a href="https://www.docker.com/">Docker</a>? None? OK. <em>Sad trombone.</em></p>
 
