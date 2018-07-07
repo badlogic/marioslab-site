@@ -220,7 +220,7 @@ Thymeleaf.benchmark             thrpt   10   1495.825 ±   34.195  ops/s
 
 <p>The magic happens in the processing step. Each input file is passed through a list of (configurable) processors. Each processor can modify the file content and final output file name. The output of one processor is the input of the next processor.</p>
 
-<p>Out-of-the-box basis-site comes with a single processor that evaluates files containing the infix <code>.bt.</code> in their file names via basis-template. It also strips the infix from the output file names. The processor will not touch files without the infix. These files are copied verbatim or processed by a user defined processor if that processor so desires.</p>
+<p>Basis-site comes with a single processor out-of-the-box. It evaluates files containing the infix <code>.bt.</code> in their file names via basis-template. It also strips the infix from the output file names. The processor will not touch files without the infix. These files are copied verbatim or processed by a user defined processor if that processor so desires.</p>
 
 <p>The template file processor will also inject a handful of functions into each template for formating dates and listing other input files and their metadata. The metadata is similar to Jekyll's and Hugo's front matter, except that it's also defined in the template language.</p>
 
