@@ -16,8 +16,7 @@ import io.marioslab.processors.ImageCropProcessor;
 public class MariosLab {
 	public static void main (String[] cliArgs) {
 		Arguments args = BasisSite.createDefaultArguments();
-		StringArgument passwordArg = args
-			.addArgument(new StringArgument("-p", "Password that must be provided for reload endpoints.", "<password>", false));
+		StringArgument passwordArg = args.addArgument(new StringArgument("-p", "Password that must be provided for reload endpoints.", "<password>", false));
 
 		ParsedArguments parsed = null;
 		byte[] password = null;
@@ -47,8 +46,8 @@ public class MariosLab {
 
 		Javalin app = Javalin.create().enableDynamicGzip().enableStaticFiles("output", Location.EXTERNAL).port(8000).start();
 
-		app.get("/api/reloadhtml", ctx -> {
-			String pwd = ctx.queryParam("password");
+		app.post("/api/reloadstatic", ctx -> {
+			String pwd = ctx.formParam("password");
 			if (MessageDigest.isEqual(pwd.getBytes(), finalPassword)) {
 				new ProcessBuilder().command("git", "pull").start();
 				Log.info("Got new static content.");
@@ -56,8 +55,8 @@ public class MariosLab {
 			}
 		});
 
-		app.get("/api/reload", ctx -> {
-			String pwd = ctx.queryParam("password");
+		app.post("/api/reload", ctx -> {
+			String pwd = ctx.formParam("password");
 			if (MessageDigest.isEqual(pwd.getBytes(), finalPassword)) {
 				ctx.response().getWriter().println("OK.");
 				ctx.response().getWriter().flush();
