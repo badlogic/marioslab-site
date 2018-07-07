@@ -37,7 +37,7 @@ metadata = {
 {{post.figure("finger.jpg", "The human body contains 8 liters of blood. All of which can exit through a little tile wound.")}}
 
 <h2>How hard can it be?</h2>
-<p>The static site generator is going to be a command line application, so I need to parse command line arguments. A templating engine is needed to do more complex things like listing published blog posts. Finally, I need a driver that assembles all these pieces it with a file system watcher. Bonus points for making that driver easy to embed in a web service that serves the static files and provides end points for dynamic content like comments.</p>
+<p>The static site generator is going to be a command line application, so I need to parse command line arguments. A templating engine is needed to do more complex things like listing published blog posts. Finally, I need a driver that assembles all these pieces and packages them with a file system watcher. Bonus points for making that driver easy to embed in a web service that serves the static files and provides end points for dynamic content like comments.</p>
 
 <p>I'm familar with the JVM. It's proven technology for web backends. Its tooling is pretty good to superb. And while Kotlin or Scala would be fun to (re-)try in production, Java 8+ has enough creature comforts to ease most of my pain.</p>
 
@@ -45,7 +45,7 @@ metadata = {
 
 <p>I like re-usable components, so each of the three pieces will go into a separate project. Since I prefer declarative builds, I'll be going with Maven as the build and dependency management system. I've used Gradle in anger, but its mix of Ant like free-form style and all that Groovy make me dislike it more than Maven. Also, it's still a pain to deploy to Maven Central.</p>
 
-<p>Speaking of Maven Central: all components will be BSD licensed OSS. This forces me to keep everything somewhat clean and tested, with OK documentation. I wouldn't want scare away poor LinkedIn recruiters because of poor quality public GitHub repositories!</p>
+<p>Speaking of Maven Central: all components will be BSD licensed OSS. This forces me to keep everything somewhat clean and tested, with OK documentation. I wouldn't want scare away poor LinkedIn recruiters with low quality public GitHub repositories!</p>
 
 <p>All of these and future components need an umbrella. And thus <strong>Basis</strong> is born.</p>
 
