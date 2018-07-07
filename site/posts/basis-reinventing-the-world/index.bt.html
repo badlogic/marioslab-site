@@ -174,7 +174,7 @@ System.out.println(template.render(context));
 <h3>Parsing, error reporting and interpretation</h3>
 <p>A lot of template engines and other compiler-like projects rely on parser generators like <a href="http://www.antlr.org/">ANTLR</a>. You provide a grammar in some <a href="https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form">(extended) Backus-Naur form</a> flavor, fight against the peculiarities of an LR(k) or Peg parser, until the whole thing becomes an unmaintainable mess, and error reporting gives you an ulcer.</p>
 
-<p>Since I'm in full control of all aspects of the template language, I can also define its syntax in such a way, that hand-writing a <a>recursive descent LL(1) parser</a> is trivial. In fact, the <a href="https://github.com/badlogic/basis-template/blob/master/src/main/java/io/marioslab/basis/template/parsing/Parser.java">entire parser is less than 450 LOC</a>. While small, it supports syntax comparable in complexity to that of Lua and JavaScript.</p>
+<p>Since I'm in full control of all aspects of the template language, I can also define its syntax in such a way, that hand-writing a <a href="https://en.wikipedia.org/wiki/Recursive_descent_parser">recursive descent LL(1) parser</a> is trivial. In fact, the <a href="https://github.com/badlogic/basis-template/blob/master/src/main/java/io/marioslab/basis/template/parsing/Parser.java">entire parser is less than 450 LOC</a>. While small, it supports syntax comparable in complexity to that of Lua and JavaScript.</p>
 
 <p>The error reporting of many template engines is also a tad lack luster, with some not even reporting the line on which an error occured. While no error reporting is perfect, I think basis-templates error reporting is pretty OK given its scope:</p>
 
