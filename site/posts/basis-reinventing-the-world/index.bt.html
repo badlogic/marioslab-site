@@ -222,7 +222,7 @@ Thymeleaf.benchmark             thrpt   10   1495.825 ±   34.195  ops/s
 
 <p>Basis-site comes with a single processor out-of-the-box. It evaluates files containing the infix <code>.bt.</code> in their file names via basis-template. It also strips the infix from the output file names. The processor will not touch files without the infix. These files are copied verbatim or processed by a user defined processor if that processor so desires.</p>
 
-<p>The template file processor will also inject a handful of functions into each template for formating dates and listing other input files and their metadata. The metadata is similar to Jekyll's and Hugo's front matter, except that it's also defined in the template language.</p>
+<p>The template file processor will also inject a handful of functions into each template for formating dates and listing other input files and their metadata. The metadata is similar to Jekyll's and Hugo's front matter, except it's also defined using the template language. Why have 2 different sets of languages when you have a bazooka?</p>
 
 <p>Files and folders starting with <code>_</code> in their name will not be passed to processors, and will not be copied to the output directory. They are however accessible to templated files, e.g. via an <code>include</code> statement.</p>
 
