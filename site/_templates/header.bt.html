@@ -9,10 +9,10 @@
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:site" content="@badlogicgames" />
 	<meta name="twitter:creator" content="@badlogicgames" />
-	<meta property="og:url" content="https://marioslab.io/{{file.output.getParent()}}" />
+	<meta property="og:url" content="https://marioslab.io/{{file.getOutputDirectory()}}" />
 	<meta property="og:title" content="{{file.metadata["title"]}}" />
 	<meta property="og:description" content="{{file.metadata["summary"]}}" />
-	<meta property="og:image" content="https://marioslab.io/{{file.output.getParent() + '/' + file.metadata["image"]}}" />
+	<meta property="og:image" content="https://marioslab.io/{{file.getOutputDirectory() + '/' + file.metadata["image"]}}" />
 	{{ end }}
 
 	<title>Mario's Lab</title>
