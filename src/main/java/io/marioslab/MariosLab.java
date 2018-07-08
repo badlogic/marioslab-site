@@ -18,9 +18,9 @@ public class MariosLab {
 		Arguments args = BasisSite.createDefaultArguments();
 		StringArgument passwordArg = args.addArgument(new StringArgument("-p", "Password that must be provided for reload endpoints.", "<password>", false));
 
-		ParsedArguments parsed = null;
-		byte[] password = null;
-		BasisSite site = null;
+		ParsedArguments parsed;
+		byte[] password;
+		BasisSite site;
 		try {
 			parsed = args.parse(cliArgs);
 			password = parsed.getValue(passwordArg).getBytes("UTF-8");
@@ -31,24 +31,25 @@ public class MariosLab {
 			Log.debug("Exception", e);
 			args.printHelp();
 			System.exit(-1);
+			return; // never reached
 		}
 
-		BasisSite finalSite = site;
-		byte[] finalPassword = password;
-		new Thread((Runnable) () -> {
+		Thread generatorThread = new Thread((Runnable) () -> {
 			try {
-				finalSite.generate();
+				site.generate();
 			} catch (Throwable t) {
 				Log.error(t.getMessage());
 				Log.debug("Exception", t);
 			}
-		}).start();
+		});
+		generatorThread.setDaemon(true);
+		generatorThread.start();
 
 		Javalin app = Javalin.create().enableDynamicGzip().enableStaticFiles("output", Location.EXTERNAL).port(8000).start();
 
 		app.post("/api/reloadstatic", ctx -> {
 			String pwd = ctx.formParam("password");
-			if (MessageDigest.isEqual(pwd.getBytes(), finalPassword)) {
+			if (MessageDigest.isEqual(pwd.getBytes(), password)) {
 				new ProcessBuilder().command("git", "pull").start();
 				Log.info("Got new static content.");
 				ctx.response().getWriter().println("OK.");
@@ -57,7 +58,7 @@ public class MariosLab {
 
 		app.post("/api/reload", ctx -> {
 			String pwd = ctx.formParam("password");
-			if (MessageDigest.isEqual(pwd.getBytes(), finalPassword)) {
+			if (MessageDigest.isEqual(pwd.getBytes(), password)) {
 				ctx.response().getWriter().println("OK.");
 				ctx.response().getWriter().flush();
 				Log.info("Got an update. Shutting down.");
