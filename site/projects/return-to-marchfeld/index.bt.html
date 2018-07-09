@@ -1,0 +1,39 @@
+{{include "../../_templates/header.bt.html"}}
+
+<style type="text/css">
+	.dosbox-container { width: 640px; height: 400px; margin: auto; margin-bottom: 1em; }
+	.dosbox-container > .dosbox-overlay { background: url(screenshot.png); }
+	ul {
+		padding: 0 2em 0 2em;
+	}
+</style>
+
+<div class="content">
+	<h2>Return to Marchfeld</h2>
+	<div id="dosbox"></div>
+	<p>Return to Marchfeld was one of the first games I've finished in 1999. It's a 90ies style 3D first person shooter written in Qbasic 4.5, using DirectQB and some assembler to make it a tiny bit faster. My friend Mike created the assets for me and stole some textures from the internet.</p>
+	<p>The engine may look like a raycaster, but is in fact a triangle mesh based rasterizer. Triangles are sorted using the painter's algorithm, which results in some artifacts for some viewing angles. Instead of perspective correct texture mapping, affine texture mapping is used, which also makes the scenery look a little nasty.</p>
+
+	<h3>Controls</h3>
+	<ul>
+		<li><strong>Cursor keys</strong>: forward, backward, turn left, turn right.</li>
+		<li><strong>CTRL</strong>: Fire.</li>
+		<li><strong>Z, X</strong>: Strafe left, right.</li>
+		<li><strong>Space</strong>: Open door (you need to stand right next to it).</li>
+		<li><strong>CTRL + F12</strong>: Increase DOSBox CPU cycles. You want at least 120,000 to make this somewhat playable.</li>
+	</ul>
+</div>
+
+<script type="text/javascript" src="https://js-dos.com/cdn/js-dos-api.js"></script>
+<script type="text/javascript">
+	var dosbox = new Dosbox({
+	id: "dosbox",
+	onload: function (dosbox) {
+		dosbox.run("rtm.zip", "./rtm.exe");
+	},
+	onrun: function (dosbox, app) {
+		console.log("App '" + app + "' is runned");
+	}
+	});
+</script>
+{{include "../../_templates/footer.bt.html"}}
