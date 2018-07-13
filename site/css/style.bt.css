@@ -5,7 +5,7 @@
 {{
 	color_background = "#ffffff"
 	color_text = "#555"
-	color_link = "#00bcd4"
+	color_link = "#629755"
 	font_size = "18px"
 	content_width = "45em"
 }}
@@ -103,7 +103,16 @@ ul {
 
 .posts li {
 	margin-bottom: 0.5em;
-	font-size: 120%;
+}
+
+.webring {
+	list-style-type: disc;
+	margin: 0 1em 0 1em;
+	padding: 0;
+}
+
+.webring li {
+	margin-bottom: 0.5em;
 }
 
 .project {
