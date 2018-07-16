@@ -28,7 +28,7 @@ public class MariosLab {
 		Arguments args = BasisSite.createDefaultArguments();
 		StringArgument passwordArg = args.addArgument(new StringArgument("-p", "Password that must be provided for reload endpoints.", "<password>", false));
 		Argument reloadArg = args
-			.addArgument(new Argument("-r", "Whether to tell any browser websocket clients to\nreload the site when the output was\nre-generated", false));
+			.addArgument(new Argument("-r", "Whether to tell any browser websocket clients to\nreload the site when the output was\nre-generated", true));
 
 		ParsedArguments parsed;
 		byte[] password;
