@@ -1,6 +1,6 @@
 {{
 metadata = {
-	title: "Building Wee Lang (1) - Disecting old times",
+	title: "Building Wee Lang (1) - Disecting history",
 	summary: "Wherein I try to analyze how I learned how to program.",
 	image: "qbasic.jpg",
 	date: parseDate("2018/07/12 23:00"),
@@ -12,7 +12,7 @@ metadata = {
 {{include "../../../_templates/post_header.bt.html"}}
 {{include "../../../_templates/post_header.bt.html" as post}}
 
-{{post.figure("qbasic.png", "Home (1996-2000).")}}
+{{post.figure("qbasic.png", "Home (1996-2001).")}}
 
 <p class="note">
 	This is the first in a series of articles on building a programming language called Wee and its tooling. Wee is an educational prgramming tool for beginners, bridging the gap between (visual) learning tools like <a href="https://scratch.mit.edu/">Scratch</a>, and professional environments like Java, Python, or C. You can learn more about my motivations on my <a href="https://www.badlogicgames.com/wordpress/?p=3950">old blog</a>.
@@ -22,7 +22,9 @@ metadata = {
 
 <p>A lot of research is available on how to teach programming (see the blog post above). Having performed user studies myself in related areas, I do however feel that the causes and effects within a learning environment are not entirely quantifiable scientifically. What I do know is how I learned to program. And a lot of my peers the same or highly similar stories.</p>
 
-<p>I thus work under the following (shaky) assumptions: by analyzing my own history, I can identify key elements that let me successfully self-learn how to program. Since my peers share similar stories, the key elements I find might be applicable not only to myself, but to a larger group of people. Story time.</p>
+<p>I thus work under the following (shaky) assumptions: by analyzing my own history, I can identify key elements that let me successfully self-learn how to program. Since my peers share similar stories, the key elements I find might be applicable not only to myself, but to a larger group of people.</p>
+
+<p>Story time.</p>
 
 <h2>Saving up</h2>
 
@@ -37,7 +39,7 @@ metadata = {
 
 <p>Within a year, I was able to afford a mouse and a double speed CD-ROM drive. Installing that CD-ROM drive was one of the most terrifying experiences in my life. The prospect of seeing this expensive machine go up in flames paralyzed me. And had I known of my parents' sacrifices, I'd have been even more scared to death. It took me a week to take the drive out of its anti-static wrapper. I'd touch the radiator, look at the drive, then put it back in. Eventually, my dad got fed up: "Son, if you don't put it in there, I'm going to put it in there. Do you want a car mechanic to handle your computer?". Under tears (not kidding), I got myself a screw driver and went to work. I'm happy to report that everything went better than expected. Otherwise, you might not be reading these lines.</p>
 
-<p>Unconciously, I learned how to use a PC. Not because I wanted to become a programmer, but so I could play all those amazing games.</p>
+<p><u>Unconciously, I learned how to use a PC</u>. Not because I wanted to become a programmer, but so I could play all those amazing games.</p>
 
 {{post.figure("gorilla.jpg", "GORILLA.BAS, wherein we learend, that bananas can explode.")}}
 <h2>Leveling up</h2>
@@ -51,20 +53,20 @@ metadata = {
 
 <pre><code class="bash">C:\GAMES\QBASIC.EXE /RUN NIBBLES.BAS</code></pre>
 
-<h2>Help!</h2>
-<p>Running this magic spell resulted in instant gratification. The command would fire up the game <a href="https://www.dosgamesarchive.com/play/nibbles/">Nibbles</a>, an early variant of the game "Snake", which we all enjoyed on our Nokia phones.</p>
+<h2>Helpful explorations</h2>
+<p>Running this magic spell resulted in <u>instant gratification</u>. The command would fire up the game <a href="https://www.dosgamesarchive.com/play/nibbles/">Nibbles</a>, an early variant of the game "Snake", which we all enjoyed on our Nokia phones.</p>
 
 {{post.figure("nibbles.jpg", "Poor Sammy.")}}
 
-<p>Once I killed off enough Sammies, I hit <code>ESC</code> and ended up in one of the most iconic programming tools of the nineties: QBasic.</p>
+<p>Once I killed off enough Sammies, I hit <code>CTRL + BREAK</code>, as pointed out by the listing instructions, and ended up in one of the most iconic programming tools of the nineties: QBasic.</p>
 
 {{post.figure("nibbles-code.jpg", "Glory. I had the German version.")}}
 
 <p>I was immediately familiar with some aspects of this program. The <code>File</code> and <code>Edit</code> menu items, as well as the editing area and scrollbars were the same as in <code>EDIT.EXE</code>, the text editor I used to modify <code>AUTOEXEC.BAT</code> and <code>CONFIG.SYS</code>. Other portions of the program were more mysterious.</p>
 
-<p>Notably, Microsoft was kind enough to give me some initial hints right there on the first screen. <code>SHIFT + F5</code>, to restart the game! <code>F1</code> to show information on any keyword my cursor is on. The same information and more was repeated in the bottom bar. That bar would change depending on the context. A fantastic on-boarding experience.</p>
+<p>Notably, Microsoft was kind enough to give me some initial hints right there on the first screen. <code>SHIFT + F5</code>, to restart the game! <code>F1</code> to show information on any keyword my cursor is on. The same information and more was repeated in the bottom bar. That bar would change depending on the context. <u>A fantastic on-boarding experience.</u></p>
 
-<p>I scrolled through the source code and what I found was surprising. Everything was extremely descriptive. What I'd later understand to be variable names, where words that I could immediately associated with aspects of the game I saw before.</p>
+<p>I scrolled through the source code and what I found was surprising. Everything was extremely descriptive. What I'd later understand to be variable names, were words that I could immediately associated with aspects of the game I saw before.</p>
 
 <pre><code>DO
    PlayNibbles NumPlayers, speed, diff$
@@ -73,12 +75,78 @@ LOOP WHILE StillWantsToPlay
 
 <p><code>NumPlayers</code> I knew form the title screen of the game, where it'd asked me to enter a number. The same for <code>speed</code>. <code>diff$</code> didn't make sense. But <code>PlayNibbles</code> and <code>StillWantsToPlay</code> in combination with <code>DO LOOP WHILE</code> sort of made sense (after consulting a dictionary to look up 'loop' and other words).</p>
 
+<p>Of course nothing really made sense at this point. I did as Microsoft told me, moved my cursor on top of <code>LOOP</code>, and pressed <code>F1</code>.</p>
+
+<center>
+<video controls loop src="f1.mp4" type="video/mp4">
+	Sorry, your browser does not support the video tag.
+</video>
+</center>
+
+<p>QBasic came with a <u>full-blown contextual help system</u>. Every keyword and standard library API had its own help page, including examples, and worded in a very beginner friendly way. When viewing the help for a token, QBasic also didn't just throw you into a separate full-screen. Instead, it kept the editor on screen, which meant there was <u>no context switching.</u></p>
+
+<p>All the examples given on the help pages where <u>tiny, self-contained little programms</u>, that you could just copy and paste into a blank <code>.BAS</code> file and run.</p>
+
+<center>
+	<video controls loop src="examples.mp4" type="video/mp4">
+		Sorry, your browser does not support the video tag.
+	</video>
+</center>
+
+<p>I remember wasting 2 nights just playing around with <code>LINE</code>, then discovering <code>CIRCLE</code> and friends. The simplicity of both the examples and the <u>lack of ceremony</u> to get them running, made for <u>fast and instantly rewarding exploration</u>.</p>
+
+<p>What the integrated help system did not come with, was a beginner's guide. Luckily, the listings I downloaded earlier contained a <u>tutorial series of small QBasic programms</u> that iteratively introduced you to basic programming concepts, like variables, data types, control flow and finally procedures. I wished I still had the source code. Instead of an accompanying website, the <u>tutorial text was part of the source code</u>. Some comments would ask you to modify the line following them. Later parts of the tutorial would be incomplete, forcing you to apply what you've learned to <u>solve small challenges.</u></p>
+
+<p>Due to my PC experience accumulated up until this time, I was already a somewhat proficient keyboard user. Still, syntax errors were a common occurance. QBasic's syntax was line-based. Every time you hit <code>ENTER</code>, the line you just completed would be checked by the parser, and you would get <u>immediate feedback on any syntax errors.</u></p>
+
+<center>
+	<video controls loop src="syntaxerror.mp4" type="video/mp4">
+		Sorry, your browser does not support the video tag.
+	</video>
+</center>
+
+<p>With more knowledge came bigger programs. And with bigger programs came the first bugs that were hard to reason about just by looking at the code. QBasic came with <u>capable debugger</u> that would let you set breakpoints and evaluate expressions when the program was paused. QBasic's big brother QuickBasic additionally let you create up to 8 watchpoints consiting of arbitrary expressions and supported conditional breakpoints. It would also allow you modify the running application. All of that was packaged up in the simplest possible UI. The following video shows QuickBasic instead of QBasic.</p>
+
+<center>
+	<video controls loop src="debugger.mp4" type="video/mp4">
+		Sorry, your browser does not support the video tag.
+	</video>
+</center>
+
+<p>Six months after opening QBasic for the first time, I became proficient enough to write little text adventures and simple graphical games. Any time a friend came over to my place, I'd proudly show off my creations. My friends were somewhat hard to impress though. They were used to higher quality on their GameBoy, SNES and other gaming devices. Why would they not see the brilliance of my little oeuvres?</p>
+
+<p>I also couldn't convince any of them to learn programming. Only one of my friends had a PC, but he rather spent his time playing games. And while I offered everyone else to come to my place to learn, the prospect of spending time in front of a computer, and typing what must have seemed like hyroglyphs, didn't appeal to anyone. I felt alone. Worse, I hit somewhat of a knowledge ceiling.</p>
+
 <h2>Making friends</h2>
+<p>Programming is not an inherently social activity. Yet, I was longing to share my thoughts and work with like minded people. At the end of 1997, at the age of 14, my parents granted my another long time wish: I got my first guitar. It was the cheapest spanish concert guitar money could buy, but it was mine! My parents already spent money on recorder lessons for my sister. Our deal was that they'd buy me a guitar, but that I had to learn playing it without taking lessons.</p>
 
-<h2>Sharing is caring</h2>
+<p>My circle of friends had some older peers in it that already were proficient guitar players, and were happy to mentor me. My focused shifted entirely to music. I finally had people to hang out with, learn from, and show share my work with. Something programming couldn't offer me. I would occasionally write the odd little program, but my focus shifted almost entirely towards music.</p>
 
-<h2>Key elements</h2>
+<p>This changed when I entered 5th grade at the gymnasium I went to (somewhat like high school, but you stay around until you are 18). We had to choose electives that semester, and naturally I signed up for computer science. Which turnd out to be more about Microsoft Office than programming. I told my teacher I'd already know all about Office (I didn't), and that instead of having to suffer through the regular lectures, it would be lovely if I could use the time to browse the internet for some programming information. I was lucky, my teacher was amazing.</p>
+
+<p>She asked me to bring some of my programs to validate that I actually knew how to code. Excited, I copied my best creations (a star field simulator and a graphical text adventure) to a floppy and showed it to her before the next lecture. She was blown away and allowed me to essentially skip her class, and do whatever I wanted. In addition, she'd give me the key to the IT lab, so I could use the computers whenever I had down time at school. Jackpot</p>
+
+<p>Invigorated, I hit this new site called <a href="https://en.wikipedia.org/wiki/AltaVista">AltaVista</a> everybody was going on about. A big improvement on the old site directories I used to frequent! My head exploded when the first search result for "qbasic games" showed a seemingly unending list of website and forums, chock-full with source code, programming tips, and most importantly, people.</p>
+
+{{post.figure("qb45-site.jpg", "My 3dLibQB is still second place! The ZIP file is corrupted, you can extract it with <code>jar xzf 3dLibQB.zip</code>.")}}
+
+<p>Feeling proficient enough with my English skills, I signed up to what appeared to be the biggest of all the forums, <a href="https://qb45.org/">QB45.COM</a>. (This is a partial copy of the old site, sadly both the download section and the forums do not contain any stuff from that time anymore). I also submitted my best code for others to enjoy and disect.</p>
+
+<p>I had finally found a place of like-minded people and a swath of new information that let me break through my knowledge ceiling. <u>Sharing and getting feedback on code</u> was a fantastic way to improve and learn new concepts. After a while, I started <u>helping others</u> on the forum, which in turn helped me to better organize my own thoughts. I also had the good fortune of becoming friends with insanely talented individuals like <a href="https://twitter.com/alimosavian">Ali Mosavian</a>, and Andre Victor, who would later create <a href="https://en.wikipedia.org/wiki/FreeBASIC">FreeBASIC</a>. Ali introduced me to the wonderful world of assembly programming, which opened entirely new worlds to me.</p>
+
+{{post.figure("rtm.jpg", "Avert your eyes, for I have brought affine texture mapping.")}}
+
+<p>The <u>internet community</u> surrounding QBasic and MS-DOS game programming was thriving at the end of the 90ies. There was a seemingly unending influx of newcomers, thirsty to join the ranks of the old guard. And the old guard, even those that were now working with different technology for their new projects, still stuck around to show beginners around. People were <u>encouraged to write about their findings</u>, which lead to an immense archive of knowledge. You can still find a lot of these articles on <a href="http://www.phatcode.net/articles.php">Phat Code</a>.</p>
+
+<p>I started university in 2003, and was exposed to a new set of ideas, including functional programming, compiler engineering and more theoretical aspects of computing. I wasn't fully formed as a programmer yet, but my <u>exposure to a lot of low-level aspects of computing</u>, forced on me by the sluggishness of QBasic, and working on mid-sized projects, gave me a great basis to work from. While I moved on to new things and technologies, I stuck around the community in some form or another until 2006, the year I got my first job. The community somewhat dispersed, or found a new home in FreeBASIC.</p>
+
+<p>I was extremely lucky to live through my formative years at the end of the 90ies. But I was even luckier to have all these supportive people in my life, from my loving parents, to my teacher and even random strangers on the internet, he ended up becoming friends for life. I hope I can pay it back in kind.</p>
 
 <h2>Next up</h2>
+<p>Avid readers may have already noticed the underlines in this essay. In the next installement, I'll try to distill my findings above into a set of key elements Wee should incorporate. I'll also take a closer look at QBasic the language, which had some surprising properties. No, I am not talking about <code>GOTO</code>. I have already harassed <a href="http://samskivert.com/">Michael</a> with my language design for Wee and hope to be able to share it soon as well.</p>
+
+<p>Until then, I'm happy to hear about your nostalgic stories or any feedback you have! Send your thoughts through <a href="">Twitter</a>.</p>
+
+<p>p.s.: As a non-native speaker and generally having a hard time with grammar in any language, I really appreciate <a href="https://github.com/badlogic/marioslab-site/blob/master/site/posts/wee/disecting-history/index.bt.html">pull requests</a>.</p>
 
 {{include "../../../_templates/post_footer.bt.html"}}

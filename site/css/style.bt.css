@@ -197,6 +197,12 @@ ul {
 	font-family: "SFMono-Regular",Consolas,"Liberation Mono",Menlo,Courier,monospace;
 }
 
+.post_content video {
+	max-width: 600px;
+	width: 100%;
+	margin-bottom: 1em;
+}
+
 /* Use border-box box sizing everywhere */
 html {
 	box-sizing: border-box;
