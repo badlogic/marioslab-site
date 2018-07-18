@@ -1,10 +1,10 @@
 {{
 metadata = {
-	title: "Building Wee Lang (2) - History lessons",
-	summary: "Wherein I identify key elements in my history enabling me to learn to program.",
-	image: "qbasic.png",
-	date: parseDate("2018/07/18 23:00"),
-	published: false,
+   title: "Building Wee Lang (2) - History lessons",
+   summary: "Wherein I identify key elements in my history enabling me to learn to program.",
+   image: "qbasic.png",
+   date: parseDate("2018/07/18 23:00"),
+   published: false,
 }
 }}
 <!-- Hi! -->
@@ -15,19 +15,19 @@ metadata = {
 {{post.figure("qbasic.png", "Home (1996-2001).")}}
 
 <p class="note">
-	This is the second in a series of articles on building a programming language called Wee and its tooling. Wee is an educational prgramming tool for beginners, bridging the gap between (visual) learning tools like <a href="https://scratch.mit.edu/">Scratch</a>, and professional environments like Java, Python, or C. You can learn more about my motivations on my <a href="https://www.badlogicgames.com/wordpress/?p=3950">old blog</a>.
+   This is the second in a series of articles on building a programming language called Wee and its tooling. Wee is an educational prgramming tool for beginners, bridging the gap between (visual) learning tools like <a href="https://scratch.mit.edu/">Scratch</a>, and professional environments like Java, Python, or C. You can learn more about my motivations on my <a href="https://www.badlogicgames.com/wordpress/?p=3950">old blog</a>.
 </p>
 
-<p>In the <a href="../dissecting-history/">last installment</a>, I reminisced about how I learned to program. For brevity's sake, I left out one important aspect: QBasic, the language. In this article, I want to informally dive into QBasic's syntax, types and module system. I'll then try to identify the key elements across all that's been discussed, that has enabled me to learn programming. It is these key elements I want to improve upon and derive Wee from.</p>
+<p>In the <a href="../dissecting-history/">last installment</a>, I reminisced about how I learned to program. For brevity's sake, I left out one important aspect: QBasic, the language. In this article, I want to informally dive into QBasic the language and then try to identify the key elements across all the factors that enabled me to learn programming, technical and non-technical. It is these key elements I want to improve upon and derive Wee from.</p>
 
-<p>As a small aside: QBasic is a less powerful derivative of QuickBasic that shipped with MS-DOS 6.x. It lacks QuickBasic's compiler and linker and hence can't create exectubales, misses some of QuickBasic's standard library functions, does not include advanced IDE features like watchpoints and conditional breakpoints, and does not support QuickBasic's modules system. Except for the missing module support, the languages QuickBasic and QBasic were identical. I'll hence treat them as the same in the following discussion.</p>
+<p>As a small aside: QBasic is a less powerful derivative of QuickBasic that shipped with MS-DOS 6.x. It lacks QuickBasic's compiler and linker, misses some standard library functions, does not include advanced IDE features like watchpoints and conditional breakpoints, and does not support QuickBasic's module system. Except for the missing module support, the languages QuickBasic and QBasic are identical. I'll hence treat them as the same in the following discussion.</p>
 
 <h2>Q(uick)Basic</h2>
-<p>A lot has been written about the mind-crippling properties of <a href="https://en.wikipedia.org/wiki/BASIC">BASIC</a>. The probably most prominent quote about BASIC comes from <a href="http://en.wikipedia.org/wiki/Edsger_W._Dijkstra">Dijkstra</a></p>
+<p>A lot has been written about the mind-crippling properties of <a href="https://en.wikipedia.org/wiki/BASIC">BASIC</a>. The most prominent quote about BASIC comes from <a href="http://en.wikipedia.org/wiki/Edsger_W._Dijkstra">Dijkstra</a></p>
 
-<p class="quote">It is practically impossible to teach good programming to students that have had a prior exposure to BASIC: as potential programmers they are mentally mutilated beyond hope of regeneration</p>
+<p class="quote">"It is practically impossible to teach good programming to students that have had a prior exposure to BASIC: as potential programmers they are mentally mutilated beyond hope of regeneration."</p>
 
-<p>It is unsurprising that Dijkstra, having famously made <a href="http://www.cs.utexas.edu/users/EWD/ewd02xx/EWD215.PDF">the case against the GOTO statement</a> and who coined the term <a href="https://en.wikipedia.org/wiki/Structured_programming">structured programming</a>, would have great distain for a language that is essentially <code>GOTO</code> soup, like this little <a href="https://en.wikipedia.org/wiki/GW-BASIC">GW-BASIC</a> snippet illustrates:</p>
+<p>Having famously made <a href="http://www.cs.utexas.edu/users/EWD/ewd02xx/EWD215.PDF">the case against the GOTO statement</a> and having coined the term <a href="https://en.wikipedia.org/wiki/Structured_programming">structured programming</a>, it is unsurprising that Dijkstra would have great distain for a language that is essentially <code>GOTO</code> soup, as this little <a href="https://en.wikipedia.org/wiki/GW-BASIC">GW-BASIC</a> snippet illustrates:</p>
 
 <pre><code>10 INPUT "What is your name: "; U$
 20 PRINT "Hello "; U$
@@ -45,26 +45,24 @@ metadata = {
 140 END
 </pre></code>
 
-<p>Early dialects like GW-BASIC did support only rudimentary forms of control flow statements like loops, and lacked ways to define procedures. Instead, control flow was largely expressed by jumping between (mandatory) line numbers via the <code>GOTO</code> statement.</p>
+<p>Early BASIC dialects like GW-BASIC supported only rudimentary forms of control flow statements. Instead, control flow was largely expressed by jumping between (mandatory) line numbers via the <code>GOTO</code> statement. These dialects also did not support functions. These are the BASICs Dijkstra was refering to.</p>
 
-<p>Combining these BASIC dialects, that came with virtually every early home computer, and the young brains of aspiring first time programmers can only result in disaster. But Q(uick)Basic was a different beast entirely: it was a <u>structured programming language</u>.</p>
+<p>But Q(uick)Basic was a different beast entirely: it was a <u>structured programming language</u>.</p>
 
 <h3>Program Structure</h3>
 <p>A QuickBasic program consists of one or more <code>.BAS</code> files (QBasic only deals with a single <code>.BAS</code> file). <u>Each file defines a module</u>. A module consists of:</p>
 
 <ul>
-	<li>Forward declarations of functions, procedures, types and (module-)global variables.</li>
-	<li>Module-level code.</li>
-	<li>Function and procedure definitions.</li>
+   <li>Forward declarations of functions, procedures, types and (module-)global variables.</li>
+   <li>Module-level code.</li>
+   <li>Function and procedure definitions.</li>
 </ul>
 
-<p>When running or compiling a <u>multi-module program</u>, the interpreter/compiler is given the list of modules, and information about which module is the main module. The interpreter/compiler then runs/compiles all modules, using the module-level code of the main module as the entry point of the program.</p>
+<p>When compiling or running a program made up of multiple modules, one module is chosen as the entry point. Its module-level code becomes the main driver of the program.</p>
 
-<p>Functions and procedures of other modules can be called by simply declaring them in the module that wants to use them. Since this gets old very quickly, function and procedure declaration can be moved out of a module and into a <code>.BI</code> header file. This header file can then be included via the <code>$INCLUDE</code> meta-command, similar to the C-preprocessor <code>#include</code> statement.</p>
+<p>To access functions, procedures, types and variables of other modules, they have to be declared in the module using them. This is achieved through a <code>.BI</code> header, usually one per module. This header file can then be included via the <code>$INCLUDE</code> meta-command, in both the module the declarations belong to, as well as other modules that want to access the module's content.</p>
 
-<p>Sharing types across modules can also be achieved by including their declaration in a <code>.BI</code> header file.</p> Modules can also share variables by declaring them as <code>COMMON</code>. Ideally, such shared variables are also declared in a <code>.BI</code> header file.</p>
-
-Here's a simple example of a program consisting of a main module, and a second module defining a procedure, a function, a variable shared across modules, and a type.
+<p>Here's a simple example of a program consisting of a main module, and a second module defining a procedure, a function, a variable shared across modules, and a type. Note that the variable is both accessible to other modules module-level code through <code>COMMON</code>, and their functions and procedures through <code>SHARED</code>.</p>
 
 <pre><code class="basic">' --- MAIN.BAS ---
 '$INCLUDE: 'MODULE.BI'
@@ -78,11 +76,10 @@ PRINT p.x; p.y
 </code></pre>
 
 <pre><code class="basic">' --- MODULE.BI ---
+DECLARE SUB initModule ()
+
 DECLARE FUNCTION add%(a AS INTEGER, b AS INTEGER)
 
-' COMMON shares the variable across modules
-' SHARED allows access to the variable from within procedures
-' and functions
 COMMON SHARED moduleVersion AS STRING = "1.0"
 
 TYPE Point2D
@@ -105,23 +102,169 @@ END FUNCTION
 
 <p>QuickBasic does not have the notion of <u>name spaces</u>, something sorely missed when mixing many modules. <u>Overuse of module-global and program-global variables</u> was also a "feature" of many QuickBasic programs in the wild, despite language constructs that could have helped avoid them.</p>
 
-<p>QuickBasic modules can be combined into <u>library files</u> with the suffix <code>.QLB</code>. This allows exchanging code without giving out the source code. In addition to packing up QuickBase modules, you can also put native code (<code>.OBJ</code> and <code>.LIB</code>) into a QLB file. The <u>foreign function interface</u> did not do any marshalling of types though.</p>
+<p>QuickBasic modules can be combined into <u>library files</u> with the suffix <code>.QLB</code>. This allows exchanging code without giving away the source code. In addition to packing up QuickBase modules, you can also put native code (<code>.OBJ</code> and <code>.LIB</code>) into a QLB file. We will briefly look at the foreign function interface later.</p>
 
-<h3>Types, aliasing, and null</h3>
+<h3>Types, variables, scopes and operators</h3>
 QBasic supports the following types:
 
 <ul>
-	<li><code>INTEGER</code>, for 16-bit signed integers.</li>
-	<li><code>LONG</code>, for 32-bit signed integers.</li>
-	<li><code>SINGLE</code>, for 32-bit floating point numbers.</li>
-	<li><code>DOUBLE</code>, for 32-bit floating point numbers.</li>
-	<li><code>STRING</code>, <u>immutable</u>, either fixed length, or dynamic length (e.g. as the result of a concatenation).</li>
-	<li>Arrays, multi-dimensional, with custom index ranges. These can not contain other arrays.</li>
-	<li><u>User-defined types</u>, that could contain primitive types, fixed length strings, and other user-defined types as fields.</li>
+   <li>Primitive types
+      <ul>
+         <li><code>INTEGER</code>, for 16-bit signed integers.</li>
+         <li><code>LONG</code>, for 32-bit signed integers.</li>
+         <li><code>SINGLE</code>, for 32-bit floating point numbers.</li>
+         <li><code>DOUBLE</code>, for 32-bit floating point numbers.</li>
+      </ul>
+   </li>
+   <li><code>STRING</code>, <u>immutable</u>, fixed length or dynamic length (e.g. as the result of a concatenation), and made up of ASCII characters.</li>
+   <li>Arrays, multi-dimensional, with custom index ranges. Can contain elements of all types except other arrays.</li>
+   <li><u>Records</u>, that could contain primitive types, fixed length strings, and other record types as fields. Can not contain dynamic strings or fixed/dynamic arrays. <u>Records can not be recursive.</u></li>
 </ul>
 
-<p>In Qbasic, <u>all types are value types</u> (with one exception which we'll encounter when discussing functions and procedures). This makes for some very interesting language properties!</p>
+<p>The first surprise in QBasic's type system: <u>everything is a value type</u> (as far as the user is concerned, and with one exception).</p>
 
+<p><u>Every variable is statically typed</u>, either through an explicit declaration statement or implicitely through first use and an optional type suffix.</p>
+
+<pre><code class="basic">a% = 10 ' A 16-bit integer
+b&amp; = 20 ' A 32-bit integer
+c! = 1.23 ' A 32-bit float
+d# = 1.23 ' A 64-bit float
+
+DIM s as STRING * 40 ' Fixed length string of 40 characters
+e$ = "Hello world." ' A dynamic string
+e$ = e$ + " My name is Mario." ' Concatenation creates a dynamic new string
+
+DIM a(-5 TO 5) AS INTEGER ' Fixed length array of integers
+REDIM f(a%) AS INTEGER ' A dynamic array
+
+' Record type declaration
+TYPE Point2d
+   x AS SINGLE
+   y AS SINGLE
+END TYPE
+
+DIM p AS Point2d ' A record consisting of two 32-bit floats x and y.
+</code></pre>
+
+<p>Declaring a variable allocates the required memory to hold a value of the variable's type. The variable will point to that memory location until it goes out of scope and its memory is reclaimed (more on that in the memory management section below). The scope of a variable is either that of the program (module-level variables), or that of the function or procedure it is defined in. Qbasic does not create scopes for control flow structures.</p>
+
+<p><u>Variables are initialized to their type's default value</u>. All primitive types are initialized to <code>0</code>. Strings are initialized to an empty string. Record fields are initialized to their respective type's default value. Array elements are also initialized to their type's default value.</p>
+
+<p>QBasic performs <u>implicit narrowing and widening</u> for primitive types, e.g. you can assign an <code>INTEGER</code> to a <code>SINGLE</code> and vice versa. There is <u>no implicit conversion of non-string types to <code>STRING</code></u>.</p>
+
+<p>For primitive types, the <u>binary arithmetic operators</u> <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>\</code> (integer division), <code>MOD</code> (integer modulo) and <code>^</code> (exponentiation) are defined. Unary arithmetic negation is also supported.</p>
+
+<p>The <u>binary logical operators</u> <code>AND</code>, <code>OR</code>, and <code>XOR</code>, as well as the unary logical <u>NOT</u> are only defined on primitive types. QBasic does not have a boolean type, but instead interprets non-zero primitive values as <em>true</em> and zero as <em>false</em>.</p>
+
+<p>The <u>binary relational operators</u> <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>=</code> (equal), <code>&lt;&gt;</code> (not equal) are supported for primitive types and strings. In the case of strings, the operators compare each string's characters and their length. <u>Records and arrays can not be tested for equality/inequality</u>, altough this would be trivial since everything is a value type.</p>
+
+<p>All operators discussed so far follow the <u>standard operator precedence</u> found in other languages like JavaScript. In addition to this operator precedence, users can use <code>(</code> and <code>)</code> to group sub-expressions.</p>
+
+<p>The <u>assignment operator</u> <code>=</code> is defined for all types except arrays. Since everything is a value type, <u>assignment deep copies</u> the right-hand side value to the left-hand side variable, record field or array element.</p>
+
+<p>The <u>array element indexing operator</u> <code>(index)</code> lets us work with array elements. Used on the left-hand side of an assignment, the right-hand side value (which must match the array element type) is deep copied to the array element at the index. Used within an expression, the operator returns a deep copy of the array element at the index.</p>
+
+<p>The <u>field operator</u> <code>.</code> lets us access the invidual fields of a record. Used on the left-hand side of an assignment, the right hand side value (which must match the field type) is deep copied to the field of the record. Used within an expression, the operator returns a deep copy of the field value of the last element in a field operator chain, e.g. <code>a.b.c</code>.</p>
+
+<h3>Control flow statements</h3>
+<p>QBasic supports a basic set of control flow statements.</p>
+
+<pre><code class="basic">' Conditions must evaluate to non-zero (true) or zero (false)
+IF a < b AND d THEN
+   ...
+ELSEIF d <> e THEN
+   ...
+ELSE
+   ...
+END IF
+
+WHILE a
+   ...
+WEND
+
+DO
+   ...
+LOOP WHILE a > b
+
+' STEP is optional
+FOR i = 2 to -2 STEP -1
+   ...
+NEXT
+
+' The test expression can be a primitive or string
+SELECT CASE someString$
+CASE "Hello", "World"
+   ...
+CASE IS < "Muh" ' IS is required when using relational operators
+   ...
+CASE 10 TO 20 ' Can also specify ranges if the text expression is a number
+   ...
+CASE ELSE
+   ...
+END SELECT
+</code></pre>
+
+<p>Nothing out of the ordinary, except that <code>SELECT</code> statements, that allow usage of strings, ranges and relational operators (compare to Java's <code>switch</code> and cry a little inside). Of course, QBasic also supports <code>GOTO</code>, but let's ignore that. All control flow statements are just that: statements. They do not yield values themselves.</p>
+
+<h3>Procedures and functions</h3>
+<p><u>Lacking a <code>unit</code> or <code>void</code> type</u>, QBasic has to make an explicit distinction between functions and procedures (functions "returning" void).</p>
+
+<pre><code class="basic">SUB DoSomething (stuff%, otherStuff%)
+...
+END SUB
+
+FUNCTION Repeat$(s AS STRING, repetitions as INTEGER)
+   FOR i% = 1 to repetitions
+      Repeat$ = Repeat$ + s
+   NEXT
+END FUNCTION
+
+DoSomething 1, 2
+a$ = Repeat("Huh", 5)
+</code></pre>
+
+<p>The return type of a function is declared by suffixing the function name with one of the implicit type suffixes for primitive and string types. This means that in QBasic, <u>functions can not return records or arrays</u>! To return a value, you simply assign it to the function name.</p>
+
+<p>Here is another interesting deviation from the "norm": <u>All arguments are passed by reference</u> by default, includes primitive types. This is the exception to "everything is a value type". It is also a solution to the problem of not being able to return records and arrays: you simply pass them in by reference.</p>
+
+<pre><code class="basic">SUB foo(i AS INTEGER, a() AS INTEGER, s AS STRING, p AS Point2d)
+   i = 10
+   a(1) = 20
+   s = "Hello"
+   p.x = 30
+END SUB
+
+DIM i AS INTEGER
+DIM a(1 to 10) AS INTEGER
+DIM s AS STRING
+DIM p AS Point2d
+
+foo(i, a, s, p)
+
+PRINT i; a(10); s; p.x
+' Output: 10 20 Hello 30
+</code></pre>
+
+<p>The <code>BYVAL</code> and <code>BYREF</code> keywords can be used to specify how arguments should be passed explicitely, except for array parameters, which are always passed by-reference. That makes sense, as passing an array by value could be a costly operation.</p>
+
+<p>Speaking of arrays: array parameters are always dimensionless. Bounds and dimensionality checks are performed at runtime.</p>
+
+<h3>Memory management</h3>
+<p>QBasic has <u>automatic memory management</u>. For a user, that's the end of the story (safe for standard library functions like <code>CLEAR</code> that smoke any and all variables for cases where memory gets tight). Under the hood, things are more interesting</p>
+
+<p>Primitive type values and record values work the same: they are allocated in the program's data segment (module-level code) or on the stack (by-value arguments, function/procedure-level variables). Module-level values of these types never get reclaimed. Stack allocated values are cleaned up as soon as a function/procedures frame is popped from the stack. This may partially explain why records can not contain dynamic strings or arrays, as these are handled differently (Records can contain static strings which are just embedded, fixed length arrays of bytes without additional meta-date, and hence easy to reclaim).</p>
+
+<p>Both dynamic strings and dynamic arrays allocate their data on the heap internally. In addition to a pointer to that heap data, they also keep track of the data's length for bounds checking.</p>
+
+<p>An array's heap data is uniquely owned by its variable. Since we can't assign one array to another, the ownership can not be transferred. Since arrays can only be passed by reference, and functions can not return an array, the invariant still holds (think this through, it's fun!). Reclaiming dynamic arrays is thus simple: if the array variable goes out of scope, free the heap memory. The second reclamation point is when an array is dynamically resized via the <code>REDIM</code> statement: the old heap data gets freed, and a new heap block is allocated an assigned to the array variable. The invariant still holds!</p>
+
+<p>Strings require a more complex reclamation strategy, as strings can be assigned to each other. In addition to the heap pointer and length, QBasic also stores a reference count for string heap data. Since strings are immutable, their heap data can be shared by multiple string variables. When one dynamic string is assigned to another dynamic string variable, the heap data reference count of the old string data is decreased, and if no other string variable references it, reclaimed. Conversely, the heap data reference count of the assigned string is increased, and the assigned-to string variable points to that heap data going forward. The two strings now share the same heap data.</p>
+
+<p>As it turns out, QBasic does actually work with <u>internal reference types for dynamically sized types</u>. It also achieves <u>multiple-ownership semantics by reference counting</u> for string data. Without the user noticing.</p>
+
+<p class="note">Note: The information in this section has been pieced together from bits of information scathered around the web and inspecting the assembly output of the QuickBasic compiler. There may be some inaccuracies, but the basic principles should hold.</p>
+
+<h3>Design consequences</h3>
 <p>Except for arguments passed by reference, there is <u>no aliasing</u> possible in QBasic. Consider this small Java snipper</p>
 
 <pre><code class="java">Point p = new Point();
@@ -167,8 +310,5 @@ END TYPE
 
 <p>One of the reasons for this is, I assume, that QBasic needs to be able to determine the size of a user-defined type to be able to copy it on assignement. Another reason may be because it would make arrays of user-defined types impossible if the individual values could be variable in length. But my real suspicion is that this the case because of memory management.</p>
 
-<h3>Memory management</h3>
-
-<h3>Functions and procedures</h3>
 
 {{include "../../../_templates/post_footer.bt.html"}}
