@@ -1,0 +1,174 @@
+{{
+metadata = {
+	title: "Building Wee Lang (2) - History lessons",
+	summary: "Wherein I identify key elements in my history enabling me to learn to program.",
+	image: "qbasic.png",
+	date: parseDate("2018/07/18 23:00"),
+	published: false,
+}
+}}
+<!-- Hi! -->
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("qbasic.png", "Home (1996-2001).")}}
+
+<p class="note">
+	This is the second in a series of articles on building a programming language called Wee and its tooling. Wee is an educational prgramming tool for beginners, bridging the gap between (visual) learning tools like <a href="https://scratch.mit.edu/">Scratch</a>, and professional environments like Java, Python, or C. You can learn more about my motivations on my <a href="https://www.badlogicgames.com/wordpress/?p=3950">old blog</a>.
+</p>
+
+<p>In the <a href="../dissecting-history/">last installment</a>, I reminisced about how I learned to program. For brevity's sake, I left out one important aspect: QBasic, the language. In this article, I want to informally dive into QBasic's syntax, types and module system. I'll then try to identify the key elements across all that's been discussed, that has enabled me to learn programming. It is these key elements I want to improve upon and derive Wee from.</p>
+
+<p>As a small aside: QBasic is a less powerful derivative of QuickBasic that shipped with MS-DOS 6.x. It lacks QuickBasic's compiler and linker and hence can't create exectubales, misses some of QuickBasic's standard library functions, does not include advanced IDE features like watchpoints and conditional breakpoints, and does not support QuickBasic's modules system. Except for the missing module support, the languages QuickBasic and QBasic were identical. I'll hence treat them as the same in the following discussion.</p>
+
+<h2>Q(uick)Basic</h2>
+<p>A lot has been written about the mind-crippling properties of <a href="https://en.wikipedia.org/wiki/BASIC">BASIC</a>. The probably most prominent quote about BASIC comes from <a href="http://en.wikipedia.org/wiki/Edsger_W._Dijkstra">Dijkstra</a></p>
+
+<p class="quote">It is practically impossible to teach good programming to students that have had a prior exposure to BASIC: as potential programmers they are mentally mutilated beyond hope of regeneration</p>
+
+<p>It is unsurprising that Dijkstra, having famously made <a href="http://www.cs.utexas.edu/users/EWD/ewd02xx/EWD215.PDF">the case against the GOTO statement</a> and who coined the term <a href="https://en.wikipedia.org/wiki/Structured_programming">structured programming</a>, would have great distain for a language that is essentially <code>GOTO</code> soup, like this little <a href="https://en.wikipedia.org/wiki/GW-BASIC">GW-BASIC</a> snippet illustrates:</p>
+
+<pre><code>10 INPUT "What is your name: "; U$
+20 PRINT "Hello "; U$
+30 INPUT "How many stars do you want: "; N
+40 S$ = ""
+50 FOR I = 1 TO N
+60 S$ = S$ + "*"
+70 NEXT I
+80 PRINT S$
+90 INPUT "Do you want more stars? "; A$
+100 IF LEN(A$) = 0 THEN GOTO 90
+110 A$ = LEFT$(A$, 1)
+120 IF A$ = "Y" OR A$ = "y" THEN GOTO 30
+130 PRINT "Goodbye "; U$
+140 END
+</pre></code>
+
+<p>Early dialects like GW-BASIC did support only rudimentary forms of control flow statements like loops, and lacked ways to define procedures. Instead, control flow was largely expressed by jumping between (mandatory) line numbers via the <code>GOTO</code> statement.</p>
+
+<p>Combining these BASIC dialects, that came with virtually every early home computer, and the young brains of aspiring first time programmers can only result in disaster. But Q(uick)Basic was a different beast entirely: it was a <u>structured programming language</u>.</p>
+
+<h3>Program Structure</h3>
+<p>A QuickBasic program consists of one or more <code>.BAS</code> files (QBasic only deals with a single <code>.BAS</code> file). <u>Each file defines a module</u>. A module consists of:</p>
+
+<ul>
+	<li>Forward declarations of functions, procedures, types and (module-)global variables.</li>
+	<li>Module-level code.</li>
+	<li>Function and procedure definitions.</li>
+</ul>
+
+<p>When running or compiling a <u>multi-module program</u>, the interpreter/compiler is given the list of modules, and information about which module is the main module. The interpreter/compiler then runs/compiles all modules, using the module-level code of the main module as the entry point of the program.</p>
+
+<p>Functions and procedures of other modules can be called by simply declaring them in the module that wants to use them. Since this gets old very quickly, function and procedure declaration can be moved out of a module and into a <code>.BI</code> header file. This header file can then be included via the <code>$INCLUDE</code> meta-command, similar to the C-preprocessor <code>#include</code> statement.</p>
+
+<p>Sharing types across modules can also be achieved by including their declaration in a <code>.BI</code> header file.</p> Modules can also share variables by declaring them as <code>COMMON</code>. Ideally, such shared variables are also declared in a <code>.BI</code> header file.</p>
+
+Here's a simple example of a program consisting of a main module, and a second module defining a procedure, a function, a variable shared across modules, and a type.
+
+<pre><code class="basic">' --- MAIN.BAS ---
+'$INCLUDE: 'MODULE.BI'
+
+DIM p as Point2D
+
+initModule
+PRINT "Module version: " + moduleVersion
+PRINT add%(1, 2)
+PRINT p.x; p.y
+</code></pre>
+
+<pre><code class="basic">' --- MODULE.BI ---
+DECLARE FUNCTION add%(a AS INTEGER, b AS INTEGER)
+
+' COMMON shares the variable across modules
+' SHARED allows access to the variable from within procedures
+' and functions
+COMMON SHARED moduleVersion AS STRING = "1.0"
+
+TYPE Point2D
+   x AS INTEGER
+   y AS INTEGER
+END TYPE
+</code></pre>
+
+<pre><code class="basic">' --- MODULE.BAS ---
+'$INCLUDE: 'MODULE.BI'
+
+SUB initModule ()
+   moduleVersion = "1.0"
+END SUB
+
+FUNCTION add%(a AS INTEGER, b AS INTEGER)
+   add% = a + b
+END FUNCTION
+</code></pre>
+
+<p>QuickBasic does not have the notion of <u>name spaces</u>, something sorely missed when mixing many modules. <u>Overuse of module-global and program-global variables</u> was also a "feature" of many QuickBasic programs in the wild, despite language constructs that could have helped avoid them.</p>
+
+<p>QuickBasic modules can be combined into <u>library files</u> with the suffix <code>.QLB</code>. This allows exchanging code without giving out the source code. In addition to packing up QuickBase modules, you can also put native code (<code>.OBJ</code> and <code>.LIB</code>) into a QLB file. The <u>foreign function interface</u> did not do any marshalling of types though.</p>
+
+<h3>Types, aliasing, and null</h3>
+QBasic supports the following types:
+
+<ul>
+	<li><code>INTEGER</code>, for 16-bit signed integers.</li>
+	<li><code>LONG</code>, for 32-bit signed integers.</li>
+	<li><code>SINGLE</code>, for 32-bit floating point numbers.</li>
+	<li><code>DOUBLE</code>, for 32-bit floating point numbers.</li>
+	<li><code>STRING</code>, <u>immutable</u>, either fixed length, or dynamic length (e.g. as the result of a concatenation).</li>
+	<li>Arrays, multi-dimensional, with custom index ranges. These can not contain other arrays.</li>
+	<li><u>User-defined types</u>, that could contain primitive types, fixed length strings, and other user-defined types as fields.</li>
+</ul>
+
+<p>In Qbasic, <u>all types are value types</u> (with one exception which we'll encounter when discussing functions and procedures). This makes for some very interesting language properties!</p>
+
+<p>Except for arguments passed by reference, there is <u>no aliasing</u> possible in QBasic. Consider this small Java snipper</p>
+
+<pre><code class="java">Point p = new Point();
+p.x = 1;
+Point p2 = p;
+p2.x = 2;
+</code></pre>
+
+<p>Both <code>p</code> and <code>p2</code> point (or reference) the same value. You can thus mutate the value through both references. In this simple case this might not be a problem, but when handing references to the same value around a complex system, <u>aliasing can make reasoning about a program's state and state mutation hard</u>. This is how most commonly used managed languages like Java, C#, or JavaScript work. It's a direct consequence of the fact, that these languages primarily use reference types.</p>
+
+<p>Aliasing is also a problem when it comes to <u>resource life-time management</u>. The life-time of a value pointed to by references is usually managed by a garbage collector. When the last reference dies (i.e. it or its owner goes out of scope), the value it points to also gets disposed of, freeing up the memory used to store the value. This is generally what you want, but for resources like open files, textures, or network connections, you might want to have direct control over their life-time. Relying on automatic memory management to release such resources is generally a bad idea.</p>
+
+<p>In QBasic, variables, user-defined type fields and array elements all store values "directly" and can not store references to values. The analogous QBasic code to the Java code above behaves differently.</p>
+
+<pre><code class="basic">DIM p AS Point2D
+DIM p2 AS Point2D
+p.x = 1
+p2 = p
+p2.x = 2
+</code></pre>
+
+<p>When <code>p</code> is assigned to <code>p2</code>, the value of <code>p</code> is copied over the current value of <code>p2</code>. The two variables represent two distinct memory regions that each can hold a <code>Point2D</code>. The subesequent assignment to <code>p2.x</code> is thus not mutating <code>p.x</code>. This makes reasoning about the state of the program easier (though this is counter acted by the over-use of global variables in many QBasic programs).</p>
+
+<p>There are more consequences to "everything is a value type": <u>there is no <code>null</code></u> in QBasic, you always have to assign a concrete value to a variable, field or array element. Consider this Java class representing a node in a linked list of integers.</p>
+
+<pre><code class="java">class Node {
+   public int value;
+   public Node next;
+}
+</code></pre>
+
+<p>The field <code>next</code> is either a reference to another <code>Node</code> instance, or is <code>null</code>. In QBasic, you can not define such a user-defined type, as there is no way to express the absence of a value, e.g. through <code>null</code>. This also means that <u>user-defined types can not be recursive</u>! Because of this and because you can not alias values through references, implementing graph-like data structures like linked lists or abstract syntax trees is possibly but hard in QBasic.</p>
+
+<p>"Everything is a value type" is also great for cache coherency (if those old machines had cache lines)!<code class="basic">DIM points(0 to 1000) AS Point2d</code> would allocate one consecutive memory region that holds 1000 <code>Point2d</code> values. Speaking of arrays, <u>assigning one array to another is not possible</u> in QBasic! You can assign strings to each other though. I assume this is possible because strings are immutable, about which we'll hear more in a second.</p>
+
+<p>Before we leave types behind us, there is one more peculiarity we need to discuss: <u>user-defined types can not contain dynamically sized strings and arrays</u>. In fact, you can not have any arrays inside a user-defined type. You can have fixed length strings though:</p>
+
+<pre><code class="basic">TYPE Person
+   name as STRING * 40
+   age as INTEGER
+END TYPE
+</code></pre>
+
+<p>One of the reasons for this is, I assume, that QBasic needs to be able to determine the size of a user-defined type to be able to copy it on assignement. Another reason may be because it would make arrays of user-defined types impossible if the individual values could be variable in length. But my real suspicion is that this the case because of memory management.</p>
+
+<h3>Memory management</h3>
+
+<h3>Functions and procedures</h3>
+
+{{include "../../../_templates/post_footer.bt.html"}}
