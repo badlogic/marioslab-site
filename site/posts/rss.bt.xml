@@ -12,6 +12,7 @@
 			<title>{{file.metadata.title}}</title>
 			<link>{{ "/" + file.getOutputDirectory() }}</link>
 			<description>{{file.metadata.summary}}</description>
+			<pubDate>{{formatDate("EEE, dd MMM yyyy HH:mm:ss zzz", file.metadata.date)}}</pubDate>
 		</item>
 	{{end}}
 </channel>
