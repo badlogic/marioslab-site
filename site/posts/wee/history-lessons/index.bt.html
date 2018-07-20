@@ -102,7 +102,7 @@ END FUNCTION
 
 <p>QuickBasic does not have the notion of <u>name spaces</u>, something sorely missed when mixing many modules. <u>Overuse of module-global and program-global variables</u> was also a "feature" of many QuickBasic programs in the wild, despite language constructs that could have helped avoid them.</p>
 
-<p>QuickBasic modules can be combined into <u>library files</u> with the suffix <code>.QLB</code>. This allows exchanging code without giving away the source code. In addition to packaging up QuickBasic modules, you can also put native code (<code>.OBJ</code> and <code>.LIB</code>) into a QLB file. We will briefly look at the foreign function interface later.</p>
+<p>QuickBasic modules can be combined into <u>library files</u> with the suffix <code>.QLB</code>. This allows exchanging code without giving away the source code. In addition to packaging up QuickBasic modules, you can also put native code (<code>.OBJ</code> and <code>.LIB</code>) into a QLB file. QuickBasic could call into <code>cdecl</code> and <code>pascal</code> code pretty easily. You just declared the function signatures.</p>
 
 <h3>Types, variables, scopes and operators</h3>
 QBasic supports the following types:
