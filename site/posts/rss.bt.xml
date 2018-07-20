@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+
+<channel>
+<title>Mario's Lab</title>
+<link>https://marioslab.io</link>
+<description>Screaming into the void.</description>
+
+	{{for file in sortFiles(listFiles("./", true, true), "date", false)}}
+		{{if file.metadata.published == false continue end}}
+		<item>
+			<title>{{file.metadata.title}}</title>
+			<link>{{ "/" + file.getOutputDirectory() }}</link>
+			<description>{{file.metadata.summary}}</description>
+		</item>
+	{{end}}
+</channel>
+</rss>
