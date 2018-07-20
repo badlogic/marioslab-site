@@ -33,7 +33,7 @@ h1 {
 }
 
 h2 {
-	font-size: 130%;
+	font-size: 150%;
 }
 
 h3 {
@@ -195,6 +195,10 @@ ul {
 .post_content ul {
 	padding: 0 2em 0 2em;
 	margin: 0 0 1em 0;
+}
+
+.post_content ul ul {
+	margin: 0;
 }
 
 .post_content p code, .post_content ul code {

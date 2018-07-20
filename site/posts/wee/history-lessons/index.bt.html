@@ -12,8 +12,6 @@ metadata = {
 {{include "../../../_templates/post_header.bt.html"}}
 {{include "../../../_templates/post_header.bt.html" as post}}
 
-{{post.figure("qbasic.png", "Home (1996-2001).")}}
-
 <p class="note">
    This is the second in a series of articles on building a programming language called Wee and its tooling. Wee is an educational prgramming tool for beginners, bridging the gap between (visual) learning tools like <a href="https://scratch.mit.edu/">Scratch</a>, and professional environments like Java, Python, or C. You can learn more about my motivations on my <a href="https://www.badlogicgames.com/wordpress/?p=3950">old blog</a>.
 </p>
@@ -249,6 +247,37 @@ PRINT i; a(10); s; p.x
 
 <p>Speaking of arrays: array parameters are always dimensionless. Bounds and dimensionality checks are performed at runtime.</p>
 
+<h3>Error handling</h3>
+<p>QBasic has a somewhat <u>rustic way of raising and handling errors</u>. The <code>ERROR</code> statement raises an error, identified by a (user-defined) error code. If no error handler is set, the program terminates. To set the global error handler, the <code>ON ERROR GOTO label|lineNumber</code> statement is used. If an error occurs, the runtime jumps to the module-level line specified after <code>GOTO</code>, which can decide how to proceed. The error handler has access to a few globals, most notably <code>ERR</code>, which holds the error code, and <code>ERL</code>, which holds the line at which the error was raised. The error handler can either exit the program, resume at the next statement after the statement that raised the error, or jump to a label/line number. Here's how that looks like:</p>
+
+<pre><code class="basic">SUB foo ()
+   ERROR 123 ' raise an error
+   PRINT "Resumed from error handler."
+END SUB
+
+ON ERROR GOTO ErrorHandler
+
+CALL foo()
+b% = 0
+a% = 1 / b% ' Division by zero raises ERR 11
+
+ErrorHandler:
+IF ERR = 123 THEN
+   PRINT "Oh no, an error occured, let's ignore it."
+   RESUME NEXT
+ELSE
+   PRINT "Unhandled error"; ERR; "at line "; ERL
+   END
+END IF
+
+' Output:
+' Oh no, an error occured, let's ignore it.
+' Resumed from error handler.
+' Unhandled error 11 at line 10
+</code></pre>
+
+<p>Not the most sophisticated of error handling mechanisms, and a bit icky as all errors (including those of modules) need to be handled in a single place. Still better than a segmentation fault!</p>
+
 <h3>Memory management</h3>
 <p>QBasic has <u>automatic memory management</u>. For a user, that's the end of the story (safe for standard library functions like <code>CLEAR</code> that smoke any and all variables for cases where memory gets tight). Under the hood, things are more interesting</p>
 
@@ -265,50 +294,203 @@ PRINT i; a(10); s; p.x
 <p class="note">Note: The information in this section has been pieced together from bits of information scathered around the web and inspecting the assembly output of the QuickBasic compiler. There may be some inaccuracies, but the basic principles should hold.</p>
 
 <h3>Design consequences</h3>
-<p>Except for arguments passed by reference, there is <u>no aliasing</u> possible in QBasic. Consider this small Java snipper</p>
+<p>In my opinion, the biggest consequence of QBasic's design is that there are <u>no aliases</u>, (except when passing arguments by reference). This is a side-effect of not having reference types (again, ignoring arguments passed by reference). It's both a blessing and curse. What's aliasing, you ask?</p>
 
-<pre><code class="java">Point p = new Point();
-p.x = 1;
-Point p2 = p;
-p2.x = 2;
+<p>Aliasing occurs when a single value is referred to by two or more symbols in the program, e.g. two variables, or a field and a variable, or through two array elements, and any other combination you can think of. It's very common in languages that have pointers or references. Consider this (pseudo) Java snippet:</p>
+
+<pre><code class="java">class A { B b = new B(); }
+A a = new A();
+foo(Arrays.asList(a.b));
 </code></pre>
 
-<p>Both <code>p</code> and <code>p2</code> point (or reference) the same value. You can thus mutate the value through both references. In this simple case this might not be a problem, but when handing references to the same value around a complex system, <u>aliasing can make reasoning about a program's state and state mutation hard</u>. This is how most commonly used managed languages like Java, C#, or JavaScript work. It's a direct consequence of the fact, that these languages primarily use reference types.</p>
+<p>The <code>B</code> instance escapes the unique ownership of A by being also put into a list. Worse, that list is passed to a method <code>foo()</code>, and god knows what that does with our poort <code>B</code> (e.g. create more references to our <code>B</code>). Anything in the system can potentially modify <code>B</code>, which makes reasoning about state hard.</p>
 
-<p>Aliasing is also a problem when it comes to <u>resource life-time management</u>. The life-time of a value pointed to by references is usually managed by a garbage collector. When the last reference dies (i.e. it or its owner goes out of scope), the value it points to also gets disposed of, freeing up the memory used to store the value. This is generally what you want, but for resources like open files, textures, or network connections, you might want to have direct control over their life-time. Relying on automatic memory management to release such resources is generally a bad idea.</p>
+<p>Having no aliases is a blessing, because <u>a system without aliasing simplifies reasoning about state and state mutators</u>. This is not only true for humans, but also compilers, which have a much easier time optimizing code without aliases. In case of QBasic, it also makes automatic memory management a lot simpler: since there can not be reference cycles, simplistic reference counting is sufficient, and only required for types that can't be allocated on the stack, e.g. dynamic arrays or strings.</p>
 
-<p>In QBasic, variables, user-defined type fields and array elements all store values "directly" and can not store references to values. The analogous QBasic code to the Java code above behaves differently.</p>
+<p>On the other hand, having no aliasing is also a curse. Quite a few <u>fundamental data structures like graphs are cumbersome to implement without aliases</u>. In a system without reference types, we can't have recursive types. Without recursive types, we can't do something like a binary tree as easily as this:</p>
 
-<pre><code class="basic">DIM p AS Point2D
-DIM p2 AS Point2D
-p.x = 1
-p2 = p
-p2.x = 2
-</code></pre>
+<pre><code class="java">// A binary tree node stores references to its left
+// and right children via a reference, with null signaling
+// "no reference".
+class Node {
+   String value;
+   Node left;
+   Node right;
 
-<p>When <code>p</code> is assigned to <code>p2</code>, the value of <code>p</code> is copied over the current value of <code>p2</code>. The two variables represent two distinct memory regions that each can hold a <code>Point2D</code>. The subesequent assignment to <code>p2.x</code> is thus not mutating <code>p.x</code>. This makes reasoning about the state of the program easier (though this is counter acted by the over-use of global variables in many QBasic programs).</p>
+   public Node (String value) { this.value = value; }
+}
 
-<p>There are more consequences to "everything is a value type": <u>there is no <code>null</code></u> in QBasic, you always have to assign a concrete value to a variable, field or array element. Consider this Java class representing a node in a linked list of integers.</p>
+// Creating a tree is easy
+Node root = new Node("root");
+root.left = new Node("root.left");
+root.right = new Node("root.right");
+root.right.left = new Node("root.right.left");
 
-<pre><code class="java">class Node {
-   public int value;
-   public Node next;
+// Traversing the tree is simple as well
+public void traverse (Node node) {
+   if (node == null) return;
+   System.out.println(node.value);
+   traverse(node.left);
+   traverse(node.right);
 }
 </code></pre>
 
-<p>The field <code>next</code> is either a reference to another <code>Node</code> instance, or is <code>null</code>. In QBasic, you can not define such a user-defined type, as there is no way to express the absence of a value, e.g. through <code>null</code>. This also means that <u>user-defined types can not be recursive</u>! Because of this and because you can not alias values through references, implementing graph-like data structures like linked lists or abstract syntax trees is possibly but hard in QBasic.</p>
-
-<p>"Everything is a value type" is also great for cache coherency (if those old machines had cache lines)!<code class="basic">DIM points(0 to 1000) AS Point2d</code> would allocate one consecutive memory region that holds 1000 <code>Point2d</code> values. Speaking of arrays, <u>assigning one array to another is not possible</u> in QBasic! You can assign strings to each other though. I assume this is possible because strings are immutable, about which we'll hear more in a second.</p>
-
-<p>Before we leave types behind us, there is one more peculiarity we need to discuss: <u>user-defined types can not contain dynamically sized strings and arrays</u>. In fact, you can not have any arrays inside a user-defined type. You can have fixed length strings though:</p>
-
-<pre><code class="basic">TYPE Person
-   name as STRING * 40
-   age as INTEGER
+<p>Here's the equivalent in QBasic:</p>
+<pre><code class="basic">' A binary tree node stores references to its left
+' and right children via an index into an array, with 0 signaling
+' "no reference".
+TYPE Node
+   value AS STRING * 40
+   left AS INTEGER
+   right as INTEGER
 END TYPE
+
+' Creating a tree is cumbersome
+DIM nodes(1 TO 4) AS Node
+nodes(1).value = "root"
+nodes(1).left = 1
+nodes(1).right = 2
+nodes(2).value = "root.left"
+nodes(3).value = "root.right"
+nodes(3).left = 4
+nodes(4).value = "root.right.left"
+
+' Traversing a tree is slightly more cumbersome
+SUB traverse (nodeIndex AS INTEGER, nodes() AS Node)
+   if (nodeIndex = 0) RETURN
+   PRINT nodes(nodeIndex).value
+   traverse(nodes(nodeIndex).left, nodes)
+   traverse(nodes(nodeIndex).right, nodes)
+END SUB
 </code></pre>
 
-<p>One of the reasons for this is, I assume, that QBasic needs to be able to determine the size of a user-defined type to be able to copy it on assignement. Another reason may be because it would make arrays of user-defined types impossible if the individual values could be variable in length. But my real suspicion is that this the case because of memory management.</p>
+<p>We have built our own "reference system" by abusing array indices as aliases. Rust suffers from a <a href="https://rust-leipzig.github.io/architecture/2016/12/20/idiomatic-trees-in-rust/">similar deficiency</a>, provided you want to stick to idiomatic Rust. We can also see that in a system without reference types, it's <u>impossible to "extract" sub elements of arrays or records into the local scope through an alias</u>.</p>
 
+<pre><code class="basic">DIM node AS node
+node = nodes(1) ' Let's modify the root!
+node.value = "Hi!"
+PRINT nodes(1).value ' Oh no, we modified a copy
+' Output: root
+</code></pre>
+
+<p>But it's not all bleak. Another consequence of "everything is a value type" is the absence of the <a href="https://en.wikipedia.org/wiki/Tony_Hoare#Apologies_and_retractions">billion dollar mistake</a>. <u>There is no <code>null</code></u> in QBasic. Sadly, it also <u>lacks a mechanism to signal optionality</u> of a value.</p>
+
+<h2>Key elements</h2>
+<p>If you read this far, ping me on <a href="https://twitter.com/badlogic">Twitter</a> to receive your price! Time to summarize my findings.</p>
+
+<h3>Target audience, prerequisits, motivators</h3>
+<p>I did not jump head first into programming, but had exposure to basic computing first. From that, I derrive the following basic skill set, which implicitely defines the target audience of Wee. A novice user of Wee:</p>
+
+<ul>
+	<li>Has a specific goal that can be achieved through programming.</li>
+	<li>Knows basic arithmetic and can read and write fluently.</li>
+	<li>Has a personal computer.</li>
+	<li>Knows how to write on a keyboard and how to use a mouse or touchpad.</li>
+	<li>Knows what files and folders are.</li>
+	<li>Knows that programs exist and serve different purposes (but not necessarily how they work).</li>
+	<li>Knows how to use a browser.</li>
+	<li>Extremely basic proficiency in English.</li>
+</ul>
+
+<p>The requirement of owning a personal computer may look a bit weird when phones and tablets are ubiquitous. But I do not think a tiny phone display and touch typing lend themselves well to learning to program. The limited screen space requires excessive mode switching. Worse, on-screen keyboards cover 30-50% of the available screen space, leaving less room to display helpful information. It is simply not comfortable to program on a mobile device (including tablets).</p>
+
+<p>The basic English proficiency requirement stems from the fact, that I do not plan on localizing keywords and sample programs to other languages. My <a href="https://twitter.com/badlogicgames/status/1019187811054948352">super scientific Twitter poll</a> seems to indicate that localizing the programming language probably does more harm than good. Information in the software world is pre-dominantely transported in English, so we might as well get novices on track early. Learning materials, comments in programs, and possibly community sections should of course be localized.</p>
+
+<p>Of course, some of these requirements can be relaxed if the user is accompanied by a person that can compensate missing skills on the spot.</p>
+
+<h3>Learning materials</h3>
+<p>When I started to program, I sourced my learning materials from various places, which was not very effective. The materials also differed in kind. The rough sketch for Wee:</p>
+
+<ul>
+	<li>Remove the language barrier as much as possible, by localizing all learning materials.</li>
+	<li>Provide a centralized hub for all learning materials, including instructions on where and how to get help.</li>
+	<li>Provide guided learning materials in form of interactive tutorials, that introduce users to
+		<ul>
+			<li>A high-level overview of programming and what it can be used for.</li>
+			<li>The <a href="https://www.researchgate.net/publication/259998496_Notional_Machines_and_Introductory_Programming_Education">notional machine</a> model used by Wee, using an interactive visualization.</li>
+			<li>How to navigate and use the basic facilities of the programming environment.</li>
+			<li>The Wee programming language, using relatable problems to motivate the introduction of a language feature.</li>
+		</ul>
+	</li>
+	<li>Provide explorative learning materials in form of small programs, using descriptive naming and comments, which users can modify and remix.</li>
+	<li>Provide reference materials integrated in the programming environment, including small, self-contained examples that can be copied, pasted and run immediately.</li>
+	<li>Allow users to publish their own materials (articles, remix-able programs, comment sections on programs, ...) on the centralized hub.</li>
+	<li>Pointers to "where to go from here" for advanced users that want to explore professional tools.</li>
+</ul>
+
+<h3>Programming environment</h3>
+<p>I think QBasic is still a pretty good baseline when it comes to introductory programming environments. I want to update that experience with Wee:</p>
+
+<ul>
+	<li>A familar UI/UX that avoids information overload, invites exploration through simplicity, and lacks ceremony.</li>
+	<li>A great on-boarding experience with instant gratification, even for people that do not read the fine manual.</li>
+	<li>A contextual help system, worded in a beginner friendly way, with references to other learning materials.</li>
+	<li>Minimal context switching.</li>
+	<li>Immediate feedback on errors, with <a href="http://elm-lang.org/blog/compiler-errors-for-humans">error messages for humans</a>.</li>
+	<li>A capable debugger.</li>
+	<li>Code navigation, completion and refactoring facilities.</li>
+	<li>Collaborative editing.</li>
+	<li>Source control management.</li>
+	<li>Simple mechanism to share programs and libraries.</li>
+</ul>
+
+<p>Again, much of this is fuzzy. I'll figure out the details once I get there. This includes the choice of platform. Currently, I gravitate towards the browser, for multiple reasons. I can more easily distribute fixes and additions to the platform and learning materials. It is more conductive to community aspects, including sharing. It's (mostly) cross-platform. There are of course also quite a few downsides. Not everyone is connected to the internet all the time. Getting a complex application like this to work across browsers is a bit of a nightmare. Finally, as a user, I might not want to leave my code with a 3rd party. We will see.</p>
+
+<h3>Programming language</h3>
+<p>QBasic was far from perfect, but I think some of its features and limitations were actually conductive to me learning to program. I already have a pretty good idea of what Wee's language design will look like. It still needs to pass the Michael smell test, so I post-pone going into details until the next article. I can however present some basic elements:</p>
+
+<ul>
+	<li>Statically typed structured programming language.</li>
+	<li>Support for modules that can be used as libraries.</li>
+	<li>Automatic memory management (but without garbage collection).</li>
+	<li>Everything is a value type.
+		<ul>
+			<li><code>unit</code>.</li>
+			<li>Primitive types (boolean, int, float, string, functions).</li>
+			<li>Lists and dictionaries.</li>
+			<li>Non-recursive records.</li>
+			<li>Reference type for function arguments</li>
+		</ul>
+	</li>
+	<li>Default value initialization.</li>
+	<li>List, dictionary and record literals.</li>
+	<li>No implicit narrowing/widening/conversions.</li>
+	<li>Standard set of arithmetic, logical and relational operators, with standard precedence.</li>
+	<li>Assignment operator deep copies (including arrays).</li>
+	<li>Control flow constructs (if, for (each), while, match).</li>
+	<li><code>with</code> statement to destructure records.</li>
+	<li>Functions
+		<ul>
+			<li>Immutable pass-by-reference by default.</li>
+			<li>Pass-by-value and mutability argument modifiers.</li>
+			<li>Can return any type or <code>unit</code>.</li>
+			<li>Named arguments.</li>
+		</ul>
+	</li>
+	<li>No aliasing except for reference function arguments.</li>
+	<li>No <code>null</code>.</li>
+	<li>Error handling TBD (possibly unchecked exceptions).</li>
+	<li>Standard library (strings, i/o, graphics, audio).</li>
+</ul>
+
+<p>While you can already start the bike-shedding, you may want to wait for a future article where I'll dive into the details. I have not decided on the runtime yet. I think for V1, I'll write a byte code interpreter that should be portable enough to expand to different platforms. Since I'm likely going to target the web first, I might look into WebAssembly as an alternative target. Ideally, Wee could be embedded anywhere.</p>
+
+<h3>Community</h3>
+<p>The final ingredient is a thriving community. In the old days, various scathered websites and forums as well as IRC channels served as community hubs. For Wee, I'd like this to be a bit more centralized, integrating it with the learning materials and the programming environment:</p>
+
+<ul>
+	<li>Users can create an account and get access to the below features.</li>
+	<li>Server-side storage and versioning of programs.</li>
+	<li>Sharing and remixing of programs.</li>
+	<li>Collaborative editing.</li>
+	<li>Forums.</li>
+	<li>Let users publish articles, dev logs, etc. (could be part of forums).</li>
+	<li>Comment sections for programs and learning materials.</li>
+</ul>
+
+<p>Funny as it may sound, I feel the least confident in building this part. There is also a massive can of worms to be opened on the legal side of things, especially when kids are involved.</p>
+
+<h2>Next up</h2>
+<p></p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
