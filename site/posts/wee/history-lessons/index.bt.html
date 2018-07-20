@@ -2,8 +2,8 @@
 metadata = {
    title: "Building Wee Lang (2) - History lessons",
    summary: "Wherein I identify key elements in my history enabling me to learn to program.",
-   image: "qbasic.png",
-   date: parseDate("2018/07/18 23:00"),
+   image: "tom.jpg",
+   date: parseDate("2018/07/21 23:00"),
    published: false,
 }
 }}
@@ -11,6 +11,8 @@ metadata = {
 
 {{include "../../../_templates/post_header.bt.html"}}
 {{include "../../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("tom.jpg", "Eierlegende Wollmilchsau.")}}
 
 <p class="note">
    This is the second in a series of articles on building a programming language called Wee and its tooling. Wee is an educational prgramming tool for beginners, bridging the gap between (visual) learning tools like <a href="https://scratch.mit.edu/">Scratch</a>, and professional environments like Java, Python, or C. You can learn more about my motivations on my <a href="https://www.badlogicgames.com/wordpress/?p=3950">old blog</a>.
@@ -473,7 +475,7 @@ PRINT nodes(1).value ' Oh no, we modified a copy
 	<li>Standard library (strings, i/o, graphics, audio).</li>
 </ul>
 
-<p>While you can already start the bike-shedding, you may want to wait for a future article where I'll dive into the details. I have not decided on the runtime yet. I think for V1, I'll write a byte code interpreter that should be portable enough to expand to different platforms. Since I'm likely going to target the web first, I might look into WebAssembly as an alternative target. Ideally, Wee could be embedded anywhere.</p>
+<p>While you can already start the bike-shedding, you may want to wait for a future article where I'll dive into the details. I have not decided on the runtime yet. I think for V1, I'll write a byte code interpreter for which multiple implementations can be written. Since I'm likely going to target the web first, I might look into WebAssembly as an alternative target. Ideally, Wee could be embedded anywhere.</p>
 
 <h3>Community</h3>
 <p>The final ingredient is a thriving community. In the old days, various scathered websites and forums as well as IRC channels served as community hubs. For Wee, I'd like this to be a bit more centralized, integrating it with the learning materials and the programming environment:</p>
@@ -491,6 +493,8 @@ PRINT nodes(1).value ' Oh no, we modified a copy
 <p>Funny as it may sound, I feel the least confident in building this part. There is also a massive can of worms to be opened on the legal side of things, especially when kids are involved.</p>
 
 <h2>Next up</h2>
-<p></p>
+<p>Now that I have an idea of what I want to achieve, I can start with the actual work. The next step is finishing the design of the language. Once that's complete, I'm going to share it here so we can all have a nice round of bike-shedding.</p>
+
+<p>As always, I'm happy to here from you on <a href="">Twitter</a> and appreciate corrections to my terrible writing in form of a <a href="https://github.com/badlogic/marioslab-site/blob/master/site/posts/wee/history-lessons/index.bt.html">pull request</a>. If you are interested in helping out with Wee, or want to give feedback that does not fit into a tweet storm, you can reach me via <a href="mailto:mario@badlogicgames.com">email</a></p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
