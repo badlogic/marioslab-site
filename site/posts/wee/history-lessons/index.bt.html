@@ -378,7 +378,7 @@ PRINT nodes(1).value ' Oh no, we modified a copy
 <p>But it's not all bleak. Another consequence of "everything is a value type" is the absence of the <a href="https://en.wikipedia.org/wiki/Tony_Hoare#Apologies_and_retractions">billion dollar mistake</a>. <u>There is no <code>null</code></u> in QBasic. Sadly, it also <u>lacks a mechanism to signal optionality</u> of a value.</p>
 
 <h2>Key elements</h2>
-<p>If you read this far, ping me on <a href="https://twitter.com/badlogic">Twitter</a> to receive your price! Time to summarize my findings.</p>
+<p>If you read this far, ping me on <a href="https://twitter.com/badlogicgames">Twitter</a> to receive your price! Time to summarize my findings.</p>
 
 <h3>Target audience, prerequisits, motivators</h3>
 <p>I did not jump head first into programming, but had exposure to basic computing first. From that, I derrive the following basic skill set, which implicitely defines the target audience of Wee. A novice user of Wee:</p>
@@ -436,7 +436,9 @@ PRINT nodes(1).value ' Oh no, we modified a copy
 	<li>Simple mechanism to share programs and libraries.</li>
 </ul>
 
-<p>Again, much of this is fuzzy. I'll figure out the details once I get there. This includes the choice of platform. Currently, I gravitate towards the browser, for multiple reasons. I can more easily distribute fixes and additions to the platform and learning materials. It is more conductive to community aspects, including sharing. It's (mostly) cross-platform. There are of course also quite a few downsides. Not everyone is connected to the internet all the time. Getting a complex application like this to work across browsers is a bit of a nightmare. Finally, as a user, I might not want to leave my code with a 3rd party. We will see.</p>
+<p>Again, much of this is fuzzy. I'll figure out the details once I get there. This includes the choice of platform. Currently, I gravitate towards the browser, for multiple reasons. I can more easily distribute fixes and additions to the platform and learning materials. It is more conductive to community aspects, including sharing. It's (mostly) cross-platform. There are of course also quite a few downsides. Not everyone is connected to the internet all the time. Getting a complex application like this to work across browsers is a bit of a nightmare. Finally, as a user, I might not want to leave my code with a 3rd party.</p>
+
+<p>An alternative to the browser would be a <a href="https://code.visualstudio.com/">Visual Studio Code</a> plugin. I would have to re-invent less, and the user would work with a professional tool. But I also could not control the experience fully, and community features are harder to integrate.</p>
 
 <h3>Programming language</h3>
 <p>QBasic was far from perfect, but I think some of its features and limitations were actually conductive to me learning to program. I already have a pretty good idea of what Wee's language design will look like. It still needs to pass the Michael smell test, so I post-pone going into details until the next article. I can however present some basic elements:</p>
@@ -446,13 +448,13 @@ PRINT nodes(1).value ' Oh no, we modified a copy
 	<li>Support for modules that can be used as libraries.</li>
 	<li>Namespaces, one per module.</li>
 	<li>Automatic memory management (but without garbage collection).</li>
-	<li>Everything is a value type.
+	<li>(Almost) Everything is a value type.
 		<ul>
 			<li><code>unit</code>.</li>
 			<li>Primitive types (boolean, int, float, string, functions).</li>
 			<li>Lists and dictionaries.</li>
 			<li>Non-recursive records.</li>
-			<li>Reference type for function arguments</li>
+			<li>Reference type that can not escape into parent scopes (function arguments, local variable references).</li>
 		</ul>
 	</li>
 	<li>Default value initialization.</li>
@@ -461,13 +463,13 @@ PRINT nodes(1).value ' Oh no, we modified a copy
 	<li>Standard set of arithmetic, logical and relational operators, with standard precedence.</li>
 	<li>Assignment operator deep copies (including arrays).</li>
 	<li>Control flow constructs (if, for (each), while, match).</li>
-	<li><code>with</code> statement to destructure records.</li>
 	<li>Functions
 		<ul>
 			<li>Immutable pass-by-reference by default.</li>
 			<li>Pass-by-value and mutability argument modifiers.</li>
 			<li>Can return any type or <code>unit</code>.</li>
 			<li>Named arguments.</li>
+			<li>Overloading on argument types.</li>
 		</ul>
 	</li>
 	<li>No aliasing except for reference function arguments.</li>
@@ -496,6 +498,6 @@ PRINT nodes(1).value ' Oh no, we modified a copy
 <h2>Next up</h2>
 <p>Now that I have an idea of what I want to achieve, I can start with the actual work. The next step is finishing the design of the language. Once that's complete, I'm going to share it here so we can all have a nice round of bike-shedding.</p>
 
-<p>As always, I'm happy to here from you on <a href="https://twitter.com/badlogicgames/status/1020456081640869888">Twitter</a> and appreciate corrections to my terrible writing in form of a <a href="https://github.com/badlogic/marioslab-site/blob/master/site/posts/wee/history-lessons/index.bt.html">pull request</a>. If you are interested in helping out with Wee, or want to give feedback that does not fit into a tweet storm, you can reach me via <a href="mailto:mario@badlogicgames.com">email</a></p>
+<p>As always, I'm happy to hear from you on <a href="https://twitter.com/badlogicgames/status/1020456081640869888">Twitter</a> and appreciate corrections to my terrible writing in form of a <a href="https://github.com/badlogic/marioslab-site/blob/master/site/posts/wee/history-lessons/index.bt.html">pull request</a>. If you are interested in helping out with Wee, or want to give feedback that does not fit into a tweet storm, you can reach me via <a href="mailto:mario@badlogicgames.com">email.</a></p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
