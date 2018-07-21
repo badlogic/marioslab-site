@@ -225,7 +225,7 @@ a$ = Repeat("Huh", 5)
 
 <p>The return type of a function is declared by suffixing the function name with one of the implicit type suffixes for primitive and string types. This means that in QBasic, <u>functions can not return records or arrays</u>! To return a value, you simply assign it to the function name.</p>
 
-<p>Here is another interesting deviation from the "norm": <u>All arguments are passed by reference</u> by default, includes primitive types. This is the exception to "everything is a value type". It is also a solution to the problem of not being able to return records and arrays: you simply pass them in by reference.</p>
+<p>Here is another interesting deviation from the "norm": <u>All arguments are passed by reference</u> by default, including primitive types. This is the exception to "everything is a value type". It is also a solution to the problem of not being able to return records and arrays: you simply pass them in by reference.</p>
 
 <pre><code class="basic">SUB foo(i AS INTEGER, a() AS INTEGER, s AS STRING, p AS Point2d)
    i = 10
