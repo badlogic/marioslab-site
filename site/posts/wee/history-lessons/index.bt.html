@@ -225,7 +225,7 @@ a$ = Repeat("Huh", 5)
 
 <p>The return type of a function is declared by suffixing the function name with one of the implicit type suffixes for primitive and string types. This means that in QBasic, <u>functions can not return records or arrays</u>! To return a value, you simply assign it to the function name.</p>
 
-<p>Here is another interesting deviation from the "norm": <u>All arguments are passed by reference</u> by default, includes primitive types. This is the exception to "everything is a value type". It is also a solution to the problem of not being able to return records and arrays: you simply pass them in by reference.</p>
+<p>Here is another interesting deviation from the "norm": <u>All arguments are passed by reference</u> by default, including primitive types. This is the exception to "everything is a value type". It is also a solution to the problem of not being able to return records and arrays: you simply pass them in by reference.</p>
 
 <pre><code class="basic">SUB foo(i AS INTEGER, a() AS INTEGER, s AS STRING, p AS Point2d)
    i = 10
@@ -305,7 +305,7 @@ A a = new A();
 foo(Arrays.asList(a.b));
 </code></pre>
 
-<p>The <code>B</code> instance escapes the unique ownership of A by being also put into a list. Worse, that list is passed to a method <code>foo()</code>, and god knows what that does with our poort <code>B</code> (e.g. create more references to our <code>B</code>). Anything in the system can potentially modify <code>B</code>, which makes reasoning about state hard.</p>
+<p>The <code>B</code> instance escapes the unique ownership of A by being also put into a list. Worse, that list is passed to a method <code>foo()</code>, and god knows what that does with our poor <code>B</code> (e.g. create more references to our <code>B</code>). Anything in the system can potentially modify <code>B</code>, which makes reasoning about state hard.</p>
 
 <p>Having no aliases is a blessing, because <u>a system without aliasing simplifies reasoning about state and state mutators</u>. This is not only true for humans, but also compilers, which have a much easier time optimizing code without aliases. In case of QBasic, it also makes automatic memory management a lot simpler: since there can not be reference cycles, simplistic reference counting is sufficient, and only required for types that can't be allocated on the stack, e.g. dynamic arrays or strings.</p>
 
