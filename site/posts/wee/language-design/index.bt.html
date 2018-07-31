@@ -1,0 +1,38 @@
+{{
+metadata = {
+   title: "Building Wee Lang (3) - Language desgin",
+   summary: "Wherein I embed a 20+ pages Google doc for you to comment on.",
+   image: "design.jpg",
+   date: parseDate("2018/07/31 23:00"),
+   published: true,
+}
+}}
+<!-- Hi! -->
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("design.jpg", "Good design lies in the eye of the beholder. Right?")}}
+
+<p class="note">
+   This is the third in a series of articles on building a programming language called Wee and its tooling. Wee is an educational prgramming tool for beginners, bridging the gap between (visual) learning tools like <a href="https://scratch.mit.edu/">Scratch</a>, and professional environments like Java, Python, or C. You can learn more about my motivations on my <a href="https://www.badlogicgames.com/wordpress/?p=3950">old blog</a>.
+</p>
+
+<p>Since the <a href="../history-lessons/">last installment</a>, I've smashed my head against the proverbial wall, trying to come up with a sensible initial design for Wee, the language. The design is currently a living and breathing artifact that will hopefully change for the better based on your input. I've thus decided to store it in a Google Doc that everyone can comment on.</p>
+
+<p>You can find an embedding of the latest version of the design below. <strong>You can <a href="href="https://docs.google.com/document/d/1X0FomwWS4oxJ7VExQjNAgpAYEnqZ3hgIkgc7J3uHOOY/edit?usp=sharing"">directly comment on the Google Doc</a>.</strong>Each section covers one aspect of the language and includes a list of open problems. Some sections are not done yet. I hope to fill those in over the coming days and weeks.</p>
+
+<p>The three biggest areas that need flushing out are error handling, memory management, and whether to include reference types. The latter is tied to memory management, as it would require a garbage collector (unless I want to expose novices to manual memory management, which I don't). The current design only has value types, which have a life-time corresponding to the scope they've been designed in. See the section <a href="https://docs.google.com/document/d/1X0FomwWS4oxJ7VExQjNAgpAYEnqZ3hgIkgc7J3uHOOY/edit#heading=h.6lpiejybh5dr">"Rephrasing stack and heap values (value types and reference types) as a life-time and shareability issue"</a> for a discussion of the pros and cons of reference types.</p>
+
+<p>As for error handling, I think I will go the Rust way, and exploit Wee's tagged unions.</p>
+
+<p>Again, I would be very grateful for <strong> feedback <a href="href="https://docs.google.com/document/d/1X0FomwWS4oxJ7VExQjNAgpAYEnqZ3hgIkgc7J3uHOOY/edit?usp=sharing"">in form of comments on the Google Doc</a></strong>. Please keep the design goals as laid out in the document in mind.</p>
+
+<iframe class="google_doc" src="https://docs.google.com/document/d/e/2PACX-1vSqhGz3yPRMZ7R-nLLhK861GaCd4xW_Ip_JEt8fNSuJ4JNbRqHULzhiPlLA726ix7lkPU7T4D52Dm1Y/pub?embedded=true"></iframe>
+
+<h2>Next up</h2>
+<p>I'll keep iterating the design a bit longer until it feels mostly well-rounded. After that, I will start implementing the language in TypeScript and document how I do that. I'll try to have all pieces working form the beginning, including the compiler, VM/interpreter, and debugger. I'll post-pone editor integration until a later date.</p>
+
+<p>As always, I'm happy to hear from you on <a href="https://twitter.com/badlogicgames/status/1020456081640869888">Twitter</a> and appreciate corrections to my terrible writing in form of a <a href="https://github.com/badlogic/marioslab-site/blob/master/site/posts/wee/language-design/index.bt.html">pull request</a>. If you are interested in helping out with Wee, or want to give feedback that does not fit into a tweet storm, you can reach me via <a href="mailto:mario@badlogicgames.com">email.</a></p>
+
+{{include "../../../_templates/post_footer.bt.html"}}

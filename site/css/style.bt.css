@@ -216,6 +216,12 @@ ul {
 	margin-bottom: 1em;
 }
 
+.post_content .google_doc {
+	border: 1px solid #555;
+	width: 100%;
+	height: 100vh;
+}
+
 /* Use border-box box sizing everywhere */
 html {
 	box-sizing: border-box;
