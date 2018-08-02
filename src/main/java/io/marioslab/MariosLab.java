@@ -44,7 +44,7 @@ public class MariosLab {
 		} catch (Throwable e) {
 			Log.error(e.getMessage());
 			Log.debug("Exception", e);
-			args.printHelp();
+			args.printHelp(System.out);
 			System.exit(-1);
 			return; // never reached
 		}
