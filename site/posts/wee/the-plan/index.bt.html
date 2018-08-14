@@ -1,0 +1,67 @@
+{{
+metadata = {
+   title: "Building Wee Lang (3) - The plan",
+   summary: "Wherein I talk about how we're going to build this darn thing.",
+   image: "design.jpg",
+   date: parseDate("2018/08/14 23:00"),
+   published: false,
+}
+}}
+<!-- Hi! -->
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("design.jpg", "Good design lies in the eye of the beholder. Right?")}}
+
+<p class="note">
+   This is the fourth in a series of articles on building a programming language called Wee and its tooling. Wee is an educational prgramming tool for beginners, bridging the gap between (visual) learning tools like <a href="https://scratch.mit.edu/">Scratch</a>, and professional environments like Java, Python, or C. You can learn more about my motivations on my <a href="https://www.badlogicgames.com/wordpress/?p=3950">old blog</a>.
+</p>
+
+<p>After I've exposed my naive, preliminary language design for Wee in the <a href="../language-design/">last installment</a>, and have pestered <a href="https://samskivert.com">Michael</a> via email more than any human can take, it's finally time to get my hands dirty with some code.</p>
+
+<p>Going forward, new articles in this series will be written as a mix of development logs and tutorials, targeted at readeres who want to learn how to write a simple programming language. I love the style of the excellent <a href="http://craftinginterpreters.com/">Crafting Interpreters</a> by <a href="https://twitter.com/munificentbob">Bob Nystrom</a>, and will try to strike a similar tone here. Also, instead of "I", I'll refer to "we", as we are building this thing together.</p>
+
+<p>However, there will be a few key differences between this series and Bob's work. For one, I will not go into as much depth as Bob. Writing text describing programming concepts and code takes a lot more time than actually writing the code. Where required, I'll link to external sources if you want to dive deeper into a topic.</p>
+
+<p>Another difference between Bob's fantastic book and my diatribes here is the type of language we each implement. Lox, the language developed in Bob's book, is a dynamically typed, class-based language. Wee is statically typed and not class-based, which brings with it some simplifications but also new challenges, allowing me to touch on topics not covered in Bob's book, including static type checking and (light-weight) type inference.</p>
+
+<p>Finally, Wee's language design is not cast in stone yet. Some area's still need some love. We'll figure things out once we get there. I'll update the <a href="https://docs.google.com/document/d/1X0FomwWS4oxJ7VExQjNAgpAYEnqZ3hgIkgc7J3uHOOY/edit">language design document</a> accordingly. Feel free to leave comments there!</p>
+
+<h2>The part list</h2>
+<p>Building a language involves piecing together many different components. Most of them build on top of each other, making it easy to iteratively and incrementally built (and test!) things. I highly recommend checking out the <a href="http://craftinginterpreters.com/a-map-of-the-territory.html">"A Map of the Territory"</a> chapter of Bob's book for a more in-depth review of what goes into building a programming language implementation. Let's have a brief look of what we'll need to implement Wee.</p>
+
+<h3>The compiler</h3>
+<p>The <a href="https://en.wikipedia.org/wiki/Compiler">compiler</a> takes Wee source files and translates the code into a form that can be executed by a (virtual) machine. Wee's compiler will do this in a sequence of phases.</p>
+
+<p class="note">The phases described below are what we'll implement for Wee. Other compilers may choose to do things a little differently, but the overall concepts should be similar.</p>
+
+<p>The compiler starts with the <a href="https://en.wikipedia.org/wiki/Lexical_analysis">lexical analysis</a> phase, also known as tokenization. In this phase, raw Wee source code is converted into a list of tokens. A token consists of a sub-string of the source code, e.g. <code>var</code>, <code>123</code>, or <code>foo</code>, and a type, e.g. "keyword", "number literal", or "identifier".</p>
+
+<p>In the next phase called <a href="https://en.wikipedia.org/wiki/Parsing">syntactic analysis</a>, or parsing, the compiler checks if the syntax of the source code is valid and builds a parse tree (also known as <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree">abstract syntax tree (AST)</a>) from the sequence of tokens. The syntax of a programming language is expressed as a <a href="https://en.wikipedia.org/wiki/Formal_grammar">grammar</a>. You can almost think of it as a recursive form of regular expressions. We'll use a special notation called <a href="https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form">extended Backus-Naur form (EBNF)</a> to describe Wee's grammar.</p>
+
+<p>With the valid parse tree in hand, we can execute the next phase known as <a href="https://en.wikipedia.org/wiki/Static_program_analysis">semantic analysis</a>, also known as static program analysis. In this phase, the compiler performs type checking and inference, verifies that variables have been declared, and so on. This phase progressively decorates the nodes in the parse tree with information such as "what type does this variable have".</p>
+
+<p>In the <a href="https://en.wikipedia.org/wiki/Code_generation_(compiler)">code generation</a> phase, the compiler takes the annotated parse tree and emits code for a target "machine". We may target a real CPU instruction set, a virtual machine like the Java Virtual Machine, or a different programming language (commonly referred to as transpiling). At the end of this phase, we get an executable the OS can run, or something that can be executed by a virtual machine, or a thing that we can link into other programs. For Wee, we'll go the virtual machine way.</p>
+
+<p>An <a href="https://en.wikipedia.org/wiki/Optimizing_compiler">optimizing compiler</a> will try to wrangle out more performance (or memory savings) of the resulting program by modifying and transforming the original code at various points in its pipeline. It may, for example, fold constant expressions like <code>3 + 2 * PI</code>into a single number instead of generating code that calculates the expression every time.</p>
+
+<p>If we want to be able to debug a program, we'll also have to generate debugging information along with the "machine" code. The information tells a debugger which parts of the "machine" code correspond to what lines, variables, or other symbols in the original source. The debugging information format depends on what type of executable we generate. For example, to debug an executable via GDB or LLDB, the executable must contain debugging information in the <a href="https://en.wikipedia.org/wiki/DWARF">DWARF</a> format. Since Wee programs will run in a virtual machine of our own making, we'll have to come up with our own debugging information format and protocol.</p>
+
+<p>Throughout all these phases of the compiler, a lot can go wrong. We want a robust error reporting and diagnostics systems in the Wee compiler, gently nudging the user towards a solution to their syntactic or semantic errors. As we'll see, this is quite a tough problem.</p>
+
+<h3>The virtual machine</h3>
+
+<h3>The runtime</h3>
+
+<h3>The debugger</h3>
+
+<h3>Tooling integration</h3>
+
+<h2>Platform choices</h2>
+
+<h2>Next up</h2>
+
+<p>As always, I'm happy to hear from you on <a href="https://twitter.com/badlogicgames/status/1020456081640869888">Twitter</a> and appreciate corrections to my terrible writing in form of a <a href="https://github.com/badlogic/marioslab-site/blob/master/site/posts/wee/language-design/index.bt.html">pull request</a>. If you are interested in helping out with Wee, or want to give feedback that does not fit into a tweet storm, you can reach me via <a href="mailto:mario@badlogicgames.com">email.</a></p>
+
+{{include "../../../_templates/post_footer.bt.html"}}
