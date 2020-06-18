@@ -149,6 +149,8 @@ target_link_libraries(test_map LINK_PUBLIC qak-lib)
 </code></pre>
 
 <p>And here's a (smoke) test.</p>
+
+<pre><code>
 #include <stdio.h>
 #include "qak.h"
 #include "test.h"
@@ -176,8 +178,6 @@ int main() {
 	allocator.free();
 	QAK_CHECK(allocator.head == nullptr, "Expected no block.");
 }
-<pre><code>
-
 </code></pre>
 
 {{include "../../../_templates/post_footer.bt.html"}}
