@@ -1,6 +1,5 @@
 {{include raw "_highlight.pack.js"}}
 
-hljs.configure({ useBR: true });
 hljs.initHighlightingOnLoad();
 
 {{if reloadWS}}
