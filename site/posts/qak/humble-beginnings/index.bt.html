@@ -300,7 +300,7 @@ String literal (94:119): "Hello world. 한자🥴"
 </code></pre>
 
 <p>
-	The returned tokens each have a type, like integer literal, or identifier, as well as a reference to their location in the source, expressed as a start and (exclusive) end offset in bytes. The location of a token is quite important, as it allows subsequent stages like the <a href="https://craftinginterpreters.com/representing-code.html">parser</a>, or type checker to report errors nicely. That said, i should keep track of line numbers as well, to easy the pain when it's time to actually print a nice error.
+	The returned tokens each have a type, like integer literal, or identifier, as well as a reference to their location in the source, expressed as a start and (exclusive) end offset in bytes. The location of a token is quite important, as it allows subsequent stages like the <a href="https://craftinginterpreters.com/representing-code.html">parser</a>, or type checker to report errors nicely. That said, i should keep track of line numbers as well, to ease the pain when it's time to actually print a nice error.
 </p>
 
 <p>
