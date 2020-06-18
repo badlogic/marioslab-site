@@ -188,4 +188,40 @@ int main() {
 	I'm happy with this so far. Eventually, a little Bash script will build all the <code>test_xxx</code> executables, enumerate and execute them, and collect stats on failed vs. succeeded tests based on their exit codes. Simple and quick.
 </p>
 
+<h3>Memory management</h3>
+<p>
+	Over the Christmas holidays I played around with <a href="https://openjdk.java.net/">OpenJDK</a> a little bit. It's a surprisingly readable code base, with many API design decisions I really like. One of them is their use of memory arenas plus RAII to clean-up after yourself in local blocks. Here's a simple example straight from OpenJDK's <code>instanceKlass.cpp</code>:
+</p>
+
+<pre><code>
+if (log_is_enabled(Trace, class, nestmates)) {
+	ResourceMark rm(THREAD);
+	log_trace(class, nestmates)("Checking nest membership of %s in %s",
+								k->external_name(), this->external_name());
+}
+</code></pre>
+
+<p>
+	The piece of code creates a <code>ResourceMark</code> inside the <code>if</code> block. Any allocation happening in that block will then be tracked by that mark. The <code>external_name()</code> method allocates memory in this case. When the block is exicted, the <code>ResourceMark</code> deconstructs itself through RAII, and cleans up any memory that was allocated through it. Nice.</p>
+
+<p>
+	There is of course a bit more to this, as indicated by the <code>THREAD</code> passed to the constructor. Under the hood, the <code>ResourceMark</code> uses a thread local to push itself on a stack of <code>ResourceMarks</code>. Any code that requires allocation can then get the <code>ResourceMark</code> at the top of that thread-local stack to do its dirty allocation work. This has the nice side effect, that one does not have to pass around allocators. It does incure a bit of a performance hit though, as the accessing the thread local isn't free.</p>
+
+<p>
+	I've built something similar for Qak called <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/src/memory.h#L22"><code>HeapAllocator</code></a>. It keeps tracks of (re-)allocations which it cleans up once it's destructed. The Qak code base is inherently single-threaded (yes, shhh), so I don't want to incure the thread-local access hit (for now). This means I have to pass the allocator to anything that needs to allocate memory. A minor inconvenience.
+</p>
+
+<pre><code>
+{
+	HeapAllocator mem;
+	Buffer file = qak::readFile("data/tokens.qak", mem);
+	Array<Token> tokens(mem);
+	Array<Error> errors(mem);
+}
+</code></pre>
+
+<p>
+	For now, the allocator keeps track of the file location of every allocation. That allows it to act as a poor man's memory leak detector. Eventually, I don't want to bake those long file names into the binary, so that's going to be toggleable via a flag.
+</p>
+
 {{include "../../../_templates/post_footer.bt.html"}}
