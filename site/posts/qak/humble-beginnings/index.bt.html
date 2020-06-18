@@ -21,7 +21,7 @@ metadata = {
 </p>
 
 <p>
-	You might remember me waxing on and on about <a href="https://marioslab.io/posts/wee/dissecting-history/">Wee</a> a long time ago. That eventually ended up becoming <a href="https://github.com/badlogic/paperbots">Paperbots</a>, a browser-based programming environment geared towards beginners, teachers, as well as programmers who want a simple creative outlet. It worked out pretty well, and were I not as lazy as I am, I'd figure out how to get the certificate for the site going again, so you can enjoy the oevres my pupils created.
+	You might remember me waxing on and on about <a href="https://marioslab.io/posts/wee/dissecting-history/">Wee</a> a long time ago. That eventually ended up becoming <a href="https://github.com/badlogic/paperbots">Paperbots</a>, a browser-based programming environment geared towards beginners, teachers, as well as programmers who want a simple creative outlet. It worked out pretty well, and were I not as lazy as I am, I'd figure out how to get the certificate for the site going again, so you can enjoy the oevres my pupils created. Alas, I remain lazy, and my nginx-proxy and Docker knowledge is insufficient.
 </p>
 
 <p>
@@ -33,12 +33,41 @@ metadata = {
 </p>
 
 <p>
-	While I'd love to create something similar to <a href="https://twitter.com/munificentbob?lang=en">Bob Nystrom's</a> excellent <a href="https://craftinginterpreters.com/">Crafting Interpreters</a>, I neither have the time, talent nor copy editor to come up with something as educationally sound. I do however hope to add on top of Bob's amazing work by building a statically typed scripting language instead of a dynamically typed one. It will be interesting to see how it performs compared to the likes of Python, Bob's <a href="https://github.com/wren-lang/wren">Wren</a>.
+	While I'd love to create something similar to <a href="https://twitter.com/munificentbob?lang=en">Bob Nystrom's</a> excellent <a href="https://craftinginterpreters.com/">Crafting Interpreters</a>, I neither have the time, talent nor copy editor to come up with something as educationally sound. I do however hope to add on top of Bob's amazing work by building a statically typed scripting language instead of a dynamically typed one. It will be interesting to see how it performs compared to the likes of Python or Bob's <a href="https://github.com/wren-lang/wren">Wren</a>.
 </p>
 
 <p>
-	While Bob did occasionally dive into the real-life issues that arrive when creating a programming language and runtime, I feel like more documentation of that sort of pain can provide additional knowledge on Bob's already impecable work. So, this is not me telling you about my successes. This is going to be me detailing my failures and dumbness!
+	While Bob did occasionally dive into the real-life issues that one encounters when creating a programming language and runtime, I feel like more documentation of that specific sort of pain can provide additional knowledge on top of Bob's already impecable work. So, this is not me telling you about my successes. This is going to be me detailing my failures and dumbness!
 </p>
 
+<h3>Where the wind's hopefully gonna blow</h3>
+<p>
+	I said no goals. I lied. Here's what I want to eventually create:
+</p>
+
+<ul>
+	<li>A statically typed programming language, featuring boring stuff like
+		<ul>
+			<li>Algol-language family syntax (yes, shhhhh)</li>
+			<li>Primitive types</li>
+			<li>Records</li>
+			<li>Functions/Closures as first class citizens</li>
+			<li>Parametric polymorphism</li>
+			<li>Modules</li>
+		</ul>
+	</li>
+	<li>A stack-based virtual machine, featuring
+		<ul>
+			<li>Single threaded use only</li>
+			<li>A pluggable garbage collector</li>
+			<li>A debugger interface</li>
+			<li>A bi-directional FFI making it easy to call C code from inside the language and vice versa.</li>
+		</ul>
+	</li>
+</ul>
+
+<p>
+	The little fucker is not going to win any language design awards. But hopefully I can keep the implementation as simple as possible so it allows experimentation with various things.
+</p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
