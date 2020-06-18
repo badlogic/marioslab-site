@@ -220,4 +220,110 @@ int main() {
 	For now, the allocator keeps track of the file location of every allocation. That allows it to act as a poor man's memory leak detector. Eventually, I don't want to bake those long file names into the binary, so that's going to be toggleable via a flag.
 </p>
 
+<p>
+	I've also implemented a simple <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/src/memory.h#L119"><code>BumpAllocator</code></a>, the usage of which you can see in the above test code. It will come in handy for allocations that are highly sequential, e.g. AST nodes during the parsing phase.
+</p>
+
+<p>
+	Am I happy with those memory management primitives? No.
+</p>
+
+<p>
+	The <code>BumpAllocator</code> has a fragmentation problem. Internally it uses a linked list of fixed size blocks. The head of that list is the "current" block. If the current block can't accommodate a new allocation, the allocator allocates a new block that can. This new block then becomes the new "current" block. The previous block just sticks around and will no longer be used, even if a subsequent allocation could fit it. There are a bunch of degenerate allocation patterns that can trip this up. But alas, we are in native code land, we know what we're doing!
+</p>
+
+<p>
+	The <code>HeapAllocator</code> in its current state also has a few problems. For one, it uses a <code>std::map</code> to keep track of allocations. Ideally, I can get rid of this dependency by using my own map. It also lacks the nice stack behaviour found in OpenJDK's <code>ResourceMark</code>, but that one is easy to fix.
+</p>
+
+<p>
+	For now, both allocators serve their purpose, albeit not as nicely as they could. We'll live.
+</p>
+
+<h3>Collections</h3>
+<p>
+	Everybody needs their own dynamic array and map implementation. So that's what I did. Feast your eyes on <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/src/map.h">map.h</a> and <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/src/array.h">array.h</a>. As with the allocators, there's a lot that could be better, especially the capacity and bucket management of the map. Alas, ain't nobody got time for that, so I'm moving on and will revisit this sometime in the future.
+</p>
+
+<h3>I/O, not one of Jupiter's moons</h3>
+<p>
+	To get things off the ground, I also need a way to read files from disk. Behold, <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/src/io.cpp">io.cpp</a>. That is the code. Please send a PR to fix up all errornous edge cases!
+</p>
+
+<h3>Tokenization  and UTF-8</h3>
+<p>
+	With the scafolding out of the way, I could finally write some compiler related code. As with any compiler project, you start with the tokenizer, also known as <a href="https://craftinginterpreters.com/scanning.html">scanner</a>, or lexer.
+</p>
+
+<p>
+	The tokenizer takes a stream of characters (in some encoding, in our case UTF-8), ignores whitespace like new lines or tabs, and returns tokens. Tokens are meaningful text strings, representing special characters like <code>+</code>, keywords, variable/type/function names, or literals like <code>1.23</code>, or <code>"Hello world."</code>.
+</p>
+
+<p>
+	The tokenizer thus turns a source file like this:
+</p>
+
+<pre><code>한자🥴
+123 123b 123s 123l 123.2 123.3f 123.4d
+'c'
+'\n'
+true false
+null
+_Some987Identifier
+"Hello world. 한자🥴"
+. , ; : + -
+</code></pre>
+
+<p>Into a list of tokens like this:</p>
+
+<pre><code>Identifier (0:10): 한자🥴
+	Integer literal (11:14): 123
+	Byte literal (15:19): 123b
+	Short literal (20:24): 123s
+	Long literal (25:29): 123l
+	Float literal (30:35): 123.2
+	Float literal (36:42): 123.3f
+	Double literal (43:49): 123.4d
+	Character literal (50:53): 'c'
+	Character literal (54:58): '\n'
+	Boolean literal (59:63): true
+	Boolean literal (64:69): false
+	Null literal (70:74): null
+	Identifier (75:93): _Some987Identifier
+	String literal (94:119): "Hello world. 한자🥴"
+	. (120:121): .
+	, (122:123): ,
+	; (124:125): ;
+	: (126:127): :
+	+ (128:129): +
+	- (130:131): -
+</code></pre>
+
+<p>
+	The returned tokens each have a type, like integer literal, or identifier, as well as a reference to their location in the source, expressed as a stard and (exclusive) end offset. The location of a token is quite important, as it allows subsequent stages like the <a href="https://craftinginterpreters.com/representing-code.html">parser</a>, or type checker to report errors nicely.
+</p>
+
+<p>
+	The <a href="https://www.cprogramming.com/tutorial/utf8.c">implementation of the tokenizer</a> is no more than 320 lines of code, and covers pretty much anything we need for an Algol-type language. It's actually more or less lifted and translated from Java to C from my old <a href="https://github.com/badlogic/basis-template/blob/master/src/main/java/io/marioslab/basis/template/parsing/Tokenizer.java">basis-template</a> scripting language. Surprisingly, the C++ code is a bit more concise than the Java version.
+</p>
+
+<p>
+	I've also added (possibly broken) UTF-8 support by shamelessly stealing 20 lines of code from <a href="https://www.cprogramming.com/tutorial/utf8.c">here</a>. The compiler really doesn't need a full-blown understanding of UTF-8. All we need is to be able to advance multi-byte UTF-8 characters. And that's what those 20 lines do.
+</p>
+
+<p>
+	You can go ahead and play around with the tokenizer via the <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/src/apps/test_tokenizer.cpp">test_tokenizer</a>" test. Just modify the <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/data/tokens.qak">tokens.qak</a> file, then run the executable from the root directory of the project. Try to crash it.
+</p>
+
+<h3>Next up</h3>
+<p>
+	Next up is the implementation of a run-of-the-mill <a href="https://en.wikipedia.org/wiki/Recursive_descent_parser#:~:text=In%20computer%20science%2C%20a%20recursive,the%20nonterminals%20of%20the%20grammar.">recursive descent parser</a> for the first couple of language constructs. The parser will validate the syntax of the program and output an <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree">abstract syntax tree</a> for subsequent processing.
+</p>
+
+<p>
+	Fun!
+</p>
+
+</h3>
+
 {{include "../../../_templates/post_footer.bt.html"}}
