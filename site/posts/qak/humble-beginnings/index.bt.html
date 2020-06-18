@@ -137,8 +137,8 @@ target_link_libraries(test_map LINK_PUBLIC qak-lib)
 <pre><code>#ifndef QAK_TEST_H
 #define QAK_TEST_H
 
-#include &lt; <cstdio &gt;
-#include &lt; cstdlib &gt;
+#include <cstdio>
+#include <cstdlib>
 #include "types.h"
 
 #define QAK_CHECK(expr, ...) { if (!(expr)) { fprintf(stdout, "ERROR: "); fprintf(stdout, __VA_ARGS__); fprintf(stdout, " (%s:%d)\n", __FILE__, __LINE__); fflush(stdout); exit(-1); } }
