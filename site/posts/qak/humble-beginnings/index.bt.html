@@ -212,6 +212,7 @@ int main() {
 	Buffer file = qak::readFile("data/tokens.qak", mem);
 	Array<Token> tokens(mem);
 	Array<Error> errors(mem);
+	u1* scratch = mem.allocate<u1>(1024, __FILE__, __LINE__);
 }
 </code></pre>
 
