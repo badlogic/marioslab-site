@@ -134,11 +134,12 @@ target_link_libraries(test_map LINK_PUBLIC qak-lib)
 <h2>Testing, testing... is this working?</h2>
 <p>While I could use any of the available C++ unit test frameworks, like <a href="https://github.com/google/googletest">Google Test</a>, I'm a simple boy who likes simple things. Here's my unit test framework.</p>
 
-<pre><code class="cpp">#ifndef QAK_TEST_H
+<pre><code class="cpp">
+#ifndef QAK_TEST_H
 #define QAK_TEST_H
 
-#include <cstdio>
-#include <cstdlib>
+#include &lt;cstdio&gt;
+#include &lt;cstdlib&gt;
 #include "types.h"
 
 #define QAK_CHECK(expr, ...) { if (!(expr)) { fprintf(stdout, "ERROR: "); fprintf(stdout, __VA_ARGS__); fprintf(stdout, " (%s:%d)\n", __FILE__, __LINE__); fflush(stdout); exit(-1); } }
@@ -190,10 +191,11 @@ int main() {
 	Over the Christmas holidays I played around with <a href="https://openjdk.java.net/">OpenJDK</a> a little bit. It's a surprisingly readable code base, with many API design decisions I really like. One of them is their use of memory arenas plus RAII to clean-up after yourself in local blocks. Here's a simple example straight from OpenJDK's <code>instanceKlass.cpp</code>:
 </p>
 
-<pre><code class="cpp">if (log_is_enabled(Trace, class, nestmates)) {
+<pre><code class="cpp">
+if (log_is_enabled(Trace, class, nestmates)) {
 	ResourceMark rm(THREAD);
 	log_trace(class, nestmates)("Checking nest membership of %s in %s",
-								k->external_name(), this->external_name());
+								k-&gt;external_name(), this-&gt;external_name());
 }
 </code></pre>
 
