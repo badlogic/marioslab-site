@@ -221,7 +221,7 @@ int main() {
 </p>
 
 <p>
-	I've also implemented a simple <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/src/memory.h#L119"><code>BumpAllocator</code></a>, the usage of which you can see in the above test code. It will come in handy for allocations that are highly sequential, e.g. AST nodes during the parsing phase.
+	I've also implemented a simple <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/src/memory.h#L119"><code>BumpAllocator</code></a>, the usage of which you can see in the above test code in the previous section. It will come in handy for allocations that are highly sequential, e.g. abstract syntax tree nodes during the parsing phase.
 </p>
 
 <p>
@@ -229,7 +229,7 @@ int main() {
 </p>
 
 <p>
-	The <code>BumpAllocator</code> has a fragmentation problem. Internally it uses a linked list of fixed size blocks. The head of that list is the "current" block. If the current block can't accommodate a new allocation, the allocator allocates a new block that can. This new block then becomes the new "current" block. The previous block just sticks around and will no longer be used, even if a subsequent allocation could fit it. There are a bunch of degenerate allocation patterns that can trip this up. But alas, we are in native code land, we know what we're doing!
+	The <code>BumpAllocator</code> has a fragmentation problem. Internally it uses a linked list of fixed sized blocks. The head of that list is the "current" block. If the current block can't accommodate a new allocation, the allocator allocates a new block that can. This new block then becomes the new "current" block. The previous block just sticks around and will no longer be used, even if a subsequent allocation could fit it. There are a bunch of degenerate allocation patterns that can trip this up. But alas, we are in native code land, we know what we're doing!
 </p>
 
 <p>
@@ -300,7 +300,7 @@ String literal (94:119): "Hello world. 한자🥴"
 </code></pre>
 
 <p>
-	The returned tokens each have a type, like integer literal, or identifier, as well as a reference to their location in the source, expressed as a stard and (exclusive) end offset. The location of a token is quite important, as it allows subsequent stages like the <a href="https://craftinginterpreters.com/representing-code.html">parser</a>, or type checker to report errors nicely.
+	The returned tokens each have a type, like integer literal, or identifier, as well as a reference to their location in the source, expressed as a start and (exclusive) end offset in bytes. The location of a token is quite important, as it allows subsequent stages like the <a href="https://craftinginterpreters.com/representing-code.html">parser</a>, or type checker to report errors nicely. That said, i should keep track of line numbers as well, to easy the pain when it's time to actually print a nice error.
 </p>
 
 <p>
@@ -317,13 +317,11 @@ String literal (94:119): "Hello world. 한자🥴"
 
 <h2>Next up</h2>
 <p>
-	Next up is the implementation of a run-of-the-mill <a href="https://en.wikipedia.org/wiki/Recursive_descent_parser#:~:text=In%20computer%20science%2C%20a%20recursive,the%20nonterminals%20of%20the%20grammar.">recursive descent parser</a> for the first couple of language constructs. The parser will validate the syntax of the program and output an <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree">abstract syntax tree</a> for subsequent processing.
+	Next up is the implementation of a run-of-the-mill <a href="https://en.wikipedia.org/wiki/Recursive_descent_parser#:~:text=In%20computer%20science%2C%20a%20recursive,the%20nonterminals%20of%20the%20grammar.">recursive descent parser</a> for the first couple of language constructs. The parser takes the tokens from the tokenizer stage, validates the syntax of the program and outputs an <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree">abstract syntax tree</a> for subsequent processing.
 </p>
 
 <p>
-	Fun!
+	Fun! Please reply to this <a href="">tweet</a> with your specific bikeshed!
 </p>
-
-</h2>
 
 {{include "../../../_templates/post_footer.bt.html"}}
