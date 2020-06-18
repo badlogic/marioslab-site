@@ -25,7 +25,7 @@ metadata = {
 </p>
 
 <p>
-	Paperbots was written in TypeScript and intended for browser-use only. In recent months, I returned to native land, writing (probably terrible) C, C++ and some x86_64 assembly. <a href="https://www.jetbrains.com/clion/">CLion</a> made this so enjoyable, that I started graving working on a C++ based side project to get the creative juices flowing again. There's just something magical about not being tied to a managed runtime and peaking and poking at memory addresses.
+	Paperbots was written in TypeScript and intended for browser-use only. In recent months, I returned to native land, writing (terrible) C, C++ and some x86_64 assembly. <a href="https://www.jetbrains.com/clion/">CLion</a> made this so enjoyable that I started craving work on a C++ based side project to get the creative juices flowing again. There's just something magical about not being tied to a managed runtime and peaking and poking at memory addresses.
 </p>
 
 <p>
@@ -58,7 +58,7 @@ metadata = {
 	</li>
 	<li>A stack-based virtual machine, featuring
 		<ul>
-			<li>Single threaded use only</li>
+			<li>Single-threaded use only</li>
 			<li>A pluggable garbage collector</li>
 			<li>A debugger interface</li>
 			<li>A bi-directional FFI making it easy to call C code from inside the language and vice versa.</li>
@@ -71,7 +71,7 @@ metadata = {
 </p>
 
 <h2>Cmake this, Cmake that</h2>
-<p>A spend 3 hours last sunday to set-up the basic build system and some code that will come in handy. More on the code in later sections.</p>
+<p>I spent 3 hours last sunday to set-up the basic build system and some code that will come in handy. More on the code in later sections.</p>
 
 <p>Here's the build, expressed as <a href="https://github.com/badlogic/qak/blob/master/CMakeLists.txt">CMakeLists.txt</a> file.</p>
 
@@ -132,13 +132,13 @@ target_link_libraries(test_map LINK_PUBLIC qak-lib)
 <p>It all feels surprisingly light-weight so far, and since I don't plan on bringing in any dependencies, it may actually stay that way. There's hope.</p>
 
 <h2>Testing, testing... is this working?</h2>
-<p>While I could use any of the available C++ unit test frameworks, like <a href="https://github.com/google/googletest">Google</a>, I'm a simple boy who likes simple things. Here's my unit test framework.</p>
+<p>While I could use any of the available C++ unit test frameworks, like <a href="https://github.com/google/googletest">Google Test</a>, I'm a simple boy who likes simple things. Here's my unit test framework.</p>
 
 <pre><code>#ifndef QAK_TEST_H
 #define QAK_TEST_H
 
-#include <cstdio>
-#include <cstdlib>
+#include &lt;<cstdio&gt;
+#include &lt;cstdlib&gt;
 #include "types.h"
 
 #define QAK_CHECK(expr, ...) { if (!(expr)) { fprintf(stdout, "ERROR: "); fprintf(stdout, __VA_ARGS__); fprintf(stdout, " (%s:%d)\n", __FILE__, __LINE__); fflush(stdout); exit(-1); } }
@@ -312,7 +312,7 @@ String literal (94:119): "Hello world. 한자🥴"
 </p>
 
 <p>
-	You can go ahead and play around with the tokenizer via the <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/src/apps/test_tokenizer.cpp">test_tokenizer</a>" test. Just modify the <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/data/tokens.qak">tokens.qak</a> file, then run the executable from the root directory of the project. Try to crash it.
+	You can go ahead and play around with the tokenizer via the <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/src/apps/test_tokenizer.cpp">test_tokenizer</a> test. Just modify the <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/data/tokens.qak">tokens.qak</a> file, then run the executable from the root directory of the project. Try to crash it.
 </p>
 
 <h2>Next up</h2>
