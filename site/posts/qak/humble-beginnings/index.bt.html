@@ -202,7 +202,7 @@ if (log_is_enabled(Trace, class, nestmates)) {
 </code></pre>
 
 <p>
-	The piece of code creates a <code>ResourceMark</code> inside the <code>if</code> block. Any allocation happening in that block will then be tracked by that mark. The <code>external_name()</code> method allocates memory in this case. When the block is exicted, the <code>ResourceMark</code> deconstructs itself through RAII, and cleans up any memory that was allocated through it. Nice.</p>
+	The piece of code creates a <code>ResourceMark</code> inside the <code>if</code> block. Any allocation happening in that block will then be tracked by that mark. The <code>external_name()</code> method allocates memory in this case. When the block is exited, the <code>ResourceMark</code> deconstructs itself through RAII, and cleans up any memory that was allocated through it. Nice.</p>
 
 <p>
 	There is of course a bit more to this, as indicated by the <code>THREAD</code> passed to the constructor. Under the hood, the <code>ResourceMark</code> uses a thread local to push itself on a stack of <code>ResourceMarks</code>. Any code that requires allocation can then get the <code>ResourceMark</code> at the top of that thread-local stack to do its dirty allocation work. This has the nice side effect, that one does not have to pass around allocators. It does incure a bit of a performance hit though, as the accessing the thread local isn't free.</p>
