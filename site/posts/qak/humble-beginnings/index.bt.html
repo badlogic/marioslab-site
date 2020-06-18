@@ -76,8 +76,7 @@ metadata = {
 <p>Here's the build, expressed as <a href="https://github.com/badlogic/qak/blob/master/CMakeLists.txt">CMakeLists.txt</a> file.</p>
 
 <pre>
-<code>
-cmake_minimum_required(VERSION 3.15)
+<code>cmake_minimum_required(VERSION 3.15)
 project(qak)
 
 if (MSVC)
@@ -135,8 +134,7 @@ target_link_libraries(test_map LINK_PUBLIC qak-lib)
 <h3>Testing, testing... is this working?</h3>
 <p>While I could use any of the available C++ unit test frameworks, like <a href="https://github.com/google/googletest">Google</a>, I'm a simple boy who likes simple things. Here's my unit test framework.</p>
 
-<pre><code>
-#ifndef QAK_TEST_H
+<pre><code>#ifndef QAK_TEST_H
 #define QAK_TEST_H
 
 #include <cstdio>
@@ -150,8 +148,7 @@ target_link_libraries(test_map LINK_PUBLIC qak-lib)
 
 <p>And here's a (smoke) test.</p>
 
-<pre><code>
-#include <stdio.h>
+<pre><code>#include <stdio.h>
 #include "qak.h"
 #include "test.h"
 
@@ -193,8 +190,7 @@ int main() {
 	Over the Christmas holidays I played around with <a href="https://openjdk.java.net/">OpenJDK</a> a little bit. It's a surprisingly readable code base, with many API design decisions I really like. One of them is their use of memory arenas plus RAII to clean-up after yourself in local blocks. Here's a simple example straight from OpenJDK's <code>instanceKlass.cpp</code>:
 </p>
 
-<pre><code>
-if (log_is_enabled(Trace, class, nestmates)) {
+<pre><code>if (log_is_enabled(Trace, class, nestmates)) {
 	ResourceMark rm(THREAD);
 	log_trace(class, nestmates)("Checking nest membership of %s in %s",
 								k->external_name(), this->external_name());
@@ -211,8 +207,7 @@ if (log_is_enabled(Trace, class, nestmates)) {
 	I've built something similar for Qak called <a href="https://github.com/badlogic/qak/blob/e1d53a5ecd36df60e5f5381f376975d1dab0ee84/src/memory.h#L22"><code>HeapAllocator</code></a>. It keeps tracks of (re-)allocations which it cleans up once it's destructed. The Qak code base is inherently single-threaded (yes, shhh), so I don't want to incure the thread-local access hit (for now). This means I have to pass the allocator to anything that needs to allocate memory. A minor inconvenience.
 </p>
 
-<pre><code>
-{
+<pre><code>{
 	HeapAllocator mem;
 	Buffer file = qak::readFile("data/tokens.qak", mem);
 	Array<Token> tokens(mem);
