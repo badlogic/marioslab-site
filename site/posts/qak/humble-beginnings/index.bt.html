@@ -1,0 +1,18 @@
+{{
+metadata = {
+	title: "Qak - Humble beginnings",
+	summary: "The wheels on the bus go round and round.",
+	image: "qak.jpg",
+	date: parseDate("2020/06/18 23:00"),
+	published: true,
+}
+}}
+<!-- Hi! -->
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("qak.jpg", "Qak")}}
+
+
+{{include "../../../_templates/post_footer.bt.html"}}
