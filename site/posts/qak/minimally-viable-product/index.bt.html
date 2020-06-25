@@ -43,23 +43,21 @@ Let's look at these in more detail.
 
 <h2>Types and values</h2>
 <p>
-	Only supporting two primitive types in the beginning makes things significantly simpler. <code>boolean</code> is needed for conditionals. <code>int32</code> and <code>float32</code> are what you'd expect, with the values (<code>true</code>, <code>false</code>, <code>123</code>, <code>123.456</code>, ...) you know and love.
+	For v0.1, I'll only support a handful of what's usually known as primitive types.
+</p>
+
+<ul>
+	<li><code>boolean</code> is needed for conditionals. Values are expressed as <code>true</code> and <code>false</code> in code.</li>
+	<li><code>int32</code> and <code>float32</code> should be self-explanatory and foreshadow what else to expect in the future. Values are expressed as the usual literals, like <code>123</code>, <code>0xfe</code>, <code>123.456</code>, <code>123f</code>, etc.</li>
+	<li><code>nothing</code> is needed to express the absence of a return value for a function. The only value is <code>nothing</code>. Yes, be worried. This might eventually turn into something like <code>null</code>!</li>
+</ul>
+
+<p>
+	Why not just <code>int32</code>? Because it complicates the type checker just enough to hit that annoyance sweet spot, which may lay bare issues earlier in the development process. Having both an integer and float type also forces me to figure out if and what type conversions I want to have in Qak.
 </p>
 
 <p>
-	Why not just <code>int32</code>? Because it complicates the type checker just an itsy bit more, which may lay bare issues earlier in the development process. Having both an integer and float type also forces me to figure out if and what type conversions I want to have in Qak.
-</p>
-
-<p>
-	<code>nothing</code> is there to indicate that a function returns, well, nothing. It has a single value: <code>nothing</code>.
-</p>
-
-<p>
-	These types are built into the language and have no explicit definition in form of Qak source code. In later language versions, I'll try to keep the number of built-in types to a minimum. Types like the inevitable <code>string</code>, <code>list</code>, or <code>map</code> will hopefully be expressible by the built-in types.
-</p>
-
-<p>
-	v0.1 of Qak will only allow the definition of <code>foreign</code> types. These are types of which the full definition must be provided to the compiler outside of a <code>.qak</code> source file. They must be declared in the module they belong to like this (<code>std.qak</code>):</code>
+	v0.1 of Qak will only allow the definition of <code>foreign</code> types. These are types of which the full definition must be provided to the compiler outside of a <code>.qak</code> source file. However, they must still be declared in the module they belong to. Sine these are built-in types, they go into the file (<code>std.qak</code>), the standard library module:</code>
 </p>
 
 <pre><code>module std
