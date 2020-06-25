@@ -21,23 +21,51 @@ metadata = {
 </p>
 
 <p>
-	Once all these components are in place for language version 0.1, I hope to be able to iterate quickly, adding new language, interpreter and core library features. I've used this iterative approach for previous (toy) language projects and it's so far worked pretty well. It's also a surefire way to run into dead ends, which means I get to document my back tracking and failures.
+	Once all these components are in place for language version 0.1, I hope to be able to iterate quickly, adding new language, interpreter and standard library features. I've used this iterative approach for previous (toy) language projects and it's so far worked pretty well. It's also a surefire way to run into dead ends, which means I get to document my back tracking and failures.
 </p>
 
 <h2>v0.1 language features</h2>
 <p>
-	Before we dive into the syntax bike shed, let me quickly lay out the planned high level language features for v0.1.
+	Before we dive into the semantics and syntax bike shed, let me quickly lay out the planned high level language features for v0.1.
 </p>
 
 <ul>
-	<li>Types: int32, float32</li>
-	<li>Functions</li>
-	<li>Function and operator overloading</li>
+	<li>Types: <code>boolean</code>, <code>int32</code>, <code>float32</code>.</li>
+	<li>Functions and operators</li>
+	<li>Function and operator overloading.</li>
 	<li>Foreign function interface, so we can call into native code.</li>
-	<li>Modules</li>
+	<li>Modules.</li>
 	<li>Module <code>std</code>, containing <code>print()</code> and maybe a handful of other things.</li>
 </ul>
 
+<p>
+Let's look at these in more detail.
+</p>
+
+<h3>Types</h3>
+<p>
+	Only supporting two primitive types in the beginning makes things significantly simpler. <code>boolean</code> is needed for conditionals. <code>int32</code> and <code>float32</code> are what you'd expect. Why not just <code>int32</code>? Because it complicates the type checker just an itsy bit more possibly.
+</p>
+
+<p>
+	These types are built into the language and have no explicit definition in form of Qak source code. In later language versions, I'll try to keep the number of built-in types to a minimum. Types like the inevitable <code>string</code>, <code>list</code>, or <code>map</code> will hopefully be expressible by the built-in types.
+</p>
+
+<p>
+	v0.1 of Qak will not allow user defined types. This means I also don't have to settle on the syntax for defining types yet. The compiler will just magically know about them, and pretend they are defined in module <code>std</code>. For the sake of discussion, just assume there's a file <code>std.qak</code>, which contains the standard library.
+</p>
+
+<pre><code>module std
+
+type int32
+type float32
+</code></pre>
+
+<p>
+	It will also not include any string or collection types, which keeps the scope small. The v0.1 types don't require me to implement a GC, which is nice, but also an open invitation to get into a dead end. We'll see how that works out.
+</p>
+
+<h3>Functions and operators</h3>
 <p>
 
 </p>
