@@ -52,18 +52,22 @@ Let's look at these in more detail.
 </p>
 
 <p>
-	v0.1 of Qak will not allow user defined types. This means I also don't have to settle on the syntax for defining types yet. The compiler will just magically know about them, and pretend they are defined in module <code>std</code>. For the sake of discussion, just assume there's a file <code>std.qak</code>, which contains the standard library.
+	v0.1 of Qak will only allow the definition of <code>foreign</code> types. These are types of which the full definition must be provided to the compiler outside of a <code>.qak</code> source file. They must be declared in the module they belong to like this (<code>std.qak</code>):</code>
 </p>
 
 <pre><code>module std
 
-type boolean
-type int32
-type float32
+foreign type boolean
+foreign type int32
+foreign type float32
 </code></pre>
 
 <p>
-	It will also not include any string or collection types, which keeps the scope small. The v0.1 types don't require me to implement a GC, which is nice, but also an open invitation to get into a dead end. We'll see how that works out.
+	Why have them explicitely in a <code>.qak</code> file like that at all? You'll see in the next section on functions an operators.
+</p>
+
+<p>
+	v0.1 will also not include any string or collection types, which keeps the scope small. The v0.1 types don't require me to implement a GC, which is nice. It's also an open invitation to walk right into a dead end. We'll see how that works out.
 </p>
 
 <h3>Functions and operators</h3>
