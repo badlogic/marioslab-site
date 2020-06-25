@@ -14,6 +14,32 @@ metadata = {
 
 {{post.figure("mvp.jpg", "Language goes Brrrr.")}}
 
+<h2>Qak 0.1</h2>
 
+<p>
+	Alrighty. With all the basics out of the way as described in the <a href="https://marioslab.io/posts/qak/humble-beginnings/">last Qak post</a>, it's time to define a minimal language I want to implement. This v0.1 will only contain the absolute mininum language features needed to get the infrastructure composed of tokenizer, parser, AST, type checker, byte code generator, and interpreter going. Ideally, I can also build the debugger interface for this.
+</p>
+
+<p>
+	Once all these components are in place for language version 0.1, I hope to be able to iterate quickly, adding new language, interpreter and core library features. I've used this iterative approach for previous (toy) language projects and it's so far worked pretty well. It's also a surefire way to run into dead ends, which means I get to document my back tracking and failures.
+</p>
+
+<h2>v0.1 language features</h2>
+<p>
+	Before we dive into the syntax bike shed, let me quickly lay out the planned high level language features for v0.1.
+</p>
+
+<ul>
+	<li>Types: int32, float32</li>
+	<li>Functions</li>
+	<li>Function and operator overloading</li>
+	<li>Foreign function interface, so we can call into native code.</li>
+	<li>Modules</li>
+	<li>Module <code>std</code>, containing <code>print()</code> and maybe a handful of other things.</li>
+</ul>
+
+<p>
+
+</p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
