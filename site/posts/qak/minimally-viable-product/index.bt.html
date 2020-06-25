@@ -30,10 +30,11 @@ metadata = {
 </p>
 
 <ul>
-	<li>Types: <code>boolean</code>, <code>int32</code>, <code>float32</code>.</li>
-	<li>Functions and operators</li>
-	<li>Function and operator overloading.</li>
-	<li>Foreign function interface, so we can call into native code.</li>
+	<li>Types: <code>boolean</code>, <code>int32</code>, <code>float32</code>, <code>nothing</code>.</li>
+	<li>Functions, operators, and overloading.</li>
+	<li>Basic expressions</li>
+	<li>Basic control flow statements</li>
+	<li>Foreign function interface.</li>
 	<li>Modules.</li>
 	<li>Module <code>std</code>, containing <code>print()</code> and maybe a handful of other things.</li>
 </ul>
@@ -42,9 +43,17 @@ metadata = {
 Let's look at these in more detail.
 </p>
 
-<h3>Types</h3>
+<h3>Types and values</h3>
 <p>
-	Only supporting two primitive types in the beginning makes things significantly simpler. <code>boolean</code> is needed for conditionals. <code>int32</code> and <code>float32</code> are what you'd expect. Why not just <code>int32</code>? Because it complicates the type checker just an itsy bit more possibly.
+	Only supporting two primitive types in the beginning makes things significantly simpler. <code>boolean</code> is needed for conditionals. <code>int32</code> and <code>float32</code> are what you'd expect, with the values (<code>true</code>, <code>false</code>, <code>123</code>, <code>123.456</code>, ...) you know and love.
+</p>
+
+<p>
+	Why not just <code>int32</code>? Because it complicates the type checker just an itsy bit more, which may lay bare issues earlier in the development process. Having both an integer and float type also forces me to figure out if and what type conversions I want to have in Qak.
+</p>
+
+<p>
+	<code>nothing</code> is there to indicate that a function returns, well, nothing. It has a single value: <code>nothing</code>.
 </p>
 
 <p>
@@ -56,7 +65,6 @@ Let's look at these in more detail.
 </p>
 
 <pre><code>module std
-
 foreign type boolean
 foreign type int32
 foreign type float32
@@ -70,9 +78,24 @@ foreign type float32
 	v0.1 will also not include any string or collection types, which keeps the scope small. The v0.1 types don't require me to implement a GC, which is nice. It's also an open invitation to walk right into a dead end. We'll see how that works out.
 </p>
 
-<h3>Functions and operators</h3>
+<h3>Functions, operators, and overloading</h3>
 <p>
+	A function is a piece of code that has a name, (optional) arguments, and a return type. I don't particularly care for the syntax, but here we go:
+</p>
 
+<pre><code>function add(a: int32, b: int32): int32
+	return a + b
+end
+</code></pre>
+
+<p>Omitting the return type means the function returns <code>nothing</code> (which can of course also be specified explicitely.</p>
+
+<p>
+	A pretty standard affair, with the notable exception that Qak won't be a curly based language, at least not for statement/block delimitation. Instead we write it all out and will like it. I believe this to be friendlier to beginners, but we'll see.
+</p>
+
+<p>
+	Surprise: operators and functions are the same thing. It's just that operators have syntactic sugar, i.e. they can be called by infix notation ala <code>2 + 3</code>, instead of <code>+(2, 3)</code> (looks familiar, eh?).
 </p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
