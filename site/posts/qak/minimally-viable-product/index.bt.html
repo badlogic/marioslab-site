@@ -107,8 +107,7 @@ end
 	Going back to our <code>std.qak</code> file, which defines the built-in types, it comes as no surprise that the operators are defined there as well, namely as <code>foreign</code> functions.
 </p>
 
-<pre><code>
-module std
+<pre><code>module std
 
 foreign type boolean
 foreign type int32
@@ -117,7 +116,7 @@ foreign type float32
 foreign function !(a:boolean): boolean
 foreign function &&(a: boolean, b: boolean): boolean
 ...
-foreign function =(a:float32, b: float32): boolean
+foreign function ==(a:float32, b: float32): boolean
 ...
 foreign function +(a: int32, b: int32): int32
 foreign function *(a: int32, b: int32): int32
