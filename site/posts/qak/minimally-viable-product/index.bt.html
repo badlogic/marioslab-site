@@ -72,7 +72,7 @@ foreign type float32
 </p>
 
 <p>
-	v0.1 will also not include any string or collection types, which keeps the scope small. The v0.1 types don't require me to implement a GC, which is nice. It's also an open invitation to walk right into a dead end. We'll see how that works out.
+	v0.1 will also not include any string or collection types, which keeps the scope small. The v0.1 types don't require me to implement a GC, which is nice. It's also an open invitation to walk right into a dead end when it comes to designing the interpreter. We'll see how that works out.
 </p>
 
 <h2>Functions, operators, overloading, and foreign function interface</h2>
@@ -85,14 +85,16 @@ foreign type float32
 end
 </code></pre>
 
-<p>Omitting the return type means the function returns <code>nothing</code> (which can of course also be specified explicitely.</p>
+<p>
+	Omitting the return type means the function returns <code>nothing</code> (which can of course also be specified explicitely).
+</p>
 
 <p>
 	A pretty standard affair, with the notable exception that Qak won't be a curly based language, at least not for statement/block delimitation. Instead we write it all out and will like it. I believe this to be friendlier to beginners, but we'll see.
 </p>
 
 <p>
-	Surprise: operators and functions are the same thing. It's just that operators have syntactic sugar, i.e. they can be called by infix notation ala <code>2 + 3</code>, instead of <code>+(2, 3)</code> (looks familiar, eh?).
+	Surprise: operators and functions are the same thing. It's just that operators have syntactic sugar, e.g. they can be called by infix notation ala <code>2 + 3</code>, instead of <code>+(2, 3)</code> (looks familiar, eh?). There's also unary operators like <code>!</code> or <code>-</code>.
 </p>
 
 <p>
@@ -121,20 +123,20 @@ foreign function +(a: float32, b: float32): float32
 </code></pre>
 
 <p>
-	Should the compiler find an expression like <code>3 + 2</code>, it will see if there's a function defined for that operator with those 2 input types, and insert a call to that function in the generated code.
+	Should the compiler see an expression like <code>3 + 2</code>, it will try to find a function with the name <code>+</code>, with two arguments of type <code>int32</code>, and insert a call to that function in the generated code. "But Mario, that will be slow!" I hear you scream at the top of your lungs. Yes. Which is why there'll be an optimization pass that translates certain known operator function calls to virtual machine instructions that are quicker. Think <a href="https://en.wikipedia.org/wiki/Intrinsic_function">HotSpot intrinsics</a>.
 </p>
 
 <p>
-	What about <code>3.0 + 2</code>, the addition of a <code>float32</code> and <code>int32</code>? I can't possibly create operator functions for all permutations of input types. So I'll rely on explicit casting for now. The expression <code>3.0 + 2</code> will throw a compiler error, as no function <code>+(a: float32, b: int32): float32</code> will be defined. Instead a user is expected to explicitely cast one of the operands to the type of the other, e.g. <code>3.0 + toFloat32(2)</code>. I might add some compiler sugar to insert automatic casts. For now everything is explicit.
+	What about <code>3.0 + 2</code>, the addition of a <code>float32</code> and an <code>int32</code>? I can't possibly create operator functions for all permutations of input types. So I'll rely on explicit casting for now. The expression <code>3.0 + 2</code> will throw a compiler error, as no function <code>+(a: float32, b: int32): float32</code> will be defined. Instead a user is expected to explicitely cast one of the operands to the type of the other, e.g. <code>3.0 + toFloat32(2)</code>. I might add some compiler sugar to insert automatic casts. For now everything is explicit.
 </p>
 
 <p>
-	Functions can also be overloaded based on their argument type. I could include the return type in this mechanism, but my gut tells me that leads to evil things. We'll see!
+	Functions can also be overloaded based on their argument types. I could include the return type in this mechanism, but my gut tells me that leads to evil things. We'll see.
 </p>
 
 <h2>Basic statements</h2>
 <p>
-	Many languages de jour treat almost anything as expressions that evaluate to a value, including control flow statements like <code>if</code>. Qak won't do that. Instead, it provides a handful of statements that do not produce a value, and also allow you to liter your functions with naked expressions:
+	Many languages de jour treat almost anything as an expression that evaluate to a value, including control flow statements like <code>if</code>. Qak won't do that. Instead, it provides a handful of statements that do not produce a value, and also allow you to liter your functions with naked expressions, whose generated values will be discarded.
 </p>
 
 <pre><code>
@@ -156,9 +158,10 @@ while(bar)
 		bar = false
 	else
 		// arbitrary expressions (Which includes things
-		// like function calls. The value generated by
-		// the expression is simply discarded.
+		// like function calls.
 		print(foo)
+
+		// The value generated by this expression is simply discarded.
 		foo + 34 * zeroInitializer
 
 		if (shouldWeStop()) then
@@ -175,15 +178,17 @@ return foo * 10
 </code></pre>
 
 <p>
-	There's plenty in the above code that will force me to build a good infrastructure basis for the interpreter.
+	There's plenty in the above code that will force me to build reasonable infrastructure for the interpreter. More complex constructs are mostly just syntactic sugar that can be compiled to the basic statements shown above.
 </p>
 
 <h2>Modules</h2>
 <p>
-	The compilation unit of Qak is the module, a single file with a module definition at the top, as we've seen in <code>std.qak</code> above. A module consists of:
+	The compilation unit of Qak is the module. A module consists of:
 </p>
 
 <ul>
+	<li>The module name, expressed as <code>module myModuleName</code> at the top of the file</li>
+	<li>Imports of other modules (see below).</li>
 	<li>Type definitions. For now only <code>foreign</code> types are possible.</li>
 	<li>Function definitions.</li>
 	<li>Module variable definitions.</li>
@@ -201,9 +206,13 @@ return foo * 10
 	Any type, function, or variable with a name starting with <code>_</code> is considered private to the module. Anything else can be accessed by other modules. Again, this is likely a terrible idea. An explicit <code>private</code> specifier might be better.
 </p>
 
+<p>
+	Since a module can have variables, and those variables can have initializer expressions, I have to figure out a way when those initializers are run by the interpreter. I'm sure every little thing is gonna be alright.
+</p>
+
 <h2>Standard library</h2>
 <p>
-	The standard library will be exceptionally minimal. It will define the (<code>foreign</code>) built-in types and their operators, common type conversion functions, and a handful of <code>print()</code> overloads, one for each type.
+	The standard library will be exceptionally minimal. It will define the (<code>foreign</code>) built-in types and their operators, common type conversion functions, and a handful of <code>print()</code> overloads, one for each type. All its code will go into the <code>std.qak</code> file.
 </p>
 
 <h2>Up next</h2>
