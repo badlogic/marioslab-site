@@ -65,6 +65,7 @@ Let's look at these in more detail.
 </p>
 
 <pre><code>module std
+
 foreign type boolean
 foreign type int32
 foreign type float32
@@ -83,8 +84,8 @@ foreign type float32
 	A function is a piece of code that has a name, (optional) arguments, and a return type. I don't particularly care for the syntax, but here we go:
 </p>
 
-<pre><code>function add(a: int32, b: int32): int32
-	return a + b
+<pre><code>function foo(a: int32, b: int32): int32
+	...
 end
 </code></pre>
 
@@ -96,6 +97,40 @@ end
 
 <p>
 	Surprise: operators and functions are the same thing. It's just that operators have syntactic sugar, i.e. they can be called by infix notation ala <code>2 + 3</code>, instead of <code>+(2, 3)</code> (looks familiar, eh?).
+</p>
+
+<p>
+	The whole range of operators for our built-in types are expressed as functions. The precedence of operators is fixed and part of the language definition. Making that configurable seems like a lot of pain.
+</p>
+
+<p>
+	Going back to our <code>std.qak</code> file, which defines the built-in types, it comes as no surprise that the operators are defined there as well, namely as <code>foreign</code> functions.
+</p>
+
+<pre><code>
+module std
+
+foreign type boolean
+foreign type int32
+foreign type float32
+
+foreign function !(a:boolean): boolean
+foreign function &&(a: boolean, b: boolean): boolean
+...
+foreign function =(a:float32, b: float32): boolean
+...
+foreign function +(a: int32, b: int32): int32
+foreign function *(a: int32, b: int32): int32
+...
+foreign function +(a: float32, b: float32): float32
+</code></pre>
+
+<p>
+	Should the compiler find an expression like <code>3 + 2</code>, it will see if there's a function defined for that operator with those 2 input types, and insert a call to that function in the generated code.
+</p>
+
+<p>
+	What about <code>3.0 + 2</code>, the addition of a <code>float32</code> and <code>int32</code>? I can't possibly create operator functions for all permutations of input types. So I'll rely on explicit casting for now. The expression <code>3.0 + 2</code> will throw a compiler error, as no function <code>+(a: float32, b: int32): float32</code> will be defined. Instead a user is expected to explicitely cast one of the operands to the type of the other, e.g. <code>3.0 + toFloat32(2)</code>. I might add some compiler sugar to insert automatic casts. For now everything is explicit.
 </p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
