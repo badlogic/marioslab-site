@@ -182,7 +182,25 @@ return foo * 10
 
 <h2>Modules</h2>
 <p>
+	The compilation unit of Qak is the module, a single file with a module definition at the top, as we've seen in <code>std.qak</code> above. A module consists of:
+</p>
 
+<ul>
+	<li>Type definitions. For now only <code>foreign</code> types are possible.</li>
+	<li>Function definitions.</li>
+	<li>Module variable definitions.</li>
+</ul>
+
+<p>
+	A module can import other modules, as long as the resulting graph of imports is acyclic. I'm sure this is a terrible idea, but I'll go with it for now. All modules import the <code>std</code> module by default.
+</p>
+
+<p>
+	Importing a module is done like this: <code>import someModuleName</code>. I'll cross the "how the hell do you resolve modules?" bridge later. To avoid name clashes between things from an imporated module and the current module, one can do <code>import someModuleName as foo</code>, and access things from that module via <code>foo.thing</code>.
+</p>
+
+<p>
+	Any type, function, or variable with a name starting with <code>_</code> is considered private to the module. Anything else can be accessed by other modules. Again, this is likely a terrible idea. An explicit <code>private</code> specifier might be better.
 </p>
 
 <h2>Standard library</h2>
@@ -191,5 +209,8 @@ return foo * 10
 </p>
 
 <h2>Up next</h2>
+<p>This should be enough to create a contrived factorial nano benchmark to compare Qak against the likes of Lua and Python. Next time we'll look at the implementation of the parser and generation of the abstract syntax tree for the poor excuse of a language specification outlined above.</p>
+
+<p>Discuss this post by replying to <a href="">this tweet.</a></p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
