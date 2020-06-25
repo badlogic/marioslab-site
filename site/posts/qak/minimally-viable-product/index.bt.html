@@ -127,7 +127,7 @@ foreign function +(a: float32, b: float32): float32
 </p>
 
 <p>
-	What about <code>3.0 + 2</code>, the addition of a <code>float32</code> and an <code>int32</code>? I can't possibly create operator functions for all permutations of input types. So I'll rely on explicit casting for now. The expression <code>3.0 + 2</code> will throw a compiler error, as no function <code>+(a: float32, b: int32): float32</code> is defined. Instead a user is expected to explicitely cast one of the operands to the type of the other, e.g. <code>3.0 + toFloat32(2)</code>. I might add some compiler sugar to insert automatic casts. For now everything is explicit.
+	What about <code>3.0 + 2</code>, the addition of a <code>float32</code> and an <code>int32</code>? I can't possibly create operator functions for all permutations of input types. So I'll rely on explicit casting for now. The expression <code>3.0 + 2</code> will throw a compiler error, as the function <code>+(a: float32, b: int32): float32</code> is undefined. Instead a user is expected to explicitely cast one of the operands to the type of the other, e.g. <code>3.0 + toFloat32(2)</code>. I might add some compiler sugar to insert automatic casts. For now everything is explicit.
 </p>
 
 <p>
