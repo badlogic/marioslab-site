@@ -33,8 +33,37 @@ metadata = {
 </p>
 
 <p>
-	However, Chomsky's work was actually quite useful for us computer folks. Many of the techniques we use, like <a href="https://en.wikipedia.org/wiki/Regular_expression">regular expressions</a>, or their recursive version, <a href="https://en.wikipedia.org/wiki/Parsing">parsers</a>, can be fitted Chomsky's formal grammars. It's also a fantastic way to torture university students in their first compiler engineering course.
+	However, Chomsky's work was actually quite useful for us computer folks. Many of the techniques we use, like <a href="https://en.wikipedia.org/wiki/Regular_expression">regular expressions</a>, or their recursive version, <a href="https://en.wikipedia.org/wiki/Parsing">parsers</a>, can be fitted Chomsky's formal grammars. They are also a fantastic way to torture students in their first compiler engineering university course.
 </p>
+
+<p>
+	I'll have non of that academic rigorosity here, nor will I use any of the available generators for tokenizers. Instead, I'll go with handcrafted, artisan, organic, and possibly buggy and slow tokenization of my own design. Here we go.
+</p>
+
+<h3>What's a character?</h3>
+<p>
+	This question has tortured us computer-y folks for decades. We still kind of suck at it, but somehow agree that <a href="https://en.wikipedia.org/wiki/UTF-8#:~:text=UTF%2D8%20(8%2Dbit,Ken%20Thompson%20and%20Rob%20Pike.">UTF-8</a> is the least sucky way to approach that question. All of this is really boring, so here's code to traverse a stream of bytes one UTF-8 character at a time, which may be composed of 1, 2, 3, or 4 sequential bytes. It's really all magic to me.
+</p>
+
+<pre><code>/* Reads the next UTF-8 character from the stream and returns it as a UTF-32 character.
+* Taken from https://www.cprogramming.com/tutorial/utf8.c */
+static QAK_FORCE_INLINE uint32_t nextUtf8Character(const uint8_t *data, uint32_t *index) {
+	static const uint32_t utf8Offsets[6] = {
+			0x00000000UL, 0x00003080UL, 0x000E2080UL,
+			0x03C82080UL, 0xFA082080UL, 0x82082080UL
+	};
+
+	uint32_t character = 0;
+	int sz = 0;
+	do {
+		character <<= 6;
+		character += data[(*index)++];
+		sz++;
+	} while (data[*index] && !(((data[*index]) & 0xC0) != 0x80));
+	character -= utf8Offsets[sz - 1];
+
+	return character;
+}</code></pre>
 
 <h2>Up next</h2>
 <p>This should be enough to create a contrived factorial nano benchmark to compare Qak against the likes of Lua and Python. Next time we'll look at the implementation of the parser and generation of the abstract syntax tree for the poor excuse of a language specification outlined above.</p>
