@@ -157,7 +157,7 @@ int32_t nextUtf8Character(const uint8_t *data, uint32_t *index) {
 </p>
 
 <p>
-	The function takes bytes making up UTF-8 characters and an byte-index into the bytes, reads the next UTF-8 character, updates the index by the number of bytes read, and returns the character as UTF-32. Repeatedly calling this function allows us to traverse all UTF-8 characters in a source, e.g.
+	The function takes bytes making up UTF-8 characters and a byte-index into the bytes, reads the next UTF-8 character, updates the index by the number of bytes read, and returns the character as UTF-32. Repeatedly calling this function allows us to traverse all UTF-8 characters in a source, e.g.
 </p>
 
 <pre><code>Source source(...);
@@ -168,7 +168,9 @@ while (index < source.size) {
 }
 </code></pre>
 
-<p>There's likely a dragon in <code>nextUtf8Character()</code> regarding invalid UTF-8 byte sequences. We'll never know, cause ain't nobody got time to validate it against all possible foobar inputs.</p>
+<p>
+	There's likely a dragon in <code>nextUtf8Character()</code> regarding invalid UTF-8 byte sequences. We'll never know, cause ain't nobody got time to validate it against all possible foobar inputs.
+</p>
 
 <h3>How is token formed?</h3>
 <p>
@@ -259,9 +261,173 @@ if (stream.match("123", true)) {
 	Easy, right? Well, consider what happens if the source code is <code>   12345   </code>. We'd still get a match for "123". Whoops. That's not what we want. Matching all possible numbers this way is also a bit ... shall we say elaborate.
 </p>
 
-<h2>Up next</h2>
-<p>This should be enough to create a contrived factorial nano benchmark to compare Qak against the likes of Lua and Python. Next time we'll look at the implementation of the parser and generation of the abstract syntax tree for the poor excuse of a language specification outlined above.</p>
+<p>
+	Instead, we get inspired by Chomsky's and our nightmarish experiences cobbling together regular expression strings for our regex library of choice, and build our own regular expression matcher! Yes.
+</p>
 
-<p>Discuss this post by replying to <a href="https://twitter.com/badlogicgames/status/1276218596943953922">this tweet.</a></p>
+<p>
+	Qak can contain all kinds of tokens, like number literals like <code>123.4</code>, operators like <code>==</code>, variable names like <code>foo</code>, and so on. Each token type has a character pattern it follows. We'll have to figure out the patterns for all the types of tokens we have and then handcraft invocations to <code>CharacterStream</code> to see if we find a match in the source for a specific token type. Let's start with numbers!
+</p>
+
+<p>
+	Qak supports both integer and floating point numbers in version 0.1. We want to treat them as different types of tokens, as they will end up having a different type (<code>int32</code>, <code>float32</code>) when it comes to type checking a program. Let's define the pattern of these two types of tokens.
+</p>
+
+<p>
+	An integer number starts with a character out of the set <code>"0"-"9"</code>, followed by zero or more characters out of <code>"0"-"9"</code>. As a regular expression, we'd denote it as <code>[0-9][0-9]*</code>. In code it looks like this:
+</p>
+
+<pre><code>
+Source source(...);
+CharacterStream stream(source);
+Array&lt;Token&gt; tokens;
+
+while (stream.hasMore()) {
+	// Skip the whitespace
+	stream.skipWhiteSpace();
+
+	// if there aer no more characters after skipping white
+	// space, we've reached the end of the source.
+	if (!stream.hasMore()) break;
+
+	// Start a span for the next token we're about to tokenize.
+	stream.startSpan();
+
+	// Tokenize numbers. The first character must be a digit.
+	if (stream.matchDigit(true)) {
+		// Followed by 0 or more digits.
+		while(stream.matchDigit(true)) {
+			// nothing to do here, we just match
+			// until we find no more digit.
+		}
+		tokens.add({IntegerLiteral, stream.endSpan()});
+		continue;
+	}
+
+	// None of our patterns matched, this is an error.
+	printf("Unknown token type\n");
+	break;
+}
+</code></pre>
+
+<p>
+	Pretty simple! I've also sneakily introduced the <a href="https://github.com/badlogic/qak/blob/master/src/tokenizer.h#L264"><code>Token</code></a> struct, which is just a <code>Span</code> with an additional <a href="https://github.com/badlogic/qak/blob/master/src/tokenizer.h#L216"><code>TokenType</code></a> enum value.
+</p>
+
+<p>
+	What about floating point number literals like <code>123.45</code>? Easy peasy, we just extend the above code with additional matches.
+</p>
+
+<pre><code>Source source(...);
+CharacterStream stream(source);
+Array&lt;Token&gt; tokens;
+
+while (stream.hasMore()) {
+	stream.skipWhiteSpace();
+	if (!stream.hasMore()) break;
+	stream.startSpan();
+
+	if (stream.matchDigit(true)) {
+		while(stream.matchDigit(true));
+
+		// Is there a period? Then we have a floating point
+		// number.
+		boolean isFloat = false;
+		if (stream.match(".", true)) {
+			isFloat = true;
+
+			// Keep matching digits. Note that we allow
+			// 123. by not requiring at least one more
+			// digit after the period.
+			while(stream.matchDigit(true));
+		}
+
+		// Create a IntegerLiteral or FloatLiteral token based on if there
+		// was a period.
+		tokens.add({isFloat ? IntegerLiteral : FloatLiteral, stream.endSpan()})
+	}
+
+	printf("Unknown token type\n");
+	break;
+}
+</code></pre>
+
+<p>
+	This can be extended to parse hexadecimal numbers like <code>0xa000</code>, or type specifier suffixes like in <code>123l</code> in case we have a <code>int64</code> type. You can find Qak's current number tokenization in <a href="https://github.com/badlogic/qak/blob/master/src/tokenizer.cpp#L228">tokenizer.cpp</a>. It already does more than we need for version 0.1.
+</p>
+
+<p>
+	What about keywords like <code>var</code> or <code>while</code>, and variable names, or literal values like <code>true</code>, or <code>nothing</code>? Well. In the literature on compiler engineering, you'll often find that a separation of all these things is made. I say "NO" to that. I treat keywords and variable, type or function names as the same token type. They are all identifiers. Literal values like <code>false</code> are their own token type, <code>BooleanLiteral</code> in this case. But when it comes to tokenizing them, they are all the same!
+</p>
+
+<p>
+	We can cover them all with a simple pattern: they have to start with an alphabetical character or an underscore, followed by zero or more digits, underscores, or alphabetical characters. <code>CharacterStream::matchIdentifierStart()</code> and <code>CharacterStream::matchIdentifierPart()</code> already implement the required logic to check if a character is a valid first character, or a valid subsequent character. We can extend the above code thusly:
+</p>
+
+<pre><code>Source source(...);
+CharacterStream stream(source);
+Array&lt;Token&gt; tokens;
+
+while (stream.hasMore()) {
+	stream.skipWhiteSpace();
+	if (!stream.hasMore()) break;
+	stream.startSpan();
+
+	// Tokenize numbers
+	if (stream.matchDigit(true)) {
+		...
+	}
+
+	// Tokenize keywords, variable/type/function names, value literals
+	// like "true", "nothing".
+	if (stream.matchIdentifierStart(true)) {
+		while(stream.matchIdentifierPart(true));
+		Span span = stream.endSpan();
+
+		// Check if we got any of the value literals
+		if (span.matches(QAK_STR("true"))) || span.matches(QAK_STR("false")) {
+			tokens.add({BooleanLiteral, span});
+		} else if (span.matches(QAK_STR("nothing"))) {
+			tokens.add({NothingLiteral, span});
+		} else {
+			tokens.add({Identifier, span});
+		}
+		continue;
+	}
+
+	printf("Unknown token type\n");
+	break;
+}
+</code></pre>
+
+<p>
+	That covers almost everything, except for operators and other special characters. Matching those is just tedious, as you have to basically enumerate and match them all. I went through a bunch of iterations regarding that in the actual tokenizer, with a focus on making it as fast as possible. The resulting code	is a little less straight forward than the above. Have a look at the <a href="https://github.com/badlogic/qak/commits/master/src/tokenizer.cpp">history of the tokenizer.cpp file</a> to see how that evolved.
+</p>
+
+<p>
+	And that is how we tokenize things the old school way. At the end, we have an <code>Array</code> of tokens that the next stage in the compiler can consume and make sense of. Great success.
+</p>
+
+<h3>ERROR, **BEEP**, **BOOP**</h3>
+<p>
+	What I left out in the dicsussion above are things like memory management and error handling. Memory management in a compiler is actually an interesting challenge, especially if you want to make it fast. I'll dedicate a different blargh post.
+</p>
+
+<p>
+	Error handling is a pretty simple affair though, so let's cover that quickly. In the above code snippets, I simply <code>printf</code>ed my way out of it and exited the tokenizer loop. In a real compiler, you want to report an error to the user, so they know why their code is bad.
+</p>
+
+<p>
+	In Qak, I have a simple struct called <a href="https://github.com/badlogic/qak/blob/master/src/error.h"><code>Errors</code></a> that, surprisingly, manages <code>Error</code> instances. Anytime the compiler encounters an error, it pushes the <code>Span</code> where the error happend into the <code>Errors</code> struct, along with a descriptive message. A span has all the information needed to print line numbers and even the source lines where the error happend, which is exactly what <code>Error::print()</code> and <code>Errors::print()</code> do.
+</p>
+
+<p>
+	Another issue with error handling with compilers is that they usually have pretty deep call stacks due to recursion. For these cases we'll need additional machinery. We'll see that once we get to parsing.
+</p>
+
+<h2>Up next</h2>
+<p>The next time we'll look into constructing an abstract syntax tree from the tokens and making sure the user didn't hand us unintelligble code.</p>
+
+<p>Discuss this post by replying to <a href="">this tweet.</a></p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
