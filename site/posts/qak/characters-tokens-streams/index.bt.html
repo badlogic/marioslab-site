@@ -157,9 +157,106 @@ static QAK_FORCE_INLINE uint32_t nextUtf8Character(const uint8_t *data, uint32_t
 </p>
 
 <p>
-	The function takes bytes making up UTF-8 characters and an byte-index into the bytes, reads the next UTF-8 character, updates the index by the number of bytes read, and returns the character as UTF-32. Repeatedly calling this function allows us to traverse all UTF-8 characters.
+	The function takes bytes making up UTF-8 characters and an byte-index into the bytes, reads the next UTF-8 character, updates the index by the number of bytes read, and returns the character as UTF-32. Repeatedly calling this function allows us to traverse all UTF-8 characters in a source, e.g.
 </p>
 
+<pre><code>Source source(...);
+uint32_t index = 0;
+while (index < source.size) {
+	uint32_t character = nextUtf8Character(source.data, &index);
+	// do something with the character
+}
+</code></pre>
+
+<p>There's likely a dragon in <code>nextUtf8Character()</code> regarding invalid UTF-8 byte sequences. We'll never know, cause ain't nobody got time to validate it against all possible foobar inputs.</p>
+
+<h3>How is token formed?</h3>
+<p>
+	We can store our input bytes, refer to sequences within those bytes, and know how to traverse the bytes one UTF-8 character at a time. Time to think about the types of tokens a Qak source file can contain and how to best find them in the source data.
+</p>
+
+<p>
+	To ease traversing the characters in a source, I've created the <a href="https://github.com/badlogic/qak/blob/master/src/tokenizer.h#L24"><code>CharacterStream</code></a> class. It wraps a source and keeps track of the current position in the source we are in, both expressed as a byte-offset and a line number. It uses the <code>nextUtf8Character()</code> function to traverse the UTF-8 characters, and provides a bunch of handy little functions to match the current character in the source with something we are looking for. It also tells us if we've reached the end of the stream and makes sure we never access bytes outside the source.
+</p>
+
+<p>
+	Here are the methods <code>CharacterStream</code> offers as pseudo-code:
+</p>
+
+<pre><code>class CharacterStream {
+	/* Returns whether the stream has more UTF-8 characters */
+	bool hasMore();
+
+	/* Returns whether the stream has numChars more UTF-8 characters */
+	bool hasMore(size_t numChars);
+
+	/* Returns the current UTF-8 character and advances to the next character */
+	uint32_t consume();
+
+	/* Returns the current UTF-8 character without advancing to the next character */
+	uint32_t peek()
+
+	/* Returns true if the current UTF-8 character matches the needle, false otherwise.
+	 * Advances to the next character if consume is true */
+	bool match(const char *needleData, bool consume);
+
+	/* Returns true if the current UTF-8 character is a digit ([0-9]), false otherwise.
+	 * Advances to the next character if consume is true */
+	bool matchDigit(bool consume);
+
+	/* Returns true if the current UTF-8 character is a hex-digit ([0-9a-fA-F]), false otherwise.
+	 * Advances to the next character if consume is true */
+	bool matchHex(bool consume);
+
+	/* Returns true if the current UTF-8 character is valid as the first character
+	 * of an identifier ([a-zA-Z_] or any unicode character >= 0xc0), e.g. variable
+	 * name, false otherwise. Advances to the next character if consume is true */
+	bool matchIdentifierStart(bool consume);
+
+	/* Returns true if the current UTF-8 character is valid as the first character
+	 * of an identifier ([a-zA-Z_] or any unicode character >= 0x80), e.g. variable
+	 * name, false otherwise. Advances to the next character if consume is true */
+	bool matchIdentifierPart(bool consume);
+
+	/* Skips all white space characters ([' '\r\n\t]) and single-line comments.
+	* Comments start with '#' and end at the end of the current line. */
+	void skipWhiteSpace();
+
+	/* Mark the start of a span at the current position in the stream. See Span::endSpan(). */
+	void startSpan();
+
+	/* Return the Span ending at the current position, previously started via
+	* startSpan(). Calls to startSpan() and endSpan() must match. They can
+	* not be nested.*/
+	Span endSpan();
+}</code></pre>
+
+<p>
+	Those should be pretty self-explanatory. The most complex part is skipping white space, which covers ignoring whitespace and comments, and keeps track of the current line number for us. Matching the keyword <code>var</code> would look something like this:
+</p>
+
+<pre><code>Source source(...);
+CharacterStream stream(source);
+
+stream.skipWhiteSpace();
+stream.startSpan();
+if (stream.match("var", true)) {
+	printf("Matched 'var'");
+	Span varSpan = stream.endSpan();
+	printf("start: %i, end: %i, start line: %i, end line: %i", varSpan.start, varSpan.end, varSpan.startLine, varSpan.endLine);
+}
+</code></pre>
+
+<p>
+	We construct the stream from the source and immediately skip all whitespace until a character is found that's not whitespace. We want to keep track of the location of whatever comes next, so we start to track a new span via <code>stream.startSpan()</code>. A call to <code>stream.endSpan()</code> will return a <code>Span</code> describing the location of whatever we've matched so far.
+</p>
+
+<p>
+	Then we use <code>stream.match()</code> to check if the next few characters make up the string <code>"var"</code> and tell the stream to advance the index if there's a match by passing <code>true</code> for the <code>consume</code> argument. If the string was matched, we end the span and print the location of the string in the source.
+</p>
+
+<p>
+	Easy, right? Well, consider what happens if the source code is <code>   variable   </code>. We'd still get a match. Whoops. That's not what we want.
 </p>
 
 <h2>Up next</h2>
