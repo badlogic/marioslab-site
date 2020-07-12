@@ -52,7 +52,7 @@ end
 
 <p>During tokenization, we really don't care if the tokens in that order make sense within the rules of the programming language. All we care about is that they are valid "words" within the programming language.</p>
 
-<p>You might be wondering why the comments starting with <code>//</code> aren't tokens, or what happens with whitespace. The comments could actually be tokens themselve, which might come in handy if we wanted to implement something like JavaDocs or Doxygen. At this point, I won't do that, so comments get ignored by the tokenization process. Whitespace of any form is also ignored, as Qak is not a whitespace sensitive language like Python.</p>
+<p>You might be wondering why the comments starting with <code>//</code> aren't tokens, or what happens with whitespace. The comments could actually be tokens themselves, which might come in handy if we wanted to implement something like JavaDocs or Doxygen. At this point, I won't do that, so comments get ignored by the tokenization process. Whitespace of any form is also ignored, as Qak is not a whitespace sensitive language like Python.</p>
 
 <p class="blockquote">
 	Funnily enough, a smart guy called <a href="https://en.wikipedia.org/wiki/Chomsky_hierarchy">Chomsky's</a> came up with a bunch of sciency stuff to describe (formal) grammars of natural languages. And while initially promising, Chomsky's work failed to be applicable to natural languages, which led to many sad trombone sounds in the linguist community. At least that's what my linguist wife told me. I'm obliged by law to believe her.</br></br>
@@ -71,11 +71,21 @@ end
 </p>
 
 <p>
-	In the Qak code, the <a href="https://github.com/badlogic/qak/blob/master/src/source.h#L41"><code>Source</code></a> struct encapsulates an array of bytes of a fixed length, paired with a (file) name making up a source code "file". It can also give us inidividual lines delimited by <code>\n</code> in the source code, which comes in handy when we print out nice errors with line highlights later on.
+	In the Qak code, the <a href="https://github.com/badlogic/qak/blob/master/src/source.h#L41"><code>Source</code></a> struct encapsulates an array of bytes of a fixed length, paired with a (file) name making up a source code "file". It can also give us inidividual lines delimited by <code>\n</code> in the source code, which comes in handy when we print out nice errors with line highlights later on. Here's the pseudo-code version of that struct, with details omitted:
 <p>
 
+<pre><code>struct Source {
+	const char *fileName;
+	uint8_t *data;
+	size_t size;
+
+	Array&lt;Line&gt; &lines();
+}
+</code></pre>
+
+
 <p>
-	During tokenization, we'll cut that source up into groups of characters we'll call tokens.
+
 </p>
 
 <h3>Plowing through UTF-8 characters</h3>
