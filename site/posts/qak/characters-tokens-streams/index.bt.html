@@ -21,16 +21,38 @@ metadata = {
 </p>
 
 <p>
-	What's this magical first step? If you had any kind of formal computer science education then the terms <a href="https://en.wikipedia.org/wiki/Lexical_analysis">lexical analysis, lexing, scanning, or tokenization</a> might be familiar.
+	What's this magical first step? It goes by many names: <a href="https://en.wikipedia.org/wiki/Lexical_analysis">lexical analysis, lexing, scanning, or tokenization</a> and probably a gazillion more. If you had any kind of exposure to formal computer science education, you've likely heard one or more of these terms.
 </p>
 
 <p>
-	In non-academic words: take a bunch of bytes from a source like a source code file, figure out which bytes make up a character, then group characters together into "words", also known as <strong>tokens</strong>, that are valid in your programming language. Going forward, I shall refer to this process as <strong>tokenization</strong>.
+	In non-academic words, we want to take a bunch of bytes from a source like a source code file, figure out which bytes make up a character, then group characters together into "words", also known as <strong>tokens</strong>, that are valid for the programming language. Going forward, I shall refer to this process as <strong>tokenization</strong>.
 </p>
 
 <p>
-	A token can be a string literal like <code>"Hello World."</code>, a number literal like <code>123.4</code>, or a variable name like <code>foo</code>. The end result of tokenization is a sequential list of tokens from a source code file that we can feed into the next step of the compiler, known as parsing. I'll talk about that in the next post.
+	Here's a little Qak snippet to illustrate tokenization:
 </p>
+
+<pre><code>// variable declaration with initializers and simple type inference
+// Variables without initializer will be initialized to the type's
+// default value.
+var foo = 123
+var bar: boolean = true
+var zeroInitializer: int32
+
+// While statement, who needs for(-each)?!
+while(bar)
+	// Variables are block scoped
+	var uff = 3
+end
+</code></pre>
+
+<p>
+	This source code consists of the tokens <code>var</code>, <code>foo</code>, <code>=</code>, <code>123</code>, <code>var</code>, <code>bar</code>, <code>:</code>, <code>boolean</code>, <code>=</code>, <code>true</code>, <code>var</code>, <code>zeroInitializer</code>, <code>:</code>, <code>int32</code>, <code>while</code>, <code>(</code>, <code>bar</code>, <code>)</code>, <code>var</code>, <code>uff</code>, <code>=</code>, <code>3</code>, and <code>end</code>.
+</p>
+
+<p>During tokenization, we really don't care if the tokens in that order make sense within the rules of the programming language. All we care about is that they are valid "words" within the programming language.</p>
+
+<p>You might be wondering why the comments starting with <code>//</code> aren't tokens, or what happens with whitespace. The comments could actually be tokens themselve, which might come in handy if we wanted to implement something like JavaDocs or Doxygen. At this point, I won't do that, so comments get ignored by the tokenization process. Whitespace of any form is also ignored, as Qak is not a whitespace sensitive language like Python.</p>
 
 <p class="blockquote">
 	Funnily enough, a smart guy called <a href="https://en.wikipedia.org/wiki/Chomsky_hierarchy">Chomsky's</a> came up with a bunch of sciency stuff to describe (formal) grammars of natural languages. And while initially promising, Chomsky's work failed to be applicable to natural languages, which led to many sad trombone sounds in the linguist community. At least that's what my linguist wife told me. I'm obliged by law to believe her.</br></br>
