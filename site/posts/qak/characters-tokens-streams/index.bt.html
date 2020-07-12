@@ -25,7 +25,11 @@ metadata = {
 </p>
 
 <p>
-	In non-academic words: take a bunch of bytes, figure out which bytes make up a character, then group characters together into words that make up sentences (or statements in your code). Going forward, I shall refer to this process as <strong>tokenization</strong>.
+	In non-academic words: take a bunch of bytes from a source like a source code file, figure out which bytes make up a character, then group characters together into "words", also known as <strong>tokens</strong>, that are valid in your programming language. Going forward, I shall refer to this process as <strong>tokenization</strong>.
+</p>
+
+<p>
+	A token can be a string literal like <code>"Hello World."</code>, a number literal like <code>123.4</code>, or a variable name like <code>foo</code>. The end result of tokenization is a sequential list of tokens from a source code file that we can feed into the next step of the compiler (which I'll talk about in the next post).
 </p>
 
 <p>
@@ -37,15 +41,30 @@ metadata = {
 </p>
 
 <p>
-	I'll have non of that academic rigorosity here, nor will I use any of the available generators for tokenizers. Instead, I'll go with handcrafted, artisan, organic, and possibly buggy and slow tokenization of my own design. Here we go.
+	I'll have none of that academic rigorosity here, nor will I use any of the available generators for tokenizers. Instead, I'll go with handcrafted, artisan, organic, and possibly buggy and slow tokenization of my own design. Here we go.
 </p>
 
-<h3>What's a character?</h3>
+<h3>Qak compiler would like to know your (source) location</h3>
+
 <p>
-	This question has tortured us computer-y folks for decades. We still kind of suck at it, but somehow agree that <a href="https://en.wikipedia.org/wiki/UTF-8#:~:text=UTF%2D8%20(8%2Dbit,Ken%20Thompson%20and%20Rob%20Pike.">UTF-8</a> is the least sucky way to approach that question. All of this is really boring, so here's code to traverse a stream of bytes one UTF-8 character at a time, which may be composed of 1, 2, 3, or 4 sequential bytes. It's really all magic to me.
+	The Qak compiler will need to get source code from somewhere. Could be a file. Could be a network stream. Or a string embedded in your program that calls into the Qak compiler. What the compiler cares about is the bytes making up the source code, and a name for nicely reporting errors in that source.
+</p>
+
+<p>
+	In the Qak code, the <a href="https://github.com/badlogic/qak/blob/master/src/source.h#L41"><code>Source</code></a> struct encapsulates an array of bytes of a fixed length, paired with a (file) name making up a source code "file". It can also give us inidividual lines delimited by <code>\n</code> in the source code, which comes in handy when we print out nice errors with line highlights later on.
+<p>
+
+<p>
+	During tokenization, we'll cut that source up into groups of characters we'll call tokens.
+</p>
+
+<h3>Plowing through UTF-8 characters</h3>
+<p>
+	What's a character? This question has tortured us computer-y folks for decades. We still kind of suck at it, but somehow agree that <a href="https://en.wikipedia.org/wiki/UTF-8#:~:text=UTF%2D8%20(8%2Dbit,Ken%20Thompson%20and%20Rob%20Pike.">UTF-8</a> is the least sucky way to approach that question. All of this is really boring, so here's code to traverse a stream of bytes one UTF-8 character at a time, which may be composed of 1, 2, 3, or 4 sequential bytes. It's really all magic to me.
 </p>
 
 <pre><code>/* Reads the next UTF-8 character from the stream and returns it as a UTF-32 character.
+* The index is updated to point to the next UTF-8 character in the stream.
 * Taken from https://www.cprogramming.com/tutorial/utf8.c */
 static QAK_FORCE_INLINE uint32_t nextUtf8Character(const uint8_t *data, uint32_t *index) {
 	static const uint32_t utf8Offsets[6] = {
@@ -64,6 +83,16 @@ static QAK_FORCE_INLINE uint32_t nextUtf8Character(const uint8_t *data, uint32_t
 
 	return character;
 }</code></pre>
+
+<p>
+	The code is adapted from this fine <a href="https://www.cprogramming.com/tutorial/unicode.html">article</a> by Jeff Bezanson, whom I thank for figuring this out instead of me having to do it.
+</p>
+
+<p>
+	The function takes bytes making up UTF-8 characters and an byte-index into the bytes, reads the next UTF-8 character, updates the index by the number of bytes read, and returns the character as UTF-32. Repeatedly calling this function allows us to traverse all UTF-8 characters.
+</p>
+
+</p>
 
 <h2>Up next</h2>
 <p>This should be enough to create a contrived factorial nano benchmark to compare Qak against the likes of Lua and Python. Next time we'll look at the implementation of the parser and generation of the abstract syntax tree for the poor excuse of a language specification outlined above.</p>
