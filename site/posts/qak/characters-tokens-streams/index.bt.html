@@ -83,10 +83,44 @@ end
 }
 </code></pre>
 
+<p>
+	The compiler will later refer to parts of that source, e.g. the location of a token within, or the characters spanned by an entire  <code>while</code> statement and its body. The compiler needs this information for two tasks:
+</p>
+
+<ul>
+	<li>Getting substrings for "things", e.g. the text of a token like <code>123</code> to turn it into a number, or the name of a variable to look up. This can be expressed as a start and end byte-offset into the source data.</li>
+	<li>Error reporting. Here we traditionally want lines numbers.</li>
+</ul>
+
+<p>In the Qak source code, a location in a source is stored as a <a href="">https://github.com/badlogic/qak/blob/master/src/source.h#L99<code>Span</code></a>, which looks like this in pseudo code:</p>
+
+<pre><code>struct Span {
+	Source &amp;source;
+	uint32_t start;
+	uint32_t end;
+	uint32_t startLine;
+	uint32_t endLine;
+}</code></pre>
 
 <p>
-
+Pretty straight forward. The <code>end</code> offset is exclusive, <code>startLine</code> and <code>endLine</code> are indices into the array returned by <code>Source::lines()</code> and start at 1 instead of 0.
 </p>
+
+<p>
+	Speaking of lines, Qak also has a representation for those expressed via the <a href="https://github.com/badlogic/qak/blob/master/src/source.h#L17"><code>Line</code></a> struct. Here's the pseudo code:
+</p>
+
+<pre><code>struct Line {
+	uint32_t start;
+	uint32_t end;
+	uint32_t lineNumber;
+}
+</code></pre>
+
+<p>
+	<code>start</code> and <code>end</code> are again byte-offsets into the source's data.
+</p>
+
 
 <h3>Plowing through UTF-8 characters</h3>
 <p>
