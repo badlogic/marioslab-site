@@ -121,6 +121,10 @@ Pretty straight forward. The <code>end</code> offset is exclusive, <code>startLi
 	<code>start</code> and <code>end</code> are again byte-offsets into the source's data.
 </p>
 
+<p>
+	Alright, we can now store source data, and refer to parts of the source data in byte-offset and line-based ways. Let's have a look at how we can get individual characters from the source data. Turns out that's a bit more involved than just taking one byte at a time if we want those sweet, sweet emojis in our source code 🤡 💩.
+</p>
+
 
 <h3>Plowing through UTF-8 characters</h3>
 <p>
