@@ -357,7 +357,7 @@ while (stream.hasMore()) {
 </p>
 
 <p>
-	What about keywords like <code>var</code> or <code>while</code>, and variable names, or literal values like <code>true</code>, or <code>nothing</code>? Well. In the literature on compiler engineering, you'll often find that a separation of all these things is made. I say "NO" to that. I treat keywords and variable, type or function names as the same token type. They are all identifiers. Literal values like <code>false</code> are their own token type, <code>BooleanLiteral</code> in this case. But when it comes to tokenizing them, they are all the same!
+	What about keywords like <code>var</code> or <code>while</code>, and variable names, or literal values like <code>true</code>, or <code>nothing</code>? Well. In the literature on compiler engineering, you'll often find that a separation of all these things is made in the tokenizer. I say "NO" to that. I treat keywords and variable, type or function names as the same token type called identifiers. Literal values like <code>false</code> are their own token type, <code>BooleanLiteral</code> in this case. But when it comes to tokenizing them, they are all the same!
 </p>
 
 <p>
@@ -428,6 +428,6 @@ while (stream.hasMore()) {
 <h2>Up next</h2>
 <p>The next time we'll look into constructing an abstract syntax tree from the tokens and making sure the user didn't hand us unintelligble code.</p>
 
-<p>Discuss this post by replying to <a href="">this tweet.</a></p>
+<p>Discuss this post by replying to <a href="https://twitter.com/badlogicgames/status/1282357454362365953">this tweet.</a></p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
