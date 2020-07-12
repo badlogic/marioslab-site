@@ -134,7 +134,7 @@ Pretty straight forward. The <code>end</code> offset is exclusive, <code>startLi
 <pre><code>/* Reads the next UTF-8 character from the stream and returns it as a UTF-32 character.
 * The index is updated to point to the next UTF-8 character in the stream.
 * Taken from https://www.cprogramming.com/tutorial/utf8.c */
-static QAK_FORCE_INLINE uint32_t nextUtf8Character(const uint8_t *data, uint32_t *index) {
+int32_t nextUtf8Character(const uint8_t *data, uint32_t *index) {
 	static const uint32_t utf8Offsets[6] = {
 			0x00000000UL, 0x00003080UL, 0x000E2080UL,
 			0x03C82080UL, 0xFA082080UL, 0x82082080UL
@@ -232,7 +232,7 @@ while (index < source.size) {
 }</code></pre>
 
 <p>
-	Those should be pretty self-explanatory. The most complex part is skipping white space, which covers ignoring whitespace and comments, and keeps track of the current line number for us. Matching the keyword <code>var</code> would look something like this:
+	Those should be pretty self-explanatory. The most complex part is skipping white space, which covers ignoring whitespace and comments, and keeps track of the current line number for us. Matching the number <code>123</code> would look something like this:
 </p>
 
 <pre><code>Source source(...);
@@ -240,8 +240,8 @@ CharacterStream stream(source);
 
 stream.skipWhiteSpace();
 stream.startSpan();
-if (stream.match("var", true)) {
-	printf("Matched 'var'");
+if (stream.match("123", true)) {
+	printf("Matched '123'");
 	Span varSpan = stream.endSpan();
 	printf("start: %i, end: %i, start line: %i, end line: %i", varSpan.start, varSpan.end, varSpan.startLine, varSpan.endLine);
 }
@@ -252,11 +252,11 @@ if (stream.match("var", true)) {
 </p>
 
 <p>
-	Then we use <code>stream.match()</code> to check if the next few characters make up the string <code>"var"</code> and tell the stream to advance the index if there's a match by passing <code>true</code> for the <code>consume</code> argument. If the string was matched, we end the span and print the location of the string in the source.
+	Then we use <code>stream.match()</code> to check if the next few characters make up the string <code>"123"</code> and tell the stream to advance the index if there's a match by passing <code>true</code> for the <code>consume</code> argument. If the string was matched, we end the span and print the location of the string in the source.
 </p>
 
 <p>
-	Easy, right? Well, consider what happens if the source code is <code>   variable   </code>. We'd still get a match. Whoops. That's not what we want.
+	Easy, right? Well, consider what happens if the source code is <code>   12345   </code>. We'd still get a match for "123". Whoops. That's not what we want. Matching all possible numbers this way is also a bit ... shall we say elaborate.
 </p>
 
 <h2>Up next</h2>
