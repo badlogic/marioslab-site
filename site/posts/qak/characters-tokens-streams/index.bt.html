@@ -1,0 +1,433 @@
+{{
+metadata = {
+	title: "Qak - Of characters, tokens, and streams",
+	summary: "",
+	image: "token.jpeg",
+	date: parseDate("2020/07/12 23:00"),
+	published: true,
+}
+}}
+<!-- Hi! -->
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("token.jpeg", "Not the token we're looking for.")}}
+
+<h2>Qak - Of characters, tokens, and streams</h2>
+
+<p>
+	Last time, I laid out <a href="https://marioslab.io/posts/qak/minimally-viable-product/">the plan for Qak 0.1</a>, the minimally viable product version of the language. Quite a bit of work has been completed already, and many adventures, especially related to performance improvements, have been had. Great material for another blargh post. Today we'll have a look at the first step of making sense of a Qak source file though. A bit boring, but it needs to be done.
+</p>
+
+<p>
+	What's this magical first step? It goes by many names: <a href="https://en.wikipedia.org/wiki/Lexical_analysis">lexical analysis, lexing, scanning, or tokenization</a> and probably a gazillion more. If you had any kind of exposure to formal computer science education, you've likely heard one or more of these terms.
+</p>
+
+<p>
+	In non-academic words, we want to take a bunch of bytes from a source, like a source code file, figure out which bytes make up a character, then group characters together into "words", also known as <strong>tokens</strong>, that are valid for the programming language. Going forward, I shall refer to this process as <strong>tokenization</strong>.
+</p>
+
+<p>
+	Here's a little Qak snippet to illustrate tokenization:
+</p>
+
+<pre><code>// variable declaration with initializers and simple type inference
+// Variables without initializer will be initialized to the type's
+// default value.
+var foo = 123
+var bar: boolean = true
+var zeroInitializer: int32
+
+// While statement, who needs for(-each)?!
+while(bar)
+	// Variables are block scoped
+	var uff = 3
+end
+</code></pre>
+
+<p>
+	This source code consists of the tokens <code>var</code>, <code>foo</code>, <code>=</code>, <code>123</code>, <code>var</code>, <code>bar</code>, <code>:</code>, <code>boolean</code>, <code>=</code>, <code>true</code>, <code>var</code>, <code>zeroInitializer</code>, <code>:</code>, <code>int32</code>, <code>while</code>, <code>(</code>, <code>bar</code>, <code>)</code>, <code>var</code>, <code>uff</code>, <code>=</code>, <code>3</code>, and <code>end</code>.
+</p>
+
+<p>During tokenization, we really don't care if the tokens in that order make sense within the rules of the programming language. All we care about is that they are valid "words" within the programming language.</p>
+
+<p>You might be wondering why the comments starting with <code>//</code> aren't tokens, or what happens with whitespace. The comments could actually be tokens themselves, which might come in handy if we wanted to implement something like JavaDocs or Doxygen. At this point, I won't do that, so comments get ignored by the tokenization process. Whitespace of any form is also ignored, as Qak is not a whitespace sensitive language like Python.</p>
+
+<p class="blockquote">
+	Funnily enough, a smart guy called <a href="https://en.wikipedia.org/wiki/Chomsky_hierarchy">Chomsky's</a> came up with a bunch of sciency stuff to describe (formal) grammars of natural languages. And while initially promising, Chomsky's work failed to be applicable to natural languages, which led to many sad trombone sounds in the linguist community. At least that's what my linguist wife told me. I'm obliged by law to believe her.</br></br>
+
+	Chomsky's work was actually quite useful for us computer folks. Many of the techniques we use, like <a href="https://en.wikipedia.org/wiki/Regular_expression">regular expressions</a>, or their recursive version, <a href="https://en.wikipedia.org/wiki/Parsing">parsers</a>, can be fitted Chomsky's formal grammars. They are also a fantastic way to torture students in their first compiler engineering university course.
+</p>
+
+<p>
+	I'll have none of that academic rigorosity here, nor will I use any of the available generators for tokenizers. Instead, I'll go with handcrafted, artisan, organic, and possibly buggy and slow tokenization of my own design. Here we go.
+</p>
+
+<h3>Qak compiler would like to know your (source) location</h3>
+
+<p>
+	The Qak compiler will need to get source code from somewhere. Could be a file. Could be a network stream. Or a string embedded in your program that calls into the Qak compiler. What the compiler cares about is the bytes making up the source code, and a name for nicely reporting errors in that source.
+</p>
+
+<p>
+	In the Qak code, the <a href="https://github.com/badlogic/qak/blob/master/src/source.h#L41"><code>Source</code></a> struct encapsulates an array of bytes of a fixed length, paired with a (file) name making up a source code "file". It can also give us inidividual lines delimited by <code>\n</code> in the source code, which comes in handy when we print out nice errors with line highlights later on. Here's the pseudo-code version of that struct, with details omitted:
+<p>
+
+<pre><code>struct Source {
+	const char *fileName;
+	uint8_t *data;
+	size_t size;
+
+	Array&lt;Line&gt; &lines();
+}
+</code></pre>
+
+<p>
+	The compiler will later refer to parts of that source, e.g. the location of a token within, or the characters spanned by an entire  <code>while</code> statement and its body. The compiler needs this information for two tasks:
+</p>
+
+<ul>
+	<li>Getting substrings for "things", e.g. the text of a token like <code>123</code> to turn it into a number, or the name of a variable to look up. This can be expressed as a start and end byte-offset into the source data.</li>
+	<li>Error reporting. Here we traditionally want lines numbers.</li>
+</ul>
+
+<p>In the Qak source code, a location in a source is stored as a <a href="">https://github.com/badlogic/qak/blob/master/src/source.h#L99<code>Span</code></a>, which looks like this in pseudo code:</p>
+
+<pre><code>struct Span {
+	Source &amp;source;
+	uint32_t start;
+	uint32_t end;
+	uint32_t startLine;
+	uint32_t endLine;
+}</code></pre>
+
+<p>
+Pretty straight forward. The <code>end</code> offset is exclusive, <code>startLine</code> and <code>endLine</code> are indices into the array returned by <code>Source::lines()</code> and start at 1 instead of 0.
+</p>
+
+<p>
+	Speaking of lines, Qak also has a representation for those expressed via the <a href="https://github.com/badlogic/qak/blob/master/src/source.h#L17"><code>Line</code></a> struct. Here's the pseudo code:
+</p>
+
+<pre><code>struct Line {
+	uint32_t start;
+	uint32_t end;
+	uint32_t lineNumber;
+}
+</code></pre>
+
+<p>
+	<code>start</code> and <code>end</code> are again byte-offsets into the source's data.
+</p>
+
+<p>
+	Alright, we can now store source data, and refer to parts of the source data in byte-offset and line-based ways. Let's have a look at how we can get individual characters from the source data. Turns out that's a bit more involved than just taking one byte at a time if we want those sweet, sweet emojis in our source code 🤡 💩.
+</p>
+
+
+<h3>Plowing through UTF-8 characters</h3>
+<p>
+	What's a character? This question has tortured us computer-y folks for decades. We still kind of suck at it, but somehow agree that <a href="https://en.wikipedia.org/wiki/UTF-8#:~:text=UTF%2D8%20(8%2Dbit,Ken%20Thompson%20and%20Rob%20Pike.">UTF-8</a> is the least sucky way to approach that question. All of this is really boring, so here's code to traverse a stream of bytes one UTF-8 character at a time, which may be composed of 1, 2, 3, or 4 sequential bytes. It's really all magic to me.
+</p>
+
+<pre><code>/* Reads the next UTF-8 character from the stream and returns it as a UTF-32 character.
+* The index is updated to point to the next UTF-8 character in the stream.
+* Taken from https://www.cprogramming.com/tutorial/utf8.c */
+int32_t nextUtf8Character(const uint8_t *data, uint32_t *index) {
+	static const uint32_t utf8Offsets[6] = {
+			0x00000000UL, 0x00003080UL, 0x000E2080UL,
+			0x03C82080UL, 0xFA082080UL, 0x82082080UL
+	};
+
+	uint32_t character = 0;
+	int sz = 0;
+	do {
+		character <<= 6;
+		character += data[(*index)++];
+		sz++;
+	} while (data[*index] && !(((data[*index]) & 0xC0) != 0x80));
+	character -= utf8Offsets[sz - 1];
+
+	return character;
+}</code></pre>
+
+<p>
+	The code is adapted from this fine <a href="https://www.cprogramming.com/tutorial/unicode.html">article</a> by Jeff Bezanson, whom I thank for figuring this out instead of me having to do it.
+</p>
+
+<p>
+	The function takes bytes making up UTF-8 characters and a byte-index into the bytes, reads the next UTF-8 character, updates the index by the number of bytes read, and returns the character as UTF-32. Repeatedly calling this function allows us to traverse all UTF-8 characters in a source, e.g.
+</p>
+
+<pre><code>Source source(...);
+uint32_t index = 0;
+while (index < source.size) {
+	uint32_t character = nextUtf8Character(source.data, &index);
+	// do something with the character
+}
+</code></pre>
+
+<p>
+	There's likely a dragon in <code>nextUtf8Character()</code> regarding invalid UTF-8 byte sequences. We'll never know, cause ain't nobody got time to validate it against all possible foobar inputs.
+</p>
+
+<h3>How is token formed?</h3>
+<p>
+	We can store our input bytes, refer to sequences within those bytes, and know how to traverse the bytes one UTF-8 character at a time. Time to think about the types of tokens a Qak source file can contain and how to best find them in the source data.
+</p>
+
+<p>
+	To ease traversing the characters in a source, I've created the <a href="https://github.com/badlogic/qak/blob/master/src/tokenizer.h#L24"><code>CharacterStream</code></a> class. It wraps a source and keeps track of the current position in the source we are in, both expressed as a byte-offset and a line number. It uses the <code>nextUtf8Character()</code> function to traverse the UTF-8 characters, and provides a bunch of handy little functions to match the current character in the source with something we are looking for. It also tells us if we've reached the end of the stream and makes sure we never access bytes outside the source.
+</p>
+
+<p>
+	Here are the methods <code>CharacterStream</code> offers as pseudo-code:
+</p>
+
+<pre><code>class CharacterStream {
+	/* Returns whether the stream has more UTF-8 characters */
+	bool hasMore();
+
+	/* Returns whether the stream has numChars more UTF-8 characters */
+	bool hasMore(size_t numChars);
+
+	/* Returns the current UTF-8 character and advances to the next character */
+	uint32_t consume();
+
+	/* Returns the current UTF-8 character without advancing to the next character */
+	uint32_t peek()
+
+	/* Returns true if the current UTF-8 character matches the needle, false otherwise.
+	 * Advances to the next character if consume is true */
+	bool match(const char *needleData, bool consume);
+
+	/* Returns true if the current UTF-8 character is a digit ([0-9]), false otherwise.
+	 * Advances to the next character if consume is true */
+	bool matchDigit(bool consume);
+
+	/* Returns true if the current UTF-8 character is a hex-digit ([0-9a-fA-F]), false otherwise.
+	 * Advances to the next character if consume is true */
+	bool matchHex(bool consume);
+
+	/* Returns true if the current UTF-8 character is valid as the first character
+	 * of an identifier ([a-zA-Z_] or any unicode character >= 0xc0), e.g. variable
+	 * name, false otherwise. Advances to the next character if consume is true */
+	bool matchIdentifierStart(bool consume);
+
+	/* Returns true if the current UTF-8 character is valid as the first character
+	 * of an identifier ([a-zA-Z_] or any unicode character >= 0x80), e.g. variable
+	 * name, false otherwise. Advances to the next character if consume is true */
+	bool matchIdentifierPart(bool consume);
+
+	/* Skips all white space characters ([' '\r\n\t]) and single-line comments.
+	* Comments start with '#' and end at the end of the current line. */
+	void skipWhiteSpace();
+
+	/* Mark the start of a span at the current position in the stream. See Span::endSpan(). */
+	void startSpan();
+
+	/* Return the Span ending at the current position, previously started via
+	* startSpan(). Calls to startSpan() and endSpan() must match. They can
+	* not be nested.*/
+	Span endSpan();
+}</code></pre>
+
+<p>
+	Those should be pretty self-explanatory. The most complex part is skipping white space, which covers ignoring whitespace and comments, and keeps track of the current line number for us. Matching the number <code>123</code> would look something like this:
+</p>
+
+<pre><code>Source source(...);
+CharacterStream stream(source);
+
+stream.skipWhiteSpace();
+stream.startSpan();
+if (stream.match("123", true)) {
+	printf("Matched '123'");
+	Span varSpan = stream.endSpan();
+	printf("start: %i, end: %i, start line: %i, end line: %i", varSpan.start, varSpan.end, varSpan.startLine, varSpan.endLine);
+}
+</code></pre>
+
+<p>
+	We construct the stream from the source and immediately skip all whitespace until a character is found that's not whitespace. We want to keep track of the location of whatever comes next, so we start to track a new span via <code>stream.startSpan()</code>. A call to <code>stream.endSpan()</code> will return a <code>Span</code> describing the location of whatever we've matched so far.
+</p>
+
+<p>
+	Then we use <code>stream.match()</code> to check if the next few characters make up the string <code>"123"</code> and tell the stream to advance the index if there's a match by passing <code>true</code> for the <code>consume</code> argument. If the string was matched, we end the span and print the location of the string in the source.
+</p>
+
+<p>
+	Easy, right? Well, consider what happens if the source code is <code>   12345   </code>. We'd still get a match for "123". Whoops. That's not what we want. Matching all possible numbers this way is also a bit ... shall we say elaborate.
+</p>
+
+<p>
+	Instead, we get inspired by Chomsky and our nightmarish experiences cobbling together regular expression strings for our regex library of choice, and build our own regular expression matcher! Yes.
+</p>
+
+<p>
+	Qak can contain all kinds of tokens, e.g. number literals like <code>123.4</code>, operators like <code>==</code>, variable names like <code>foo</code>, and so on. Each token type has a character pattern it follows. We'll have to figure out the patterns for all the types of tokens we have and then handcraft invocations to <code>CharacterStream</code> to see if we find a match in the source for a specific token type. Let's start with numbers!
+</p>
+
+<p>
+	Qak supports both integer and floating point numbers in version 0.1. We want to treat them as different types of tokens, as they will end up having a different type (<code>int32</code>, <code>float32</code>) when it comes to type checking a program. Let's define the pattern of these two types of tokens.
+</p>
+
+<p>
+	An integer number starts with a character out of the set <code>"0"-"9"</code>, followed by zero or more characters out of <code>"0"-"9"</code>. As a regular expression, we'd denote it as <code>[0-9][0-9]*</code>. In code it looks like this:
+</p>
+
+<pre><code>
+Source source(...);
+CharacterStream stream(source);
+Array&lt;Token&gt; tokens;
+
+while (stream.hasMore()) {
+	// Skip the whitespace
+	stream.skipWhiteSpace();
+
+	// if there are no more characters after skipping white
+	// space, we've reached the end of the source.
+	if (!stream.hasMore()) break;
+
+	// Start a span for the next token we're about to tokenize.
+	stream.startSpan();
+
+	// Tokenize numbers. The first character must be a digit.
+	if (stream.matchDigit(true)) {
+		// Followed by 0 or more digits.
+		while(stream.matchDigit(true)) {
+			// nothing to do here, we just match
+			// until we find no more digit.
+		}
+		tokens.add({IntegerLiteral, stream.endSpan()});
+		continue;
+	}
+
+	// None of our patterns matched, this is an error.
+	printf("Unknown token type\n");
+	break;
+}
+</code></pre>
+
+<p>
+	Pretty simple! I've also sneakily introduced the <a href="https://github.com/badlogic/qak/blob/master/src/tokenizer.h#L264"><code>Token</code></a> struct, which is just a <code>Span</code> with an additional <a href="https://github.com/badlogic/qak/blob/master/src/tokenizer.h#L216"><code>TokenType</code></a> enum value.
+</p>
+
+<p>
+	What about floating point number literals like <code>123.45</code>? Easy peasy, we just extend the above code with additional matches.
+</p>
+
+<pre><code>Source source(...);
+CharacterStream stream(source);
+Array&lt;Token&gt; tokens;
+
+while (stream.hasMore()) {
+	stream.skipWhiteSpace();
+	if (!stream.hasMore()) break;
+	stream.startSpan();
+
+	if (stream.matchDigit(true)) {
+		while(stream.matchDigit(true));
+
+		// Is there a period? Then we have a floating point
+		// number.
+		boolean isFloat = false;
+		if (stream.match(".", true)) {
+			isFloat = true;
+
+			// Keep matching digits. Note that we allow
+			// 123. by not requiring at least one more
+			// digit after the period.
+			while(stream.matchDigit(true));
+		}
+
+		// Create a IntegerLiteral or FloatLiteral token based on if there
+		// was a period.
+		tokens.add({isFloat ? IntegerLiteral : FloatLiteral, stream.endSpan()})
+	}
+
+	printf("Unknown token type\n");
+	break;
+}
+</code></pre>
+
+<p>
+	This can be extended to parse hexadecimal numbers like <code>0xa000</code>, or type specifier suffixes like in <code>123l</code> in case we add an <code>int64</code> type. You can find Qak's current number tokenization in <a href="https://github.com/badlogic/qak/blob/master/src/tokenizer.cpp#L228">tokenizer.cpp</a>. It already does more than we need for version 0.1.
+</p>
+
+<p>
+	What about keywords like <code>var</code> or <code>while</code>, and variable names, or literal values like <code>true</code>, or <code>nothing</code>? Well. In the literature on compiler engineering, you'll often find that a separation of all these things is made in the tokenizer. I say "NO" to that. I treat keywords and variable, type or function names as the same token type called identifiers. Literal values like <code>false</code> are their own token type, <code>BooleanLiteral</code> in this case. But when it comes to tokenizing them, they are all the same!
+</p>
+
+<p>
+	We can cover them all with a simple pattern: they have to start with an alphabetical character or an underscore, followed by zero or more digits, underscores, or alphabetical characters. <code>CharacterStream::matchIdentifierStart()</code> and <code>CharacterStream::matchIdentifierPart()</code> already implement the required logic to check if a character is a valid first character, or a valid subsequent character. We can extend the above code thusly:
+</p>
+
+<pre><code>Source source(...);
+CharacterStream stream(source);
+Array&lt;Token&gt; tokens;
+
+while (stream.hasMore()) {
+	stream.skipWhiteSpace();
+	if (!stream.hasMore()) break;
+	stream.startSpan();
+
+	// Tokenize numbers
+	if (stream.matchDigit(true)) {
+		...
+	}
+
+	// Tokenize keywords, variable/type/function names, value literals
+	// like "true", "nothing".
+	if (stream.matchIdentifierStart(true)) {
+		while(stream.matchIdentifierPart(true));
+		Span span = stream.endSpan();
+
+		// Check if we got any of the value literals
+		if (span.matches(QAK_STR("true"))) || span.matches(QAK_STR("false")) {
+			tokens.add({BooleanLiteral, span});
+		} else if (span.matches(QAK_STR("nothing"))) {
+			tokens.add({NothingLiteral, span});
+		} else {
+			tokens.add({Identifier, span});
+		}
+		continue;
+	}
+
+	printf("Unknown token type\n");
+	break;
+}
+</code></pre>
+
+<p>
+	That covers almost everything, except for operators and other special characters. Matching those is just tedious, as you have to basically enumerate and match them all. I went through a bunch of iterations regarding that in the actual tokenizer, with a focus on making it as fast as possible. The resulting code	is a little less straight forward than the above. Have a look at the <a href="https://github.com/badlogic/qak/commits/master/src/tokenizer.cpp">history of the tokenizer.cpp file</a> to see how that evolved.
+</p>
+
+<p>
+	And that is how we tokenize things the old school way. At the end, we have an <code>Array</code> of tokens that the next stage in the compiler can consume and make sense of. Great success.
+</p>
+
+<h3>ERROR, **BEEP**, **BOOP**</h3>
+<p>
+	What I left out in the dicsussion above are things like memory management and error handling. Memory management in a compiler is actually an interesting challenge, especially if you want to make it fast. I'll dedicate a different blargh post.
+</p>
+
+<p>
+	Error handling is a pretty simple affair though, so let's cover that quickly. In the above code snippets, I simply <code>printf</code>ed my way out of it and exited the tokenizer loop. In a real compiler, you want to report an error to the user, so they know why their code is bad.
+</p>
+
+<p>
+	In Qak, I have a simple struct called <a href="https://github.com/badlogic/qak/blob/master/src/error.h"><code>Errors</code></a> that, surprisingly, manages <code>Error</code> instances. Anytime the compiler encounters an error, it pushes the <code>Span</code> where the error happend into the <code>Errors</code> struct, along with a descriptive message. A span has all the information needed to print line numbers and even the source lines where the error happend, which is exactly what <code>Error::print()</code> and <code>Errors::print()</code> do.
+</p>
+
+<p>
+	Another issue with error handling with compilers is that they usually have pretty deep call stacks due to recursion. For these cases we'll need additional machinery. We'll see that once we get to parsing.
+</p>
+
+<h2>Up next</h2>
+<p>The next time we'll look into constructing an abstract syntax tree from the tokens and making sure the user didn't hand us unintelligble code.</p>
+
+<p>Discuss this post by replying to <a href="https://twitter.com/badlogicgames/status/1282357454362365953">this tweet.</a></p>
+
+{{include "../../../_templates/post_footer.bt.html"}}

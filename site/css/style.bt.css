@@ -118,6 +118,14 @@ ul {
 	margin: 1em 0 1em 0 !important;
 }
 
+.blockquote {
+	font-style: italic;
+	font-family: sarif;
+	border-left: solid 4px {{color_note}};
+	padding: 0 2em 0 2em;
+	margin: 1em 0 1em 0 !important;
+}
+
 .content {
 	margin: auto;
 	padding: 0 2em 2em 2em;
