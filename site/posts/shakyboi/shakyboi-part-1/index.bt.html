@@ -273,7 +273,7 @@ Code:
 
 <p>Let's ignore the <code>dup</code> instruction.</p>
 
-<p>The next instruction at byte code index 4 calls a special method, the constructor of <code>Bar</code>. The constructor is specified as a constant pool entry at index 9. The constant pool entry is of type <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.4.2"></a>MethodRef</p>, which encodes a class (<code>Bar</code> in this case), and the method of that class we want to invoke (the constructor of <code>Bar</code>):</p>
+<p>The next instruction at byte code index 4 (<code>invokespecial #9</code>) calls a special method, the constructor of <code>Bar</code>. The constructor is specified as a constant pool entry at index 9. The constant pool entry is of type <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.4.2"></a>MethodRef</p>, which encodes a class (<code>Bar</code> in this case), and the method of that class we want to invoke (the constructor of <code>Bar</code>):</p>
 
 <pre><code class="plaintext">#9 = Methodref          #7.#3          // Bar."<init>":()V</code></pre>
 
