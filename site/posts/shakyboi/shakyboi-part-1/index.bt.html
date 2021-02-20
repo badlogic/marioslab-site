@@ -20,24 +20,51 @@ metadata = {
 
 <p>ProGuard takes as input Java <code>.class</code> files and "shrinks", optimizes, and obfuscates them. The "shrinking" part is more commonly known as <a href="https://en.wikipedia.org/wiki/Tree_shaking"></a>tree shaking</a>, at least in the JavaScript space.</p>
 
-<p>The goal of tree shaking is a form of dead code removal. Removing dead code generally results in smaller binary sizes, a desirable thing for faster deployments or quicker downloads. In case of Java, we can apply tree shaking on multiple levels. For now, we'll concern ourselves with tree shaking at the class level. Have a look at this contrived example Java app.</p>
+<p>The goal of tree shaking is a form of dead code removal. Removing dead code generally results in smaller binary sizes, a desirable thing for faster deployments or quicker downloads. In case of Java, we can apply tree shaking on multiple levels. For now, we'll concern ourselves with tree shaking at the class level. The goal of class-level tree shaking is to remove any classes that is not used by the app.</p>
+
+<p>Have a look at this contrived example Java app.</p>
+
+<pre><code>public class Zipp() {
+    public void doZipp() {
+        System.out.println("I'm a zipp.");
+    }
+}</code></pre>
+
+<pre><code>public class Zapp() {
+    public void doZapp() {
+        System.out.println("I'm a zapp.");
+    }
+}</code></pre>
 
 <pre><code>public class Foo() {
     public void doFoo() {
-        System.out.println("I'm a foo.");
+        new Zipp().doZipp();
+        new Zapp().doZapp();
     }
 }</code></pre>
 
 <pre><code>public class Bar() {
     public void doBar() {
-        System.out.println("I'm a bar.");
+        new Zapp().doZapp();
     }
 }</code></pre>
 
-<pre><code>public class Main() {
+<pre><code>public class App() {
     public static void main(String[] argv) {
         new Foo().doFoo();
     }
 }</code></pre>
+
+<p>Let's assume we have compiled the 4 classes via <code>javac</code> and packged them into a file called <code>app.jar</code> file with the build system of our choice. The <code>app.jar</code> file would look like this.</p>
+
+<pre><code>
+App.class
+Bar.class
+Foo.class
+Zapp.class
+Zipp.class
+</code></pre>
+
+<p>To run our app we call <code>java -cp app.jar App</code>, which effectively tells the Java Virtual Machine (JVM) to look up the class <code>App</code> in the <code>app.jar</code> file and call its <code>main(String[])</code> method.</p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
