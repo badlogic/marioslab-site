@@ -133,11 +133,11 @@ var network = new vis.Network(container, data, options);
 
 <p>Having performed our dependency analysis manually, we can remove the files <code>Foo.class</code> and <code>Zipp.class</code> from our <code>app.jar</code> file and the app will still work:</p>
 
-<pre><code class="plaintext">❯ zip -d target/app.jar Foo.class Zipp.class
+<pre><code class="plaintext">❯ zip -d app.jar Foo.class Zipp.class
 deleting: Zipp.class
 deleting: Foo.class
 
-❯ java -jar target/app.jar
+❯ java -jar app.jar
 I'm a Bar.
 I'm a Zapp.
 I'm a Zopp.</code></pre>
@@ -147,7 +147,7 @@ I'm a Zopp.</code></pre>
 <pre><code class="plaintext">❯ ls -lah app.jar
 -rw-r--r--  1 badlogic  staff   4.1K Feb 20 14:16 app.jar
 
-❯ zip -d target/app.jar Foo.class Zipp.class
+❯ zip -d app.jar Foo.class Zipp.class
 deleting: Zipp.class
 deleting: Foo.class
 
