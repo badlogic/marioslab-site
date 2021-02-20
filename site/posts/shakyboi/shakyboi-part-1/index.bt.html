@@ -286,12 +286,12 @@ Code:
 
 <pre><code class="plaintext">([Ljava/lang/String;)V</code></pre>
 
-<p>As it turns out, classes referenced by a class can all be found in the constant pool, either in form of a Class constant pool entry, or as a descriptor string. The latter is a bit more complex to handle, as we have to go through all constant pool entry types that reference such a descriptor. We can figure this out from the class file format specification.</p>
+<p>As it turns out, classes directly referenced by a class can all be found in the constant pool, either in form of a Class constant pool entry, or as a descriptor string. The latter is a bit more complex to handle, as we have to go through all constant pool entry types that reference such a descriptor. We can figure this out from the class file format specification. Additionally, we have to consider the super class hierarchy of the class.</p>
 
 <p>And if we can do it for one class, we can do it for all other classes it depends on, recursively, which gives us our class dependency graph. Easy!</p>
 
 <h3>Up next</h3>
-<p>I've already created a repository and filled in some class file parsing code. In the next installment I'll discuss the implementation of the basic class level tree shaker.</p>
+<p>I've already created a repository and filled in some class file parsing code, see <a href="https://github.com/badlogic/shakyboi">Shakyboi on GitHub</a>. In the next installment I'll discuss the implementation of the basic class level tree shaker.</p>
 
 <p>Discuss this post on <a href="">Twitter</a>.</p>
 
