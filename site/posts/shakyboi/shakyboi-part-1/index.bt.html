@@ -1,46 +1,43 @@
 {{
-    metadata = {
-        title: "Shakyboi - Part 1: Of tree shaking and class files",
-        summary: "",
-        image: "treeshake.jpg",
-        date: parseDate("2021/02/20 12:00"),
-        published: true,
+metadata = {
+    title: "Shakyboi - Part 1: Of tree shaking and class files",
+    summary: "",
+    image: "treeshake.jpg",
+    date: parseDate("2021/02/20 12:00"),
+    published: true,
+}
+}}
+<!-- Hi! -->
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("treeshake.jpg", "Shake it like a polaroid picture.")}}
+
+<h2>Shakyboi - Part 1: Of tree shaking and class files</h2>
+
+<p>I don't hate <a href="https://www.guardsquare.com/en/products/proguard">ProGuard</a>. It's a fine piece of software. However, its documentation is a bit lacking, and some of its behaviour is weird. So what better way to spend a few weekends than to learn all the hard lessons Eric, creator of ProGuard, had learned over many years!</p>
+
+<p>ProGuard takes as input Java <code>.class</code> files and "shrinks", optimizes, and obfuscates them. The "shrinking" part is more commonly known as <a href="https://en.wikipedia.org/wiki/Tree_shaking"></a>tree shaking</a>, at least in the JavaScript space.</p>
+
+<p>The goal of tree shaking is a form of dead code removal. Removing dead code generally results in smaller binary sizes, a desirable thing for faster deployments or quicker downloads. In case of Java, we can apply tree shaking on multiple levels. For now, we'll concern ourselves with tree shaking at the class level. Have a look at this contrived example Java app.</p>
+
+<pre><code>public class Foo() {
+    public void doFoo() {
+        System.out.println("I'm a foo.");
     }
-    }}
-    <!-- Hi! -->
+}</code></pre>
 
-    {{include "../../../_templates/post_header.bt.html"}}
-    {{include "../../../_templates/post_header.bt.html" as post}}
-
-    {{post.figure("treeshake.jpg", "Shake it like a polaroid picture.")}}
-
-    <h2>Shakyboi - Part 1: Of tree shaking and class files</h2>
-
-    <p>I don't hate <a href="https://www.guardsquare.com/en/products/proguard">ProGuard</a>. It's a fine piece of software. However, its documentation is a bit lacking, and some of its behaviour is weird. So what better way to spend a few weekends than to learn all the hard lessons Eric, creator of ProGuard, had learned over many years!</p>
-
-    <p>ProGuard takes as input Java <code>.class</code> files and "shrinks", optimizes, and obfuscates them. The "shrinking" part is more commonly known as <a href="https://en.wikipedia.org/wiki/Tree_shaking"></a>tree shaking</a>, at least in the JavaScript space.</p>
-
-    <p>The goal of tree shaking is a form of dead code removal. Removing dead code generally results in smaller binary sizes, a desirable thing for faster deployments or quicker downloads. In case of Java, we can apply tree shaking on multiple levels. For now, we'll concern ourselves with tree shaking at the class level. Have a look at this contrived example Java app.</p>
-
-    <pre><code>public class Foo() {
-        public void doFoo() {
-            System.out.println("I'm a foo.");
-        }
+<pre><code>public class Bar() {
+    public void doBar() {
+        System.out.println("I'm a bar.");
     }
-    </code></pre>
+}</code></pre>
 
-    <pre><code>public class Bar() {
-        public void doBar() {
-            System.out.println("I'm a bar.");
-        }
+<pre><code>public class Main() {
+    public static void main(String[] argv) {
+        new Foo().doFoo();
     }
-    </code></pre>
+}</code></pre>
 
-    <pre><code>public class Main() {
-        public static void main(String[] argv) {
-            new Foo().doFoo();
-        }
-    }
-    </code></pre>
-
-    {{include "../../../_templates/post_footer.bt.html"}}
+{{include "../../../_templates/post_footer.bt.html"}}
