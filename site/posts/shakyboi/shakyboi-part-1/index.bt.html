@@ -92,7 +92,7 @@ I'm a Zopp.</code></pre>
 
 <p>The command starts the Java Virtual Machine (JVM) and tells it to look up the class <code>App</code> in the <code>app.jar</code> file and call its <code>main(String[])</code> method.</p>
 
-<p>With our mushy brains, we can easily see from both the output and the source code that class <code>App</code> depends on class <code>Bar</code> (because <code>Bar</code> is referenced in <code>App.main(String[])</code>), and that <code>Bar</code> depends on <code>Zapp</code> (because <code>Zapp</code> is referenced in <code>Bar.doBar()</code>). Class <code>Foo</code> is not referenced in <code>App</code> or <code>Bar</code>, nor is <code>Zipp</code>. Congratulations, you just manually shook the class dependency tree (well, graph really), which looks like this:</p>
+<p>With our mushy brains, we can easily see from both the output and the source code that class <code>App</code> depends on class <code>Bar</code> (because <code>Bar</code> is referenced in <code>App.main(String[])</code>), and that <code>Bar</code> depends on <code>Zapp</code> and <code>Zopp</code> (because they are referenced in <code>Bar.doBar()</code>). Class <code>Foo</code> is not referenced in <code>App</code> or <code>Bar</code>, nor is <code>Zipp</code>. Congratulations, you just manually shook the class dependency tree (well, graph really), which looks like this:</p>
 
 <div id="app-class-dependencies" style="height: 300px;"></div>
 <script type="text/javascript">
