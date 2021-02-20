@@ -8,3 +8,5 @@ new WebSocket("ws://" + url.host + "/api/reloadws").onmessage = function () {
 	location.reload();
 }
 {{end}}
+
+{{include raw "_vis-network.min.js"}}
