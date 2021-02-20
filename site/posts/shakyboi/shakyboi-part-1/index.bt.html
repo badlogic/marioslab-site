@@ -1,0 +1,223 @@
+{{
+    metadata = {
+        title: "Shakyboi - Part 1: Of tree shaking and class files",
+        summary: "",
+        image: "",
+        date: parseDate("2020/02/20 12:00"),
+        published: true,
+    }
+    }}
+    <!-- Hi! -->
+
+    {{include "../../../_templates/post_header.bt.html"}}
+    {{include "../../../_templates/post_header.bt.html" as post}}
+
+    {{post.figure("mvp.jpg", "Language goes Brrrr.")}}
+
+    <h2>Qak 0.1</h2>
+
+    <p>
+        Alrighty. With all the basics out of the way as described in the <a href="https://marioslab.io/posts/qak/humble-beginnings/">last Qak post</a>, it's time to define a minimal language I want to implement. This v0.1 will only contain the absolute mininum language features needed to get the infrastructure composed of tokenizer, parser, AST, type checker, byte code generator, and interpreter going. Ideally, I can also build the debugger interface for this.
+    </p>
+
+    <p>
+        Once all these components are in place for v0.1, I hope to be able to iterate quickly, adding new language, interpreter and standard library features. I've used this iterative approach for previous (toy) language projects and it's so far worked pretty well. It's also a surefire way to jump head first into super deep dead ends. Which means I get to document my back tracking and failures for your enjoyment.
+    </p>
+
+    <h2>Minimal language features</h2>
+    <p>
+        Before we dive into the semantics and syntax bike shed, let me quickly lay out the planned high level language features for v0.1.
+    </p>
+
+    <ul>
+        <li>Basic types and values.</li>
+        <li>Functions, operators, overloading, and foreign function interface.</li>
+        <li>Basic statements.</li>
+        <li>Modules.</li>
+        <li>Minimal standard library.</li>
+    </ul>
+
+    <p>
+    Let's look at these in more detail.
+    </p>
+
+    <h2>Types and values</h2>
+    <p>
+        For v0.1, I'll only support a handful of what's usually known as primitive types.
+    </p>
+
+    <ul>
+        <li><code>boolean</code> is needed for conditionals. Values are expressed as <code>true</code> and <code>false</code> in code.</li>
+        <li><code>int32</code> and <code>float32</code> should be self-explanatory and foreshadow what else to expect in the future. Values are expressed as the usual literals, like <code>123</code>, <code>0xfe</code>, <code>123.456</code>, <code>123f</code>, etc.</li>
+        <li><code>nothing</code> is needed to express the absence of a return value for a function. The only value is <code>nothing</code>. Yes, be worried. This might eventually turn into something like <code>null</code>!</li>
+    </ul>
+
+    <p>
+        Why not just <code>int32</code>? Because it complicates the type checker just enough to hit that annoyance sweet spot, which may lay bare issues earlier in the development process. Having both an integer and float type also forces me to figure out if and what type conversions I want to have in Qak.
+    </p>
+
+    <p>
+        v0.1 of Qak will only allow the definition of <code>foreign</code> types. These are types for which the full definition must be provided to the compiler outside of a <code>.qak</code> source file. However, they must still be declared in the module they belong to. Sine these are built-in types, they go into the file (<code>std.qak</code>), the standard library module:</code>
+    </p>
+
+    <pre><code>module std
+
+    foreign type boolean
+    foreign type int32
+    foreign type float32
+    </code></pre>
+
+    <p>
+        Why have them explicitely in a <code>.qak</code> file like that at all? You'll see in the next section on functions an operators.
+    </p>
+
+    <p>
+        v0.1 will also not include any string or collection types, which keeps the scope small. The v0.1 types don't require me to implement a GC, which is nice. It's also an open invitation to smack into a design wall at full speed when designing the interpreter. We'll see how that works out.
+    </p>
+
+    <h2>Functions, operators, overloading, and foreign function interface</h2>
+    <p>
+        A function is a piece of code that has a name, (optional) arguments, and a return type. I don't particularly care for the syntax, but here we go:
+    </p>
+
+    <pre><code>function foo(a: int32, b: int32): int32
+        ...
+    end
+    </code></pre>
+
+    <p>
+        Omitting the return type means the function returns <code>nothing</code> (which can of course also be specified explicitely).
+    </p>
+
+    <p>
+        A pretty standard affair, with the notable exception that Qak won't be a curly based language, at least not for statement/block delimitation. Instead we write it all out. And we'll like it. I believe this to be friendlier to beginners, but we'll see.
+    </p>
+
+    <p>
+        Surprise: operators and functions are the same thing. It's just that operators have syntactic sugar, e.g. they can be called by infix notation ala <code>2 + 3</code>, instead of <code>+(2, 3)</code> (looks familiar, eh?). There's also unary operators like <code>!</code> or <code>-</code>.
+    </p>
+
+    <p>
+        The whole range of operators for our built-in types are expressed as functions. The precedence of operators is fixed and part of the language definition. Making that configurable seems like a lot of pain. The supported operators consist of the standard logical and arithmetic operators you are used to from other languages, including unary, binary, and ternary operators.
+    </p>
+
+    <p>
+        Going back to our <code>std.qak</code> file, which defines the built-in types, it comes as no surprise that the operators are defined there as well, namely as <code>foreign</code> functions, the implementation of which must be provided to interpreter later on.
+    </p>
+
+    <pre><code>module std
+
+    foreign type boolean
+    foreign type int32
+    foreign type float32
+
+    foreign function !(a:boolean): boolean
+    foreign function &&(a: boolean, b: boolean): boolean
+    ...
+    foreign function ==(a:float32, b: float32): boolean
+    ...
+    foreign function +(a: int32, b: int32): int32
+    foreign function *(a: int32, b: int32): int32
+    ...
+    foreign function +(a: float32, b: float32): float32
+    </code></pre>
+
+    <p>
+        Should the compiler see an expression like <code>3 + 2</code>, it will try to find a function with the name <code>+</code>, with two arguments of type <code>int32</code>, and insert a call to that function in the generated code. "But Mario, that will be slow!" I hear you scream at the top of your lungs. Yes. Which is why there'll be an optimization pass that translates certain known operator function calls to virtual machine instructions that are quicker. Think <a href="https://en.wikipedia.org/wiki/Intrinsic_function">HotSpot intrinsics</a>.
+    </p>
+
+    <p>
+        What about <code>3.0 + 2</code>, the addition of a <code>float32</code> and an <code>int32</code>? I can't possibly create operator functions for all permutations of input types. So I'll rely on explicit casting for now. The expression <code>3.0 + 2</code> will throw a compiler error, as the function <code>+(a: float32, b: int32): float32</code> is undefined. Instead, a user is expected to explicitely cast one of the operands to the type of the other, e.g. <code>3.0 + toFloat32(2)</code>. I might add some compiler sugar to insert automatic casts. For now everything is explicit.
+    </p>
+
+    <p>
+        Functions can also be overloaded based on their argument types. I could include the return type in this mechanism, but my gut tells me that path leads to lots and lots of darkness. We'll see.
+    </p>
+
+    <h2>Basic statements</h2>
+    <p>
+        Many languages de jour treat almost anything as an expression that evaluate to a value, including control flow statements like <code>if</code>. Qak won't do that. Instead, it provides a handful of statements that do not produce a value, and also allow you to liter your functions with naked expressions. The values generated by such expressions will be discarded.
+    </p>
+
+    <pre><code>
+    // variable declaration with initializers and simple type inference
+    // Variables without initializer will be initialized to the type's
+    // default value.
+    var foo = 123
+    var bar: boolean = true
+    var zeroInitializer: int32
+
+    // While statement, who needs for(-each)?!
+    while(bar)
+        // Variables are block scoped
+        var uff = 3
+
+        // If statement
+        if (foo > 200) then
+            // Assignments
+            bar = false
+        else
+            // arbitrary expressions (Which includes things
+            // like function calls.
+            print(foo)
+
+            // The value generated by this expression is simply discarded.
+            foo + 34 * zeroInitializer
+
+            if (shouldWeStop()) then
+                // break and continue (not pictured here)
+                break
+            end
+        end
+
+        foo = foo + 1
+    end
+
+    // return statement
+    return foo * 10
+    </code></pre>
+
+    <p>
+        There's plenty in the above code that will force me to build reasonable infrastructure for the interpreter. More complex constructs are mostly just syntactic sugar that can be compiled to the basic statements shown above.
+    </p>
+
+    <h2>Modules</h2>
+    <p>
+        The compilation unit of Qak is the module. A module consists of:
+    </p>
+
+    <ul>
+        <li>The module name, expressed as <code>module myModuleName</code> at the top of the file</li>
+        <li>Imports of other modules (see below).</li>
+        <li>Type definitions. For now only <code>foreign</code> types are possible.</li>
+        <li>Function definitions.</li>
+        <li>Module variable definitions.</li>
+    </ul>
+
+    <p>
+        A module can import other modules, as long as the resulting graph of imports is acyclic. Rust does this, some people hate it, so I'll do it as well as I strive on hatred. All modules import the <code>std</code> module by default.
+    </p>
+
+    <p>
+        Importing a module is done like this: <code>import someModuleName</code>. I'll cross the "how the hell do you resolve modules?" bridge later. To avoid name clashes between things from an imported module and the current module, one can do <code>import someModuleName as foo</code>, and access things from that module via <code>foo.thing</code>.
+    </p>
+
+    <p>
+        Any type, function, or variable with a name starting with <code>_</code> is considered private to the module. Anything else can be accessed by other modules. Again, this is likely a terrible idea. An explicit <code>private</code> specifier might be better.
+    </p>
+
+    <p>
+        Since a module can have variables, and those variables can have initializer expressions, I have to figure out a way when those initializers are run by the interpreter. I'm sure every little thing is gonna be alright.
+    </p>
+
+    <h2>Standard library</h2>
+    <p>
+        The standard library will be exceptionally minimal. It will define the (<code>foreign</code>) built-in types and their operators, common type conversion functions, and a handful of <code>print()</code> overloads, one for each type. All its code will go into the <code>std.qak</code> file.
+    </p>
+
+    <h2>Up next</h2>
+    <p>This should be enough to create a contrived factorial nano benchmark to compare Qak against the likes of Lua and Python. Next time we'll look at the implementation of the parser and generation of the abstract syntax tree for the poor excuse of a language specification outlined above.</p>
+
+    <p>Discuss this post by replying to <a href="https://twitter.com/badlogicgames/status/1276218596943953922">this tweet.</a></p>
+
+    {{include "../../../_templates/post_footer.bt.html"}}
