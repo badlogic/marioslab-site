@@ -27,6 +27,7 @@ public class MariosLab {
 	public static void main (String[] cliArgs) {
 		Arguments args = BasisSite.createDefaultArguments();
 		StringArgument passwordArg = args.addArgument(new StringArgument("-p", "Password that must be provided for reload endpoints.", "<password>", false));
+		Argument generateOnlyArg = args.addArgument(new Argument("-go", "Generate static assets, then terminate.", true));
 		Argument reloadArg = args
 			.addArgument(new Argument("-r", "Whether to tell any browser websocket clients to\nreload the site when the output was\nre-generated", true));
 
@@ -47,6 +48,11 @@ public class MariosLab {
 			args.printHelp(System.out);
 			System.exit(-1);
 			return; // never reached
+		}
+
+		if (parsed.has(generateOnlyArg)) {
+			site.generate(() -> {});
+			System.exit(0);
 		}
 
 		Thread generatorThread = new Thread((Runnable) () -> {
