@@ -1,0 +1,319 @@
+{{
+metadata = {
+    title: "Shakyboi - Part 2: Class lookups, tests, and class file parsing",
+    summary: "",
+    image: "treeshake.jpg",
+    date: parseDate("2021/02/21 12:00"),
+    published: true,
+}
+}}
+<!-- Hi! -->
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+<script>
+{{include raw "../../../js/_vis-network.min.js"}}
+</script>
+
+{{post.figure("treeshake.jpg", "Shake it like a polaroid picture.")}}
+
+<h2>Shakyboi - Part 2: Builds, Class lookups, tests, and class file parsing</h2>
+
+<p><a href="/posts/shakyboi-part-1">Last time</a> I proposed to write a (partial) replacement for ProGuard for <im>Very Good Reasons (tm)</im>. We had a superficial look at what tree shaking is, how it applies to Java classes, and how we could get the data needed to perform the shaking.</p>
+
+<p>All of that was very superficial and didn't contain any meat-y code. This installement will have some meat-y code, but will not yet describe the implementation of the actual tree shaking. Instead, we'll walk through the scafolding needed to get us to a place where we can implement tree shaking. Here's what we'll need.</p>
+
+<ul>
+    <li><strong>Build:</strong> Everybody loves Gradle, so I'll be using Maven. We'll set it up such that it spits out a fat <code>.jar</code> that can be run from the CLI, and a way to run tests. For good measure, we'll throw in the incantations to be able to publish things to Maven Central via SonaType eventually, i.e. if we create plugins to use shakyboi via Gradle or Maven.</li>
+    <li><strong>Tests:</strong> Running shakyboi via the CLI is the end goal, but for development purposes we need a bit of structure and repeatability. We'll use <a href="https://junit.org/junit5/">JUnit 5</a>, like the good JVM citizens we are.</li>
+    <li><strong>Class lookup:</strong> A way to find <code>.class</code> files based on class names like <code>java/lang/Object</code> and read their raw bytes. The files can come from a directory, a <code>.jar</code> file, or a <a href="https://openjdk.java.net/jeps/220">Java Runtime Image</a>, like the one in the JDK/JRE we use to run our shakyboi.</li>
+    <li><strong><code>.class</code> file parser:</strong> We'll need to figure out all classes a class under inspection references to create our dependency graph. For that, we need to parse raw <code>.class</code> files. While we could use <a href="https://asm.ow2.io/">ASM</a>, we'll write our own class file parser based on the <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html">class file format specification</a>. Waste of time? Maybe, but a fun exercise and it forces us to understand the JVM a little better.</li>
+</ul>
+
+<h3>Building and testing</h3>
+<p>Not much to say here. Have a look at the full <a href="https://github.com/badlogic/shakyboi/blob/main/pom.xml"><code>pom.xml</code></a>. It's a barebone (yes, really...) build descriptor that will allow us to:</p>
+
+<ul>
+    <li><code>mvn test</code>, to execute all unit tests.</li>
+    <li><code>mvn package</code>, to package the fat jar, which will be output to <code>shakyboi/target/shakyboi.jar</code></li>
+    <li><code>mvn deploy</code>, to deploy a snapshot build to SonaType (Mario only).</li>
+    <li><code>mvn release:prepare && maven release:deploy</code>, to deploy a release version that gets synced with Maven Central (Mario only).</li>
+</ul>
+
+<p>The <code>pom.xml</code> file also lets us import the project into the IDE of our choice. For this little project I'll deviate from my usual choice of Eclipse (fight me) and use IntelliJ IDEA.</p>
+
+<h3>Looking up classes</h3>
+<p>A user of shakyboi is expected to feed it a bunch of <code>.class</code> files that make up their app and that should be tree shaken. Let's call these classes <strong>app classes</strong>.</p>
+
+<p>The app classes may depend on other classes that should not be shaken, e.g. classes from the Java runtime class library like <code>java/util/List</code>. For tree shaking, we still need to at least verify they exist, so we need a way to look them up as well. Let's call these classes <strong>bootstrap classes</strong>.</p>
+
+<p>Classes can come from different sources, but we don't particularly care about the details. Instead, we generalize via the <code>ClassLookup</code> interface and create implementations for different source types. The basic interface is simple:</p>
+
+<pre><code>package io.marioslab.shakyboi.lookup;
+
+/**
+ * A class lookup provides the raw bytes of a class fetched from
+ * some place.
+ */
+public interface ClassLookup {
+    /**
+     * Looks up the class with the given name and returns its
+     * <code>.class</code> file as a byte array.
+     *
+     * @param name the binary class name, e.g. "java/lang/Object". @see <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.2.1">jvms-4.2.1</a>.
+     * @return the classes bytes or null.
+     * @throws RuntimeException in case an unrecoverable error happened.
+     */
+    byte[] findClass(String name);
+}</code></pre>
+
+<p>for historical reasons, the class file format requires package names to be delimited by <code>/</code> instead of <code>.</code>. Thus, <code>java.lang.Object</code> turns into <code>java/lang/Object</code>. This is called the <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.2.1">binary class name</a> as per the specification.</p>
+
+<p>To avoid conversions from and to the binary class name format, we'll use the binary class name format throughout the shakyboi code. Only user facing code will use the dot notation, e.g. <code>java.lang.Object</code></p>
+
+<p><code>.class</code> files of app classes usually come from either a directory or a <code>.jar</code> file. These two sources are covered by <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/lookup/DirectoryClassLookup.java"><code>DirectoryClassLookup</code></a> and <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/lookup/JarClassLookup.java"><code>JarClassLookup</code></a>.</p>
+
+
+<p>For unit tests, we may want to load classes at runtime from the JVM classpath, for which we can use <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/lookup/ClassLoaderClassLookup.java"><code>ClassLoaderClassLookup</code></a>. It can be used to load classes that belong to the tests (app classes), as well as classes from the Java runtime (bootstrap classes) and makes writing self-contained tests easy.</p>
+
+<p>Until and including Java 8, a JDK or JRE would ship all JRE classes in a single file called <code>lib/rt.jar</code>. This changed with the introduction of <a href="https://openjdk.java.net/jeps/220"></a>modules in Java 9</a>. The JDK or JRE now ships with file called <code>lib/modules</code> containing modules like <code>java.base</code>, which in turn contain their respective <code>.class</code> files. To access <code>.class</code> files in such a module image, we can use <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/lookup/JrtImageClassLookup.java"><code>JrtImageClassLookup</code></a>. The current implementation looks up the modules file in the home directory of the JDK or JRE that is currently executing shakyboi.</p>
+
+<p>Multiple class lookups can be chained via a <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/lookup/CombinedClassLookup.java"><code>CombinedClassLookup</code></a>. That should cover pretty much all of our class lookup needs.</p>
+
+<p>A simple smoke test called <a href="https://github.com/badlogic/shakyboi/blob/main/src/test/java/io/marioslab/shakyboi/tests/ClassLookupTest.java"><code>ClassLookupTest</code></a> checks the basic functionality of all the above classes, and illustrates their use.</p>
+
+<h3>Understanding <code>.class</code> files</h3>
+<p>We can lookup the raw bytes of a <code>.class</code> file by class name. Next, we have to write a parser that can parse the <code>.class</code> file, so we can find all other classes mentioned in that class file.</p>
+    
+<p>To write a parser, we need to understand that Java class file format which is described in the <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html">Java Virtual Machine Specification</a>. Go, have a look! It's pretty nifty, but has some historic limitations, like using 16-bit indices, resulting in things like maximum method sizes of 64kb and similar unfortunate consequences.</p>
+
+<p>Here's the top-level structure of a class file:</p>
+
+<pre><code>ClassFile {
+    u4             magic;
+    u2             minor_version;
+    u2             major_version;
+    u2             constant_pool_count;
+    cp_info        constant_pool[constant_pool_count-1];
+    u2             access_flags;
+    u2             this_class;
+    u2             super_class;
+    u2             interfaces_count;
+    u2             interfaces[interfaces_count];
+    u2             fields_count;
+    field_info     fields[fields_count];
+    u2             methods_count;
+    method_info    methods[methods_count];
+    u2             attributes_count;
+    attribute_info attributes[attributes_count];
+}</code></pre>
+
+<p>The spec uses C-like structs to describe the data in a class file. Instead of <code>short</code>, <code>int</code>, etc., it uses more precise types like <code>u2</code> (16-bit unsigned integer), or <code>u4</code> (32-bit unsigned integer). Note that everything in a class file is stored in big endian.</p>
+
+<p>The first three fields are the magic marker <code>0xcafebabe</code>, and the major and minor <a hre="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.1-200-B.2">class file version</a>.</p>
+
+<p>The <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.4">constant pool</a> is a lookup for things like class names, method signatures, strings, numeric constants, and other things. This is were our focus will be. More on it later.</p>
+
+<p>The <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.1-200-E.1"><code>access_flags</code></a> field stores whether the class is public, private, and so on, as a set of bit flags.</p>
+
+<p>The <code>this_class</code> field is meant to tell us the fully qualified name of the class, but how is that done with just a number (<code>u2</code>)?</p>
+
+<p>The answer is the <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.4">constant pool</a>, stored in the <code>constant_pool[]</code> array. As its name says, it stores constants, such as strings, numbers, etc. Basically any kind of data that's not code is stored here and referenced (and shared) by the other parts of the class file.</p>
+
+<p>There are different types of constant pool entries, e.g. a type representing a UTF-8 strings, a type for int constants, and so on. The type of an entry is encoded in its first byte according to the spec. The generic representation of an entry is a <code>cp_info</code>:</p>
+
+<pre><code>cp_info {
+    u1 tag;
+    u1 info[];
+}</code></pre>
+
+<p>The first byte is a tag, denoting the type of entry, followed by the payload as a variable length array of bytes. There is a total of <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.4-210">17 constant pool entry types</a>. We have to find the entries that contain class names. Let's have a look at the most probably candidate types.</p>
+
+<p>According to the spec, the <code>this_class</code> field points at an entry in the constant pool that must have the type <code>CONSTANT_Class (7)</code>. Here's the corresponding structure:</p>
+
+<pre><code>CONSTANT_Class_info {
+    u1 tag;
+    u2 name_index;
+}</code></pre>
+
+<p>The <code>tag</code> field would be set to the value <code>7</code>. The <code>info[]</code> part of the generic <code>cp_info</code> becomes a single 16-bit unsigned integer called <code>name_index</code>. It is an index into the constant pool, pointing at another constant pool entry of type <code>CONSTANT_Utf8 (1)</code>, which looks like this:</p>
+
+<pre><code>CONSTANT_Utf8_info {
+    u1 tag;
+    u2 length;
+    u1 bytes[length];
+}</code></pre>
+
+<p>Now we're getting somewhere! The <code>tag</code> is set to the value <code>1</code>. The <code>length</code> stores the length of the UTF-8 string in bytes. And finally, the <code>bytes[]</code> array stores the actual UTF-8 data. That's where our class' name hides!</p>
+
+<p>Moving through the class file structure again, the next field is <code>super_class</code>. It too is an index into the constant pool that points at a <code>CONSTANT_Class_info</code> entry, which in turn points at a <code>CONSTANT_Utf8_info</code> that holds the super class' name.</p>
+
+<p>Next in the class file structure is the <code>interfaces[]</code> array. Each of its elements is again an index into the constant pool, pointing at a <code>CONSTANT_Class_info</code> entry representing one of the interfaces the class implements.</p>
+
+<p>Other classes may also be referenced as types of fields of a class, which we can find in the next part of the class file structure, the <code>fields[]</code> array. The <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.5">structure of a field</a> looks like this:</p>
+
+<pre><code>field_info {
+    u2             access_flags;
+    u2             name_index;
+    u2             descriptor_index;
+    u2             attributes_count;
+    attribute_info attributes[attributes_count];
+}</code></pre>
+
+<p>That looks familiar! The <code>name_index</code> is an index into the constant pool, pointing at a UTF-8 string entry representing the field's name. The <code>descriptor_index</code> points at a UTF-8 constant pool entry that describes the field's type. The field type is encoded according to the <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.3.2">field descriptor</a> format.</p>
+
+<p>E.g. a field with type <code>java.utils.List</code> would be described by the descriptor <code>Ljava/utils/List;</code>. A two dimensional array of objects would have the descriptor <code>[[Ljava/lang/Object;</code>, etc. We can extract additional class names from every field descriptor!</p>
+
+<p>Next in the class file structre is the <code>methods[]</code> array, which stores all the methods of the class. Each method is encoded like this:</p>
+
+<pre><code>method_info {
+    u2             access_flags;
+    u2             name_index;
+    u2             descriptor_index;
+    u2             attributes_count;
+    attribute_info attributes[attributes_count];
+}</code></pre>
+
+<p>By now, you should see the pattern. The <code>name_index</code> points to a UTF-8 entry in the constant pool representing the name of the method. The <code>descriptor_index</code> points to a UTF-8 entry that stores the method signature according to the <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.3.3">method descriptor</a> format. A method like <code>int foo(String, List)</code> would have the descriptor <code>(Ljava.lang.String;Ljava/util/List;)I</code>. Method descriptors are another place to find class names.</p>
+
+<p>The last part of the class file structure is the <code>attributes[]</code> array. <a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.7">Attributes</a> are a sort of free-form data storage that allow to store arbitrary data. Attributes are not only found in the top level class file structure, but also in fields and methods. Some attributes can even contain attributes themselves. There are a few predefined attributes the JVM expects and can process, e.g. the "Code" attribute that stores the bytecodes of a method.</p>
+
+<p>For the first iteration of shakyboi, we can ignore attributes. While they may reference classes, they will do so by pointing at the constant pool. We can thus get away with ignoring them, as parsing the constant pool does not require us to parse attributes. We'll just parse them in their generic structure form:</p>
+
+<pre><code>attribute_info {
+    u2 attribute_name_index;
+    u4 attribute_length;
+    u1 info[attribute_length];
+}</code></pre>
+
+<p>So far it looks like we can find all the classes referenced by a class in that classes constant pool. They are either encoded in <code>CONSTANT_Class_info</code>, or method and field descriptors, which are stored in <code>CONSTANT_Utf8_info</code> entries.</p>
+
+<p>Are there other elements of the class file that may reference another class? Yes! Have a look at this class:</p>
+
+<pre><code>public class Foo {
+    public void doFoo() {
+        new Zip().doZip();        
+    }
+}</code></pre>
+
+<p>Clearly, it references class <code>Zip</code> in method <code>doFoo()</code>. But <code>Zip</code> is not part of the method signature, so won't be found in the method's descriptor. Let's <code>javap -c</code> the class. Here's what the disassembled method bytecodes look^ like:</p>
+
+<pre><code>public void doFoo();
+Code:
+    0: new           #7                  // class Zip
+    3: dup
+    4: invokespecial #9                  // Method Zip."<init>":()V
+    7: invokevirtual #10                 // Method Zip.doZip:()V
+    10: return</code></pre>
+
+<p>The <code>new</code>, <code>invokespecial</code>, and <code>invokevirtual</code> instructions all reference <code>Zip</code> via the constant pool in some form, e.g. <code>new #7</code> references the constant pool entry at index 7. Let's have a look at the constant pool entries at indices <code>7, 9, 10</code>:</p>
+
+<pre><code> #7 = Class              #8             // Zip
+ #8 = Utf8               Zip
+ #9 = Methodref          #7.#3          // Zip."<init>":()V
+#10 = Methodref          #7.#11         // Zip.doZip:()V
+</code></pre>
+
+<p>I threw in entry <code>8</code> for good measure. There's a class entry in the constant pool for <code>Zip</code>after all! And it's referenced directly by the <code>new</code> instruction</p>
+
+<p>We also find a new constant pool entry type: <code>CONSTANT_Fieldref_info</code>, referenced by the <code>invokespecial #9</code> and <code>invokevirtual #10</code> instructions.</p>
+
+<p>In fact, whenever bytecode references a field or method, it does so through a field reference, method reference, or interface method reference entry in the class pool. These look as follows:</p>
+
+<pre><code>CONSTANT_Fieldref_info {
+    u1 tag;
+    u2 class_index;
+    u2 name_and_type_index;
+}
+
+CONSTANT_Methodref_info {
+    u1 tag;
+    u2 class_index;
+    u2 name_and_type_index;
+}
+
+CONSTANT_InterfaceMethodref_info {
+    u1 tag;
+    u2 class_index;
+    u2 name_and_type_index;
+}</code></pre>
+
+<p>In each case, the <code>class_index</code> points to a class entry in the constant pool. It tells us which class the referenced field or method stems from. Great, another place to find classes.</p>
+
+<p>Further more, <code>name_and_type_index</code> points to a name and type entry in the constant pool, describing the field's type or the method's signature. It looks like this:</p>
+
+<pre><code>CONSTANT_NameAndType_info {
+    u1 tag;
+    u2 name_index;
+    u2 descriptor_index;
+}</code></pre>
+
+<p>Yay, we've found another set of descriptors that could potentially reference classes.</p>
+
+<p>Anything else we missed? Yes, there's one more constant pool entry type that directly references a UTF-8 entry that is a descriptor - <code>CONSTANT_MethodType_info</code>:</p>
+<pre><code>CONSTANT_MethodType_info {
+    u1 tag;
+    u2 descriptor_index;
+}</code></pre>
+
+<p>This constant pool entry is used when method handles/invoke dynamic.</p>
+
+<p>Let's summarize all the places we need to check for class names:</p>
+
+<ul>
+    <li>All <code>CONSTANT_Class_info</code> constant pool entries, except the one pointed to by <code>this_class</code>.</li>
+    <li>All <code>CONSTANT_NameAndType_info</code> constant pool entries, pointing to a field or method descriptor via <code>descriptor_index</code>.</li>
+    <li>All <code>CONSTANT_MethodType_info</code> constant pool entries, pointing to a method descriptor via <code>descriptor_index</code>.</li>
+    <li>The descriptors of fields and methods, pointed to by their <code>descriptor_index</code>.</li>    
+</ul>
+
+<p>That's a lot of words to arrive at such a tiny list. But the list of classes we generate must be exhaustive, otherwise we may end up removing things we shouldn't. Also, you now have a grasp of how <code>.class</code> files work (except for attributes, read the spec).</p>
+    
+<p>Let's finish this article off by looking at the <code>.class</code> file parser code.</p>
+
+<h3>Parsing <code>.class</code> files</h3>
+<p>Turns out writing about the <code>.class</code> file format takes longer than implementing a parser. In shakyboi, the class for parsing a <code>.class</code> file is called <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/classfile/ClassFileReader.java"><code>ClassFileReader</code></a>. It parses a <code>.class</code> file given as a <code>byte[]</code> array into a <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/classfile/ClassFile.java"><code>ClassFile</code></a> instance.</p>
+
+<p>The complexity of <code>.class</code> files is mostly found in attributes, which we can thankfully ignore (for now). The entire parser is only 167 lines long. Here's its main driver method:</p>
+
+<pre><code>public static ClassFile readClassFile(String name, byte[] data) throws IOException {
+    DataInputStream in = new DataInputStream(new ByteArrayInput(data));
+    try {
+        ClassFile clz = new ClassFile(name, data);
+
+        if (in.readInt() != 0xcafebabe) throw new RuntimeException("Magic 0xcafebabe not found");
+
+        clz.minorVersion = in.readUnsignedShort();
+        clz.majorVersion = in.readUnsignedShort();
+
+        readConstantPool(in, clz);
+
+        clz.accessFlags = in.readUnsignedShort();
+        clz.thisClass = in.readUnsignedShort();
+        clz.superClass = in.readUnsignedShort();
+
+        readInterfaces(in, clz);
+        readMembers(in, clz, clz.fields);
+        readMembers(in, clz, clz.methods);
+        readAttributes(in, clz, clz.attributes);
+
+        return clz;
+    } catch (Throwable t) {
+        throw new IOException("Error reading class " + name, t);
+    }
+}</code></pre>
+
+<p>That maps pretty cleanly to the class file structure above. The work horse is the <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/classfile/ClassFileReader.java#L42"><code>ClassFileReader.readConstantPool()</code></a> method, responsible for parsing the constant pool and translating it into Java POJOs.</p>
+
+<p>While we won't be rewriting <code>.class</code> files (yet), I've also implemented a <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/classfile/ClassFileWriter.java"><code>ClassFileWriter</code></a> which takes a <code>ClassFile</code> and serializes it into a <code>.class</code> file in form of a <code>byte[]</code> array.</p>
+
+<h3>Up next</h3>
+
+<p>You made it to the end! While wordy, your time investment in reading all fo this will be recouped once we start doing more fancy stuff, like obfuscation. For now, we are happy to have all our scaffolding in place and an idea how to identify all classes referenced by a class.</p>
+
+<p>In the next installement, we'll finally write our first tree shaker. That article will be a lot shorter :D</p>
+
+<p>Discuss this post on <a href="https://twitter.com/badlogicgames/status/1363151826464423936">Twitter</a>.</p>
+
+{{include "../../../_templates/post_footer.bt.html"}}
