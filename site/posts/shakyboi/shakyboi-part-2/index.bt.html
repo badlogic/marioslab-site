@@ -28,7 +28,7 @@ metadata = {
 </ul>
 
 <h3>Building and testing</h3>
-<p>Not much to say here. Have a look at the full <a href="https://github.com/badlogic/shakyboi/blob/main/pom.xml"><code>pom.xml</code></a>. It's a barebone (yes, really...) build descriptor that will allow us to:</p>
+<p>Not much to say here. Have a look at the full <a href="https://github.com/badlogic/shakyboi/blob/e1467d8fed2e05b3ee80ec01ca45eaa751ec38ad/main/pom.xml"><code>pom.xml</code></a>. It's a barebone (yes, really...) build descriptor that will allow us to:</p>
 
 <ul>
     <li><code>mvn test</code>, to execute all unit tests.</li>
@@ -68,16 +68,16 @@ public interface ClassLookup {
 
 <p>To avoid conversions from and to the binary class name format, we'll use the binary class name format throughout the shakyboi code. Only user facing code will use the dot notation, e.g. <code>java.lang.Object</code></p>
 
-<p><code>.class</code> files of app classes usually come from either a directory or a <code>.jar</code> file. These two sources are covered by <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/lookup/DirectoryClassLookup.java"><code>DirectoryClassLookup</code></a> and <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/lookup/JarClassLookup.java"><code>JarClassLookup</code></a>.</p>
+<p><code>.class</code> files of app classes usually come from either a directory or a <code>.jar</code> file. These two sources are covered by <a href="https://github.com/badlogic/shakyboi/blob/e1467d8fed2e05b3ee80ec01ca45eaa751ec38ad/src/main/java/io/marioslab/shakyboi/lookup/DirectoryClassLookup.java"><code>DirectoryClassLookup</code></a> and <a href="https://github.com/badlogic/shakyboi/blob/e1467d8fed2e05b3ee80ec01ca45eaa751ec38ad/src/main/java/io/marioslab/shakyboi/lookup/JarClassLookup.java"><code>JarClassLookup</code></a>.</p>
 
 
-<p>For unit tests, we may want to load classes at runtime from the JVM classpath, for which we can use <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/lookup/ClassLoaderClassLookup.java"><code>ClassLoaderClassLookup</code></a>. It can be used to load classes that belong to the tests (app classes), as well as classes from the Java runtime (bootstrap classes) and makes writing self-contained tests easy.</p>
+<p>For unit tests, we may want to load classes at runtime from the JVM classpath, for which we can use <a href="https://github.com/badlogic/shakyboi/blob/e1467d8fed2e05b3ee80ec01ca45eaa751ec38ad/src/main/java/io/marioslab/shakyboi/lookup/ClassLoaderClassLookup.java"><code>ClassLoaderClassLookup</code></a>. It can be used to load classes that belong to the tests (app classes), as well as classes from the Java runtime (bootstrap classes) and makes writing self-contained tests easy.</p>
 
-<p>Until and including Java 8, a JDK or JRE would ship all JRE classes in a single file called <code>lib/rt.jar</code>. This changed with the introduction of <a href="https://openjdk.java.net/jeps/220"></a>modules in Java 9</a>. The JDK or JRE now ships with file called <code>lib/modules</code> containing modules like <code>java.base</code>, which in turn contain their respective <code>.class</code> files. To access <code>.class</code> files in such a module image, we can use <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/lookup/JrtImageClassLookup.java"><code>JrtImageClassLookup</code></a>. The current implementation looks up the modules file in the home directory of the JDK or JRE that is currently executing shakyboi.</p>
+<p>Until and including Java 8, a JDK or JRE would ship all JRE classes in a single file called <code>lib/rt.jar</code>. This changed with the introduction of <a href="https://openjdk.java.net/jeps/220"></a>modules in Java 9</a>. The JDK or JRE now ships with file called <code>lib/modules</code> containing modules like <code>java.base</code>, which in turn contain their respective <code>.class</code> files. To access <code>.class</code> files in such a module image, we can use <a href="https://github.com/badlogic/shakyboi/blob/e1467d8fed2e05b3ee80ec01ca45eaa751ec38ad/src/main/java/io/marioslab/shakyboi/lookup/JrtImageClassLookup.java"><code>JrtImageClassLookup</code></a>. The current implementation looks up the modules file in the home directory of the JDK or JRE that is currently executing shakyboi.</p>
 
-<p>Multiple class lookups can be chained via a <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/lookup/CombinedClassLookup.java"><code>CombinedClassLookup</code></a>. That should cover pretty much all of our class lookup needs.</p>
+<p>Multiple class lookups can be chained via a <a href="https://github.com/badlogic/shakyboi/blob/e1467d8fed2e05b3ee80ec01ca45eaa751ec38ad/src/main/java/io/marioslab/shakyboi/lookup/CombinedClassLookup.java"><code>CombinedClassLookup</code></a>. That should cover pretty much all of our class lookup needs.</p>
 
-<p>A simple smoke test called <a href="https://github.com/badlogic/shakyboi/blob/main/src/test/java/io/marioslab/shakyboi/tests/ClassLookupTest.java"><code>ClassLookupTest</code></a> checks the basic functionality of all the above classes, and illustrates their use.</p>
+<p>A simple smoke test called <a href="https://github.com/badlogic/shakyboi/blob/e1467d8fed2e05b3ee80ec01ca45eaa751ec38ad/src/test/java/io/marioslab/shakyboi/tests/ClassLookupTest.java"><code>ClassLookupTest</code></a> checks the basic functionality of all the above classes, and illustrates their use.</p>
 
 <h3>Understanding <code>.class</code> files</h3>
 <p>We can lookup the raw bytes of a <code>.class</code> file by class name. Next, we have to write a parser that can parse the <code>.class</code> file, so we can find all other classes mentioned in that class file.</p>
@@ -269,7 +269,7 @@ CONSTANT_InterfaceMethodref_info {
 <p>Let's finish this article off by looking at the <code>.class</code> file parser code.</p>
 
 <h3>Parsing <code>.class</code> files</h3>
-<p>Turns out writing about the <code>.class</code> file format takes longer than implementing a parser. In shakyboi, the class for parsing a <code>.class</code> file is called <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/classfile/ClassFileReader.java"><code>ClassFileReader</code></a>. It parses a <code>.class</code> file given as a <code>byte[]</code> array into a <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/classfile/ClassFile.java"><code>ClassFile</code></a> instance.</p>
+<p>Turns out writing about the <code>.class</code> file format takes longer than implementing a parser. In shakyboi, the class for parsing a <code>.class</code> file is called <a href="https://github.com/badlogic/shakyboi/blob/6bb3dc0df4740c711a2d829d9608e94c9c9aca84/src/main/java/io/marioslab/shakyboi/classfile/ClassFileReader.java"><code>ClassFileReader</code></a>. It parses a <code>.class</code> file given as a <code>byte[]</code> array into a <a href="https://github.com/badlogic/shakyboi/blob/6bb3dc0df4740c711a2d829d9608e94c9c9aca84/src/main/java/io/marioslab/shakyboi/classfile/ClassFile.java"><code>ClassFile</code></a> instance.</p>
 
 <p>The complexity of <code>.class</code> files is mostly found in attributes, which we can thankfully ignore (for now). The entire parser is only 167 lines long. Here's its main driver method:</p>
 
@@ -300,9 +300,9 @@ CONSTANT_InterfaceMethodref_info {
     }
 }</code></pre>
 
-<p>That maps pretty cleanly to the class file structure above. The work horse is the <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/classfile/ClassFileReader.java#L42"><code>ClassFileReader.readConstantPool()</code></a> method, responsible for parsing the constant pool and translating it into Java POJOs.</p>
+<p>That maps pretty cleanly to the class file structure above. The work horse is the <a href="https://github.com/badlogic/shakyboi/blob/6bb3dc0df4740c711a2d829d9608e94c9c9aca84/src/main/java/io/marioslab/shakyboi/classfile/ClassFileReader.java#L42"><code>ClassFileReader.readConstantPool()</code></a> method, responsible for parsing the constant pool and translating it into Java POJOs.</p>
 
-<p>While we won't be rewriting <code>.class</code> files (yet), I've also implemented a <a href="https://github.com/badlogic/shakyboi/blob/main/src/main/java/io/marioslab/shakyboi/classfile/ClassFileWriter.java"><code>ClassFileWriter</code></a> which takes a <code>ClassFile</code> and serializes it into a <code>.class</code> file in form of a <code>byte[]</code> array.</p>
+<p>While we won't be rewriting <code>.class</code> files (yet), I've also implemented a <a href="https://github.com/badlogic/shakyboi/blob/6bb3dc0df4740c711a2d829d9608e94c9c9aca84/src/main/java/io/marioslab/shakyboi/classfile/ClassFileWriter.java"><code>ClassFileWriter</code></a> which takes a <code>ClassFile</code> and serializes it into a <code>.class</code> file in form of a <code>byte[]</code> array.</p>
 
 <h3>Up next</h3>
 
