@@ -1,0 +1,281 @@
+{{
+metadata = {
+    title: "Shakyboi - Part 4: Command line driver",
+    summary: "",
+    image: "treeshake.jpg",
+    date: parseDate("2021/02/28 12:00"),
+    published: true,
+}
+}}
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("treeshake.jpg", "If you read this, say 'Moo' on Twitter.")}}
+
+<h2>Shakyboi - Part 4: Command line driver</h2>
+
+<p><a href="/posts/shakyboi/shakyboi-part-3">Last time</a> we build the class dependency graph. Time to wrap it all up and create a command line driver for Shakyboi, i.e. the actual thing users can execute to tree shake their <code>.jar</code> files. The driver needs to be passed:</p>
+
+<ul>
+    <li>One or more <code>.jar</code> files and/or directories containing the <code>.class</code> files and resources of our app.</li>
+    <li>One or more <code>.jar</code> files, directories, or JRT images containing the <code>.class</code> files of bootstrap classes.</li>
+    <li>One or more root class names to start tracing the class dependency graph from.</li>
+    <li>An optional file name to output a HTML or JSON report to. The report contains info about the reachable and removed app classes.</li>
+</ul>
+
+<p>Here's the interface of the command line driver, telling us what we can do.</p>
+
+<pre><code class="html">Usage: shakyboi &lt;options&gt;
+    Options:
+    
+       --app &lt;dir|jar&gt;               A directory or .jar to lookup app class files in.
+    
+       --bootstrap &lt;dir|jar|"jrt"&gt;   A directory, .jar, or "jrt" (Java runtime image)
+                                     to lookup bootstrap class files in. "jrt" is the default.
+    
+       --root &lt;class-name-pattern&gt;   A root class name (pattern), e.g. my.package.App, **.Foo.
+                                     You can specify multiple classes by using multiple --root.
+                                     options.
+    
+       --output &lt;jar-file&gt;           The name of the output .jar file. Performs a dry-run if omitted.
+    
+       --html-report &lt;html-file&gt;     (Optional) The name of the .html file to write the report to.
+                                     You can view it locally in a browser.
+    
+       --json-report &lt;json-file&gt;     (Optional) The name of the .json file to write the report to.
+</code></pre>
+
+<h3>Refactoring <code>ClassLookup</code></h3>
+<p>The <code>ClassLookup</code> class can currently only find <code>.class</code> files. Apps may however include resource files as well, which we have to copy to the output <code>.jar</code> file. If we want to report the classes we've removed from the app, we also have to have a way to enumerate all classes of an app. We thus refactor <code>ClassLookup</code> to become <a href="https://github.com/badlogic/shakyboi/blob/94b919739feefef62eca3dc1c30ec6ee2bc0c596/src/main/java/io/marioslab/shakyboi/lookup/Lookup.java"><code>Lookup</code></a>:</p>
+
+<pre><code>public interface Lookup {
+    /**
+     * Looks up the class with the given name and returns its
+     *  &lt;code&gt;.class &lt;/code&gt; file content as a byte array.
+     *
+     * @param name the binary class name, e.g. "java/lang/Object". @see  &lt;a href="https://docs.oracle.com/javase/specs/jvms/se15/html/jvms-4.html#jvms-4.2.1" &gt;jvms-4.2.1 &lt;/a &gt;.
+     * @return the classes bytes or null.
+     * @throws RuntimeException in case an unrecoverable error happened.
+     */
+    byte[] findClass(String name);
+
+    /**
+     * Looks up the resource with the given name and returns its
+     * content as a byte array.
+     *
+     * @param name the name of the resource, e.g. "java/lang/Object.class", or "images/bunny.png".
+     * @return the contents or null.
+     * @throws RuntimeException in case an unrecoverable error happened.
+     */
+    byte[] findResource(String name);
+
+    /**
+     * Lists all files contained in this lookup, both class and resource files.
+     *
+     * @return a list of all files in this lookup.
+     */
+    List &lt;String &gt; list();
+}</code></pre>
+
+<p>We've added the method <code>findResource(String)</code> which returns the data for a file name from the lookup. The new <code>list()</code> method returns all files in the lookup. I've converted all <code>ClassLookup</code> <a href="https://github.com/badlogic/shakyboi/tree/94b919739feefef62eca3dc1c30ec6ee2bc0c596/src/main/java/io/marioslab/shakyboi/lookup">implementations</a> to conform to this interface and renamed them accordingly. <code>ClassLoaderLookup</code> is special and will throw an exception if its <code>list()</code> method is called. While it's theoretically possibly to list all files accessible to a <code>ClassLoader</code>, it's not worth the headache as we use <code>ClassLoaderLookup</code> only in a handful of unit tests that don't use <code>Lookup.list()</code>.
+
+<h3>Refactoring ClassNode and ClassDependencyGraphGenerator</h3>
+<p>The reports of reachable and removed app classes will also contain information on which classes a class depends on. That's already quite useful, but it would be even better to also know which classes referred to a specific class.</p>
+
+<p>We thus refactor <code>ClassNode</code> to have a set of classes that refer to it, and fix up <code>ClassDependencyGraphGenerator</code> to add that information to all class nodes it encounters. You can find the single line fixes for both changes <a href="https://github.com/badlogic/shakyboi/commit/fe1f621b8e205a1168e0e248b81cc821ad0fa9a2#diff-01eea86e5cc45817fd735167f195fccdc193566216aaac5c209220893ea22ca5R43">here</a> and <a href="https://github.com/badlogic/shakyboi/commit/fe1f621b8e205a1168e0e248b81cc821ad0fa9a2#diff-f2142fea5b727b814c64b7c39bb194ab57f9fdebabd5f9d2d6c8256b58158aabR79">here</a></p>
+
+<p>A class may reference other classes that can't be found in either the app lookup or the bootstrap lookup. This can happen if you've omitted some classes from the <code>.jar</code> file you want to tree shake which you know will never be uses. It can also be due to a broken app. In either case, it's probably good to warn the user of such problems. I've thus <a href="https://github.com/badlogic/shakyboi/commit/1890071130dbed3c7f75f90d105e7cb5e72fa05b#diff-f2142fea5b727b814c64b7c39bb194ab57f9fdebabd5f9d2d6c8256b58158aab">refactored <code>ClassDependencyGraphGenerator.generate()</code></a> to also receive a list it can store warnings in that we later print in the driver.</p>
+
+<h3>Core logic and driver</h3>
+<p>Shakyboi should be usable from both the command line as well as programmatically, i.e. in build system plugins. We should thus separate the core logic from the command line driver.</p>
+
+<p>Shakyboi's core is implemented in the class <a href="https://github.com/badlogic/shakyboi/blob/1890071130dbed3c7f75f90d105e7cb5e72fa05b/src/main/java/io/marioslab/shakyboi/Shakyboi.java"><code>Shakyboi</code></a>. The class contains a single method called <code>shake()</code>, which takes an instance of <a href="https://github.com/badlogic/shakyboi/blob/1890071130dbed3c7f75f90d105e7cb5e72fa05b/src/main/java/io/marioslab/shakyboi/Shakyboi.java#L129"><code>Settings</code></a>:</p>
+
+<pre><code>/**
+* Specifies app {@link Lookup}, bootstrap {@link Lookup}, root classes, and output file for {@link Shakyboi}.
+* Optionally specify HTML and JSON report output files.
+*/
+public static class Settings {
+    /** The {@link io.marioslab.shakyboi.lookup.Lookup} to find app files in **/
+    public final Lookup appLookup;
+    /** The {@link io.marioslab.shakyboi.lookup.Lookup} to find bootstrap files in **/
+    public final Lookup bootstrapLookup;
+    /** List of root classes given as {@link io.marioslab.shakyboi.util.Pattern} instances */
+    public final List<Pattern> rootClasses;
+    /** Output file **/
+    public final File output;
+    /** Optionel HTML report file, may be null **/
+    public final File htmlReport;
+    /** Optionel JSON report file, may be null **/
+    public final File jsonReport;
+
+    /**
+    * Creates a new settings instance to be passed to {@link #shake(Settings)}.
+    *
+    * @param appLookup       the {@link Lookup} to find app files in.
+    * @param bootstrapLookup the {@link Lookup} to find bootstrap files in.
+    * @param rootClasses     the list of root classes given as {@link Pattern} instances.
+    * @param output          the output <code>.jar</code> file. The parent directory must exist.
+    * @param htmlReport      optional file to write the HTML report to. May be null.
+    * @param jsonReport      optional file to write the JSON report to. May be null.
+    */
+    public Settings(Lookup appLookup, Lookup bootstrapLookup, List<Pattern> rootClasses, File output, File htmlReport, File jsonReport) {
+        this.appLookup = appLookup;
+        this.bootstrapLookup = bootstrapLookup;
+        this.rootClasses = rootClasses;
+        this.output = output;
+        this.htmlReport = htmlReport;
+        this.jsonReport = jsonReport;
+    }
+}</code></pre>
+
+<p>Pretty straight forward and hopefully selfexplanatory. The only interesting bit is the way root class names are specified. They are given as <a href="https://github.com/badlogic/shakyboi/blob/1890071130dbed3c7f75f90d105e7cb5e72fa05b/src/main/java/io/marioslab/shakyboi/util/Pattern.java"><code>Pattern</code></a> instances instead of strings, so users can specify globs like <code>my.app.package.*</code> or <code>my.app.**.Foo*</code>. The class was kindly donated by Nate, <a href="https://esotericsoftware.com">Spine's</a> benevolent dictator.</p>
+
+<p>The <code>shake()</code> method ties everything together:</p>
+
+<pre><code>/**
+* Applies class tree shaking to the app classes given as a {@link Lookup} in the {@link Settings}. Generates
+* an output  &lt;code &gt;.jar &lt;/code &gt; file containing all reachable classes from the app lookup, as well as any files
+* found in the app lookup. Optionally generates a HTML and/or JSON report file. See {@link Settings}.
+*
+* @param settings the {@link Settings} specifying input and output parameters for the class tree shaking.
+* @return {@link Statistics} generated during class tree shaking.
+* @throws IOException in case a file couldn't be read from a lookup.
+*/
+public static Statistics shake(Settings settings) throws IOException {
+    // expand root classes
+    long timeRootClassExpansion = System.nanoTime();
+    var rootClassNames = new ArrayList &lt;String &gt;();
+    var inputClassesAndFiles = settings.appLookup.list();
+    var inputClasses = inputClassesAndFiles.stream().filter(f - &gt; f.endsWith(".class")).collect(Collectors.toList());
+    var inputFiles = inputClassesAndFiles.stream().filter(f - &gt; !f.endsWith(".class")).collect(Collectors.toList());
+    for (var file : inputClasses) {
+        for (var rootPattern : settings.rootClasses) {
+            if (rootPattern.matchesPath(file)) {
+                rootClassNames.add(file.replace(".class", ""));
+                break;
+            }
+        }
+    }
+    if (rootClassNames.size() == 0) throw new IOException("No root classes found in app lookup.");
+    timeRootClassExpansion = System.nanoTime() - timeRootClassExpansion;
+
+    // Generate the class dependency graph and gather all reachable app classes.
+    long timeClassDependencyGraph = System.nanoTime();
+    var warnings = new ArrayList &lt;String &gt;();
+    var classDependencyGraph = ClassDependencyGraphGenerator.generate(settings.appLookup,
+            settings.bootstrapLookup,
+            warnings,
+            rootClassNames.toArray(new String[0]));
+    var reachableAppClasses = classDependencyGraph.reachableClasses.values().stream().filter(cl - &gt; cl.isAppClass).collect(Collectors.toList());
+    timeClassDependencyGraph = System.nanoTime() - timeClassDependencyGraph;
+
+    // Write output .jar file
+    long timeWriteJar = System.nanoTime();
+    if (settings.output != null) {
+        try (var writer = new JarFileWriter(settings.output)) {
+            for (var file : inputFiles)
+                writer.addFile(file, settings.appLookup.findResource(file));
+
+            for (var clazz : reachableAppClasses)
+                writer.addFile(clazz.classFile.getName() + ".class", clazz.classFile.originalData);
+        }
+    }
+    timeWriteJar = System.nanoTime() - timeWriteJar;
+
+    // Create report if requested
+    long timeReport = System.nanoTime();
+    if (settings.htmlReport != null) generateHtmlReport(settings, inputClasses, classDependencyGraph);
+    if (settings.jsonReport != null) generateJsonReport(settings, inputClasses, classDependencyGraph);
+    timeReport = System.nanoTime() - timeReport;
+
+    return new Statistics(inputClasses.size(), reachableAppClasses.size(), warnings, timeRootClassExpansion / 1e9f, timeClassDependencyGraph / 1e9f, timeWriteJar / 1e9f, timeReport / 1e9f);
+}</code></pre>
+
+<p>That's not a lot of code! We first find the fully qualified names of all root classes matching the root name patterns the user provided. We also split up the input files into <code>.class</code> files and resource files (anything not endign in <code>.class</code>.</p>
+
+<p>We then generate the class dependency graph using <code>ClassDependencyGraphGenerator</code></p>
+
+<p>If the user provided an output file name, we write the <code>.class</code> files of reachable classes as well as all resources to the output file.</p>
+
+<p>Finally, if the user requested to get reports, we generate those as well.</p>
+
+<p>The method returns a <code>Statistics</code> instance storing a few numbers that help assess how well Shakyboi performed.</p>
+
+<p>The command line driver is then merely a wrapper around <code>Shakyboi</code> that parses the command line arguments and passes them to the <code>Shakyboi.shake()</code> method. You can find the implementation of that in <a href="https://github.com/badlogic/shakyboi/blob/1890071130dbed3c7f75f90d105e7cb5e72fa05b/src/main/java/io/marioslab/shakyboi/ShakyboiCLI.java"><code>ShakyboiCLI.java</code></a></p>
+
+<h3>Executing Shakyboi</h3>
+
+<p>Time to take Shakyboi for a ride! I'll be using the libGDX <a href="https://github.com/libgdx/libgdx-demo-pax-britannica">Pax Britannica</a> demo, the <code>.jar</code> file of which can be found <a href="">http://libgdx.badlogicgames.com/demos/paxbritannica/paxbritannica.jar</a>. You can run it via <code>java -jar paxbritannica.jar</code> on Windows, Linux, and macOS.</p>
+
+<p>After packaging Shakyboi via <code>mvn package</code>, we can have it shake Pax Britannica as follows:</p>
+
+<pre><code>java -jar shakyboi.jar \
+    --app paxbritannica.jar \
+    --root de.swagner.paxbritannica.desktop.DesktopLauncher \
+    --html-report report.html \
+    --output paxbritannica-shaky.jar</code></pre>
+
+<p>This tells Shakyboi to find app classes in <code>paxbritannica.jar</code>, to start tracing classes in <code>de.swagner.paxbritannica.desktop.DesktopLauncher</code>, to write an HTML report to <code>report.html</code> and to write the resulting output to <code>paxbritannica-shaky.jar</code>. Executing the above command yields:</p>
+
+<pre><code>WARNING: No bootstrap classes specified, defaulting to JRT image.
+WARNING: Class org.lwjgl.opengl.WindowsDisplay depends on org.lwjgl.opengles.PixelFormat, but org.lwjgl.opengles.PixelFormat could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.WindowsDisplayPeerInfo depends on org.lwjgl.opengles.GLContext, but org.lwjgl.opengles.GLContext could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.LinuxDisplay depends on org.lwjgl.opengles.GLContext, but org.lwjgl.opengles.GLContext could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.LinuxDisplay depends on org.lwjgl.opengles.PixelFormat, but org.lwjgl.opengles.PixelFormat could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.LinuxDisplayPeerInfo depends on org.lwjgl.opengles.GLContext, but org.lwjgl.opengles.GLContext could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.DrawableGLES depends on org.lwjgl.opengles.GLES20, but org.lwjgl.opengles.GLES20 could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.DrawableGLES depends on org.lwjgl.opengles.Util, but org.lwjgl.opengles.Util could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.DrawableGLES depends on org.lwjgl.opengles.EGL, but org.lwjgl.opengles.EGL could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.DrawableGLES depends on org.lwjgl.opengles.PowerManagementEventException, but org.lwjgl.opengles.PowerManagementEventException could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.DrawableGLES depends on org.lwjgl.opengles.EGLConfig, but org.lwjgl.opengles.EGLConfig could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.DrawableGLES depends on org.lwjgl.opengles.PixelFormat, but org.lwjgl.opengles.PixelFormat could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.DrawableGLES depends on org.lwjgl.opengles.EGLContext, but org.lwjgl.opengles.EGLContext could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.DrawableGLES depends on org.lwjgl.opengles.EGLSurface, but org.lwjgl.opengles.EGLSurface could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.DrawableGLES depends on org.lwjgl.opengles.EGLDisplay, but org.lwjgl.opengles.EGLDisplay could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.ContextGLES depends on org.lwjgl.opengles.GLES20, but org.lwjgl.opengles.GLES20 could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.ContextGLES depends on org.lwjgl.opengles.EGL, but org.lwjgl.opengles.EGL could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.ContextGLES depends on org.lwjgl.opengles.PowerManagementEventException, but org.lwjgl.opengles.PowerManagementEventException could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.ContextGLES depends on org.lwjgl.opengles.GLContext, but org.lwjgl.opengles.GLContext could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.ContextGLES depends on org.lwjgl.opengles.ContextCapabilities, but org.lwjgl.opengles.ContextCapabilities could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.ContextGLES depends on org.lwjgl.opengles.EGLConfig, but org.lwjgl.opengles.EGLConfig could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.ContextGLES depends on org.lwjgl.opengles.EGLContext, but org.lwjgl.opengles.EGLContext could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.ContextGLES depends on org.lwjgl.opengles.EGLDisplay, but org.lwjgl.opengles.EGLDisplay could not be found in app or bootstrap classpath.
+WARNING: Class org.lwjgl.opengl.ContextGLES depends on org.lwjgl.opengles.EGLSurface, but org.lwjgl.opengles.EGLSurface could not be found in app or bootstrap classpath.
+Root class expansion:    0.06704833 secs
+Class dependency graph:  0.06704833 secs
+Write jar:               1.0075673 secs
+Write report:            0.15579033 secs
+Took:                    1.35360575 secs
+Output:                  /Users/badlogic/workspaces/shakyboi/paxbritannica-shaky.jar
+HTML report:             /Users/badlogic/workspaces/shakyboi/report.html
+Total app classes:       2129
+Reachable app classes:   973
+Reduction:               54%</code></pre>
+
+<p>Nice! Shakyboi removed 54% of classes from the output. In terms of file size, that's a reduction by 1MB.</p>
+
+<pre><code>-rw-r--r--   1 badlogic  staff    14M Mar  7 10:26 paxbritannica-shaky.jar
+-rw-r--r--   1 badlogic  staff    15M May  5  2018 paxbritannica.jar</code></pre>
+
+<p>Most of the <code>.jar</code> file is made up of graphics files and native shared libraries, which Shakyboi just copies verbatim to the output.</p>
+
+<p>How does it compare to ProGuard? Well. I tried to write a configuration that would generate a runnable jar. But I gave up after 30 minutes, as the damn thing would just keep on crashing due to missing classes and methods. The final <code>.jar</code> size ProGuard spits out is 1MB smaller than the one Shakyboi generates. But since the app doesn't run, I can't say if that's comparable. ProGuard also removes methods, which further reduces the size of <code>.class</code> files considerably, so it definitely has an edge.</p>
+
+<p>Shakyboi also generated an HTML report of classes it kept and removed. I've embedded it below in a fancy old iframe.</p>
+
+<iframe src="report.html" style="width: 100%; height: 50em; border: none; background: white;"></iframe>
+
+<p>You can also get the raw data by passing <code>--json-report</code> as an argument.</p>
+
+<h3>What about reflection?</h3>
+<p>For Pax Britannica, I was lucky that all classes, even those loaded via reflection, have somehow been referenced by code. In other circumstances, that may not be the case. However, with the <code>--root</code> argument, we can solve any issues stemming from reflection by force including classes (possibly expressed as patterns) in the final output. Easy.</p>
+
+<h3>In conclusion (and maybe up next)</h3>
+
+<p>Well, that was a fun ride. I consider Shakyboi to be complete at this point, at least for my meager purposes. There's definitely room for improvement. We could further reduce the <code>.class</code> file size by tracing which methods are actually used. From that information, we may be able to also remove more classes. But for now, that is left as an exercise to the reader :)</p>
+
+<p>Discuss this post on <a href="">Twitter</a>.</p>
+
+{{include "../../../_templates/post_footer.bt.html"}}

@@ -1,0 +1,367 @@
+{{
+metadata = {
+    title: "Shakyboi - Part 3: Building the class dependency graph",
+    summary: "",
+    image: "treeshake.jpg",
+    date: parseDate("2021/02/28 12:00"),
+    published: true,
+}
+}}
+<!-- Hi! -->
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+<script>
+{{include raw "../../../js/_vis-network.min.js"}}
+</script>
+
+{{post.figure("treeshake.jpg", "Shake it like a polaroid picture.")}}
+
+<h2>Shakyboi - Part 3: Building the class dependency graph</h2>
+
+<p><a href="/posts/shakyboi/shakyboi-part-2">Last time</a> we build the scafolding for Shakyboi, including reading the raw bytes of <code>.class</code> files from various locations, unit tests, and class file parsing.</p>
+
+<p>In this installement, we'll implement a class dependency graph generator. It's task is it to find all classes referenced by a set of root classes recursively. Let's visualize this using our <a href="https://github.com/badlogic/shakyboi/tree/cd0751474fcc5308d321909ca0380bf3a0bf8845/src/test/java/io/marioslab/shakyboi/tests/apps/simple">simple example app</a> from the first article</a>.</p>
+
+<p>The root class of our app is the <code>App</code> class, highlighted in red below, which is fed as input to the class dependency graph generator.</p>
+
+<div id="app-class-dependencies-1" style="height: 300px;"></div>
+<pre><code style="height: 100%;">Classes to process: [App]
+Reachable classes:  [ ]</code></pre>
+<script type="text/javascript">
+var nodes = new vis.DataSet([
+    { id: 1, label: "App", color: "#ff0000"},
+    { id: 2, label: "Bar" },
+    { id: 3, label: "Foo" },
+    { id: 4, label: "Zip" },
+    { id: 5, label: "Zap" },
+    { id: 6, label: "Zop" }
+]);
+var edges = new vis.DataSet([
+]);
+var container = document.getElementById("app-class-dependencies-1");
+var data = { nodes: nodes, edges: edges };
+var options = { edges: { arrows: { to: { enabled: true } } } };
+new vis.Network(container, data, options);
+</script>
+
+<p>We start out with the given root class, which is added to the set of classes to be processed. We then apply the following algorithm.</p>
+
+<ul>
+    <li>While there are classes to process:</li>
+    <ol>
+        <li>Remove the next class from the set of classes to be processed.</li>
+        <li>If it's not already been loaded, load and parse its <code>.class</code> file.</li>
+        <li>Check if it has already been processed, in which case we goto step 1.</li>    
+        <li>Add the class to the set of reachable classes.</li>
+        <li>If this is an app class, find the set of classes it references  and</li>
+        <ol>
+            <li>Add these classes to the set of classes to be processed.</li>
+            <li>Add these classes to this class' set of classes it depends on.</li>
+        </ol>
+    </ol>
+</ul>
+
+<p>This is a simple non-recursive version of graph traversal. Let's execute it manually, iteration by iteration. Here's the state after the first iteration.</p>
+
+<div id="app-class-dependencies-2" style="height: 300px;"></div>
+<pre><code style="height: 100%;">Classes to process: [Bar]
+Reachable classes:  [App]</code></pre>
+<script type="text/javascript">
+var nodes = new vis.DataSet([
+    { id: 1, label: "App", color: "#ff0000" },
+    { id: 2, label: "Bar", color: "#00ff00" },
+    { id: 3, label: "Foo" },
+    { id: 4, label: "Zip" },
+    { id: 5, label: "Zap" },
+    { id: 6, label: "Zop" }
+]);
+var edges = new vis.DataSet([
+    { from: 1, to: 2 }
+]);
+var container = document.getElementById("app-class-dependencies-2");
+var data = { nodes: nodes, edges: edges };
+var options = { edges: { arrows: { to: { enabled: true } } } };
+new vis.Network(container, data, options);
+</script>
+
+<p>We've removed <code>App</code> from the set of classes to be processed, added it to the set of reachable classes, found that it depends on <code>Bar</code>, and added <code>Bar</code> to the set of classes to be processed, and to <code>App</code>'s set of classes it depends on. Since there are still classes to be processed, we iterate again:</p>
+
+<div id="app-class-dependencies-3" style="height: 300px;"></div>
+<pre><code style="height: 100%;">Classes to process: [Zap, Zop]
+Reachable classes:  [App, Bar]</code></pre>
+<script type="text/javascript">
+var nodes = new vis.DataSet([
+    { id: 1, label: "App", color: "#ff0000" },
+    { id: 2, label: "Bar", color: "#00ff00" },
+    { id: 3, label: "Foo" },
+    { id: 4, label: "Zip" },
+    { id: 5, label: "Zap", color: "#00ff00" },
+    { id: 6, label: "Zop", color: "#00ff00" }
+]);
+var edges = new vis.DataSet([
+    { from: 1, to: 2 },
+    { from: 2, to: 5 },
+    { from: 2, to: 6 }
+]);
+var container = document.getElementById("app-class-dependencies-3");
+var data = { nodes: nodes, edges: edges };
+var options = { edges: { arrows: { to: { enabled: true } } } };
+new vis.Network(container, data, options);
+</script>
+
+<p>We've removed <code>Bar</code> from the set of classes to be processed, added it to the set of reachable classes, and found two new classes, <code>Zap</code> and <code>Zop</code>, which we add to the set of classes to be processed, and to <code>Bar</code>'s set of classes it depends on. Let's continue iterating:</p>
+
+<div id="app-class-dependencies-4" style="height: 300px;"></div>
+<pre><code style="height: 100%;">Classes to process: [Zop]
+Reachable classes:  [App, Bar, Zap]</code></pre>
+<script type="text/javascript">
+var nodes = new vis.DataSet([
+    { id: 1, label: "App", color: "#ff0000" },
+    { id: 2, label: "Bar", color: "#00ff00" },
+    { id: 3, label: "Foo" },
+    { id: 4, label: "Zip" },
+    { id: 5, label: "Zap", color: "#00ff00" },
+    { id: 6, label: "Zop", color: "#00ff00" }
+]);
+var edges = new vis.DataSet([
+    { from: 1, to: 2 },
+    { from: 2, to: 5 },
+    { from: 2, to: 6 }
+]);
+var container = document.getElementById("app-class-dependencies-4");
+var data = { nodes: nodes, edges: edges };
+var options = { edges: { arrows: { to: { enabled: true } } } };
+new vis.Network(container, data, options);
+</script>
+
+<p>We've removed <code>Zap</code> from the set of classes to be processed, and added it to the set of reachable classes. No additional classes have been found in <code>Zap</code>! Let's process the next class:</p>
+
+<div id="app-class-dependencies-5" style="height: 300px;"></div>
+<pre><code style="height: 100%;">Classes to process: [ ]
+Reachable classes:  [App, Bar, Zap, Zop]</code></pre>
+<script type="text/javascript">
+var nodes = new vis.DataSet([
+    { id: 1, label: "App", color: "#ff0000" },
+    { id: 2, label: "Bar", color: "#00ff00" },
+    { id: 3, label: "Foo" },
+    { id: 4, label: "Zip" },
+    { id: 5, label: "Zap", color: "#00ff00" },
+    { id: 6, label: "Zop", color: "#00ff00" }
+]);
+var edges = new vis.DataSet([
+    { from: 1, to: 2 },
+    { from: 2, to: 5 },
+    { from: 2, to: 6 }
+]);
+var container = document.getElementById("app-class-dependencies-5");
+var data = { nodes: nodes, edges: edges };
+var options = { edges: { arrows: { to: { enabled: true } } } };
+new vis.Network(container, data, options);
+</script>
+
+<p>We've removed <code>Zop</code> from the set of classes to be processed, and added it to the set of reachable classes. No additional classes have been found. And since the set of classes to be processed, we've completed our search for reachable classes, consisting of <code>App</code>, <code>Bar</code>, <code>Zap</code>, and <code>Zop</code>.</p>
+
+<p>Classes <code>Foo</code> and <code>Zip</code> can not be reached from the other classes. They can thus be removed from the application.</p>
+
+<p>Mission accomplished? Not quite. For brevity reasons, I've excluded one aspect: bootstrap classes. If you look at any of the classes we processed, you'll find that they also depend on <code>Object</code>, <code>String</code>, <code>System</code> and <code>PrintStream</code>. These classes are bootstrap classes, i.e. not part of our application. If we encounter a bootstrap class during our search, it is registered as a dependency, but we do not process it. A bootstrap class should only reference classes not defined by the app. As such, anything a bootstrap class references is irrelevant for our class tree shaker.</p>
+
+<p>Let's have a look at how we implement the above in plain old Java code, using the scafolding we built in the last installment.</p>
+
+<h3>Representing the class dependency graph in code</h3>
+<p>Since we are building a graph, we need a representation for nodes in the graph. The class <a href="https://github.com/badlogic/shakyboi/blob/cd0751474fcc5308d321909ca0380bf3a0bf8845/src/main/java/io/marioslab/shakyboi/graph/ClassDependencyGraph.java#L38"><code>ClassNode</code></a> does just that:</p>
+
+<pre><code>public static class ClassNode {
+    /** The {@link ClassFile} this node represents */
+    public final ClassFile classFile;
+    /** Whether this class comes from the app class lookup or the bootstrap class lookup */
+    public final boolean isAppClass;
+    /** The list of classes this class depends on. Filled by  {@link ClassDependencyGraphGenerator#generate(ClassLookup, ClassLookup, String...)} */
+    public final List&lt;ClassNode&gt; dependsOn = new ArrayList<>(16);
+    /** Whether this class is a root class */
+    public boolean isRootClass;
+    /** Whether this class has been processed by {@link ClassDependencyGraphGenerator#generate(ClassLookup, ClassLookup, String...)} **/
+    public boolean isProcessed;
+
+    public ClassNode(ClassFile classFile, boolean isAppClass) {
+        this.classFile = classFile;
+        this.isAppClass = isAppClass;
+    }
+}</code></pre>
+
+<p>Note the <code>dependsOn</code> list. It contains the classes the class the node represents depends on. In graph speak, it's a list of outgoing edges to the classes this class depends on.</p>
+
+<p>The other fields store some book keeping data, such as if the class is an app class or not, or the <a href="https://github.com/badlogic/shakyboi/blob/cd0751474fcc5308d321909ca0380bf3a0bf8845/src/main/java/io/marioslab/shakyboi/classfile/ClassFile.java"><code>ClassFile</code></a> containing its parsed <code>.class</code> file contents. Yes, encapsulation and getters/setters be damned, all fields are <code>public final</code>.</p>
+
+<p>The graph itself is represented by <a hre="https://github.com/badlogic/shakyboi/blob/cd0751474fcc5308d321909ca0380bf3a0bf8845/src/main/java/io/marioslab/shakyboi/graph/ClassDependencyGraphGenerator.java"><code>ClassDependencyGraph</code></a>:</p>
+
+<pre><code>public class ClassDependencyGraph {
+    /** The root classes as given to {@link ClassDependencyGraphGenerator#generate(ClassLookup, ClassLookup, String...)} **/
+    public final List&lt;ClassNode&gt; rootClasses;
+    /** All classes reachable by the class dependency graph **/
+    public final Map&lt;String, ClassNode&gt; reachableClasses;
+
+    /**
+     * Constructs a new dependency graph from the given root classes and reachable classes.
+     * @param rootClasses the root classes
+     * @param reachableClasses the reachable classes, including the root classes
+     */
+    public ClassDependencyGraph(List&lt;ClassNode&gt; rootClasses, Map&lt;String, ClassNode&gt; reachableClasses) {
+        this.rootClasses = rootClasses;
+        this.reachableClasses = reachableClasses;
+    }
+}</code></pre>
+
+<p>All reachable classes are stored in a map, using the class name as the key. Additionally, the root classes are also stored as a linear list, which may come in handy later on  (or not).</p>
+
+<p>Let's have a look at the code generating the graph.</p>
+
+<h3>Generating the class dependency graph</h3>
+<p>The <code>ClassDependencyGraphGenerator</code> is responsible for generating a <code>ClassDependencyGraph</code> given an app <code>ClassLookup</code>, a boostrap <code>ClassLookup</code>, and a list of root classes to start the reachability analysis from. The main entry point is this method:
+
+<pre><code>    public static ClassDependencyGraph generate(ClassLookup appClassLookup, ClassLookup bootstrapClassLookup, String... rootClassNames) throws IOException {
+    var rootClasses = new ArrayList&lt;ClassDependencyGraph.ClassNode&gt;(); // the root classes nodes
+    var reachableClasses = new HashMap&lt;String, ClassDependencyGraph.ClassNode&gt;(); // all reachable classes, processed and unprocessed
+    var classesToProcess = new ArrayList&lt;ClassDependencyGraph.ClassNode&gt;(); // classes that still need to be processed
+
+    // Lookup all root classes and add them to to the list of classes to be processed.
+    for (String className : rootClassNames) {
+        var classNode = lookupClassNode(className, reachableClasses, bootstrapClassLookup, appClassLookup);
+        classNode.isRootClass = true;
+        rootClasses.add(classNode);
+        classesToProcess.add(classNode);
+    }
+
+    // Process classes until there no more classes to process.
+    while (classesToProcess.size() > 0) {
+        var classNode = classesToProcess.remove(classesToProcess.size() - 1);
+
+        // If this class has already been processed, continue with the next class.
+        if (classNode.isProcessed)
+            continue;
+
+        // Mark the class as processed.
+        classNode.isProcessed = true;
+
+        // Don't collect dependencies of bootstrap classes
+        if (!classNode.isAppClass)
+            continue;
+
+        // Collect the classes referenced by this class and add them to the list
+        // of classes to be processed if they haven't been processed yet. Also
+        // add the classes to this class' set of classes it depends on.
+        Set<String> collectedClassNames = collectClassNames(classNode);
+        for (String className : collectedClassNames) {
+            var otherClassNode = lookupClassNode(className, reachableClasses, bootstrapClassLookup, appClassLookup);
+            // Don't depend on this class itself
+            if (otherClassNode.classFile.getName().equals(classNode.classFile.getName()))
+                continue;
+            if (!otherClassNode.isProcessed) {
+                classesToProcess.add(otherClassNode);
+            }
+            classNode.dependsOn.add(otherClassNode);
+        }
+    }
+    return new ClassDependencyGraph(rootClasses, reachableClasses);
+}</code></pre>
+
+<p>This is an almost one-to-one translation of the algorithm given above! The most interesting bit is the call to <code>collectClassNames()</code>, which implements our logic to extract referenced classes from a <code>.class</code> file as described in the <a href="/posts/shakyboi/shakyboi-part-2/">last post</a>:</p>
+
+<pre><code>private static Set&lt;String&gt; collectClassNames(ClassDependencyGraph.ClassNode classNode) {
+    var className = classNode.classFile.getName();
+    var collectedClassNames = new HashSet&lt;String&gt;();
+
+    // Collect class names from the constant pool
+    var constantPool = classNode.classFile.constantPool;
+    for (int i = 0; i &lt; constantPool.size(); i++) {
+        var entry = constantPool.get(i);
+        if (entry == null)
+            continue; // There might be null entries in the constant pool, i.e. for long and double entries.
+
+        if (entry instanceof ClassFile.ClassInfoEntry) {
+            var otherClassName = ((ClassFile.ClassInfoEntry) entry).getName();
+            // A class info entry can also be an array descriptor. In this case, we
+            // fetch the array element type.
+            if (otherClassName.charAt(0) == '[') {
+                otherClassName = getClassFromFieldDescriptor(otherClassName);
+                if (otherClassName == null)
+                    continue;
+            }
+            collectedClassNames.add(otherClassName);
+        } else if (entry instanceof ClassFile.NameAndTypeEntry) {
+            var nameAndTypeEntry = (ClassFile.NameAndTypeEntry) entry;
+            String descriptor = nameAndTypeEntry.getDescriptor();
+            if (descriptor.charAt(0) == '(') {
+                collectedClassNames.addAll(getClassesFromMethodDescriptor(descriptor));
+            } else {
+                var otherClassName = getClassFromFieldDescriptor(descriptor);
+                if (otherClassName != null)
+                    collectedClassNames.add(otherClassName);
+            }
+        } else if (entry instanceof ClassFile.MethodTypeEntry) {
+            var methodTypeEntry = (ClassFile.MethodTypeEntry) entry;
+            var descriptor = methodTypeEntry.getDescriptor();
+            collectedClassNames.addAll(getClassesFromMethodDescriptor(descriptor));
+        }
+    }
+
+    // Collect class names from fields
+    var fields = classNode.classFile.fields;
+    for (var field : fields) {
+        var otherClassName = getClassFromFieldDescriptor(field.getDescriptor());
+        if (otherClassName != null)
+            collectedClassNames.add(otherClassName);
+    }
+
+    // Collect class names from methods
+    var methods = classNode.classFile.methods;
+    for (var method : methods) {
+        collectedClassNames.addAll(getClassesFromMethodDescriptor(method.getDescriptor()));
+    }
+
+    return collectedClassNames;
+}</code></pre>
+
+<p>As described earlier, we collect class names from a select few constant pool entry types, as well as the descriptors of fields and methods. Pretty straight forward!</p>
+
+<p>I've also added a method called <code>generateDotFile()</code>, which given a <code>ClassDependencyGraph</code> spits out a <a href="https://en.wikipedia.org/wiki/DOT_(graph_description_language)">DOT</a> formatted string. The DOT file format is a standard format for describing graphs that can be visuazlized, e.g. via this <a href="https://visjs.github.io/vis-network/examples/network/data/dotLanguage/dotPlayground.html">online visualizer</a>. Here's DOT file for the the full graph of reachable classes for our simple app, including bootstrap classes. Plug it into the visualizer above!</p>
+
+<pre><code>digraph classDependencies {
+node [shape=box, fontsize=16]
+"io/marioslab/shakyboi/tests/apps/simple/Zap" -> "java/lang/Object";
+"io/marioslab/shakyboi/tests/apps/simple/Zap" -> "java/lang/String";
+"io/marioslab/shakyboi/tests/apps/simple/Zap" -> "java/lang/System";
+"io/marioslab/shakyboi/tests/apps/simple/Zap" -> "java/io/PrintStream";
+"java/lang/Object" [color=#00ff00];
+"java/lang/String" [color=#00ff00];
+"io/marioslab/shakyboi/tests/apps/simple/Zop" -> "java/lang/Object";
+"io/marioslab/shakyboi/tests/apps/simple/Zop" -> "java/lang/String";
+"io/marioslab/shakyboi/tests/apps/simple/Zop" -> "java/lang/System";
+"io/marioslab/shakyboi/tests/apps/simple/Zop" -> "java/io/PrintStream";
+"io/marioslab/shakyboi/tests/apps/simple/App" [color=#ff0000];
+"io/marioslab/shakyboi/tests/apps/simple/App" -> "java/lang/Object";
+"io/marioslab/shakyboi/tests/apps/simple/App" -> "java/lang/String";
+"io/marioslab/shakyboi/tests/apps/simple/App" -> "io/marioslab/shakyboi/tests/apps/simple/Bar";
+"io/marioslab/shakyboi/tests/apps/simple/Bar" -> "io/marioslab/shakyboi/tests/apps/simple/Zap";
+"io/marioslab/shakyboi/tests/apps/simple/Bar" -> "java/lang/Object";
+"io/marioslab/shakyboi/tests/apps/simple/Bar" -> "java/lang/String";
+"io/marioslab/shakyboi/tests/apps/simple/Bar" -> "io/marioslab/shakyboi/tests/apps/simple/Zop";
+"io/marioslab/shakyboi/tests/apps/simple/Bar" -> "java/lang/System";
+"io/marioslab/shakyboi/tests/apps/simple/Bar" -> "java/io/PrintStream";
+"java/lang/System" [color=#00ff00];
+"java/io/PrintStream" [color=#00ff00];
+}</code></pre>
+
+<p>Having quick ways to visualize graphs comes in handy a lot when doing compiler-y stuff, from visualizing abstract syntax trees to control flow graphs. If you plan on going in that direction, I strongly recommend to take the time and build such simple visualization tools.</p>
+
+<p>You can see the <cod>ClassDependencyGraphGenerator</cod> in action in the <a href="https://github.com/badlogic/shakyboi/blob/cd0751474fcc5308d321909ca0380bf3a0bf8845/src/test/java/io/marioslab/shakyboi/tests/ClassDependencyGraphTest.java"><code>ClassDependencyGraphTest</code></a> class. It works for this simple app :)</p>
+
+
+<h3>Up next</h3>
+
+<p>Next time, we'll create the driver, aka the command line interface, of Shakyboi. We'll have to deal with a few more book keeping things, and reflection. Exciting times ahead!</p>
+
+<p>Discuss this post on <a href="https://twitter.com/badlogicgames/status/13661328">Twitter</a>.</p>
+
+{{include "../../../_templates/post_footer.bt.html"}}
