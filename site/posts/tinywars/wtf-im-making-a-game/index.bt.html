@@ -1,0 +1,129 @@
+{{
+metadata = {
+title: "tinywars - WTF, I'm making a game?",
+summary: "",
+image: "z-dos.png",
+date: parseDate("2021/08/13 12:00"),
+published: true,
+}
+}}
+<!-- Hi! -->
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+
+{{post.figure("z-dos.png", "Bitmap Brothers ❤️")}}
+
+<h2>tinywars - WTF, I'm making a game?</h2>
+
+<p>Why, hello there. Long time no see. You may know me from such failed projects like <a
+        href="/posts/wee/dissecting-history">Wee</a> or <a href="/posts/qak/minimally-viable-product">Qak</a>. Today,
+    I'm here to
+    tell you about my next big disappointment: tinywars!</p>
+
+<p>A few weeks ago, <a href="https://twitter.com/cokeandcode">Kev</a> of <a href="https://www.cokeandcode.com/">Coke And
+        Code</a> fame, twerterered about his latest
+    game, <a href="https://talesofyore.com">Tales of Yore</a>. It's a minimalist, WIP MMORPG and it just blew me away.
+    Go check it out.</p>
+
+<p>Kev's applying a very iterative "I'm a dad and can only spend a few hours a week tops on this" development mode. And
+    despite these somewhat rigid constraints, he managed to create a great little gem which gets better and better.</p>
+
+<p>In light of the arrival of our newborn son 4 weeks ago, that seems like a great activity in between diaper changes,
+    feeding sessions, and the especially creative baby entertainment sessions, consisting of fun activities like
+    "bamboozle the baby with differently colored book backs on the bookshelf" or "bamboozle the baby by badly drawing on
+    a ceramic pig with chalk".</p>
+
+{{post.figure("mrpig.jpg", "Draw me like a french pig.")}}
+
+<p>While Kev went straight to "Science-based MMORGP with dragons" for his passion project, my ambitions are a little
+    more modest. There was one
+    game in my childhood that really left an impression: <a href="https://en.wikipedia.org/wiki/Z_(video_game)">Z</a>,
+    by the glorious Bitmap Brothers. Give it a try in the embed below!</p>
+
+<center><iframe src="https://archive.org/embed/Z_1020" width="560" height="384" frameborder="0"
+        webkitallowfullscreen="true" mozallowfullscreen="true" allowfullscreen></iframe></center>
+
+<p>Z was different from other real-time strategy games at the time. Instead of base building, you conquer sections on
+    the map by capturing the section's flag with a unit. Once you control a section, you can use the section's
+    production facility to build additional units. If the
+    section is taken over by the enemy, the facility is immediately theirs to use for production.</p>
+
+<p>A similar mechanic applies to vehicles, which can be found around the map, or build in production facilities.</p>
+
+<p>Almost everything on the map can be destroyed, from rock formations, to bridges, and even production facilities.
+</p>
+
+<p>As the game progresses, your units gain experience, which translates into better aim and evasive maneuvers when
+    attacked. You kind of get attached to the little fuckers.</p>
+
+<p>Each party starts out with one section under their control, which also houses their fort. The game ends when the
+    forts of all enemy parties
+    have been destroyed.</p>
+
+<p>All of this made for comparatively fast paced, tug-of-war game play. No time was wasted on building a beautiful base.
+    It was all just "grab section flag", "build units", "pew pew pew".</p>
+
+<p>I've never played Z in multi-player mode, but I always had a feeling it would lend itself incredibly well for online
+    play.
+</p>
+
+<p>So that's what I want to build. A Z inspired multi-player real-time strategy game. No base building, just "pew, pew".
+    I'll leave
+    the detailed game design for later. I think it will naturally emerge from the basic mechanics I want to implement
+    bit by
+    bit, as time and baby permits. Accident driven development.</p>
+
+<h3>Stack-edy Stack</h3>
+{{post.figure("loljs.png", "Accurate.")}}
+<p>If you guessed I'd be using libGDX for this, you'd be wrong. See, libGDX is fine. But I also want to use this
+    opportunity to learn. And complain. As I've complained enough about libGDX in my life, and since this is going to be
+    a browser game, I might as well learn all the fancy tech them young whippersnappers created over the past 10 years!
+</p>
+
+<p>I'll be using TypeScript for both the front-end and back-end. TypeScript's been with me for a while, and I think it's
+    the best thing that has happened to the web in the past years. Thanks, Microsoft. I guess?</p>
+
+<p>Instead of reinventing the wheel in terms of basic game loop, input, rendering and sound, I'll be using Kev's brand
+    new <a href="https://github.com/kevglass/gute">Gute</a> library.</p>
+
+<p>And I guess that's where the fun ends and the tortu^H^H^H^H learning experience begins.</p>
+
+<p>The server side will be
+    implemented using <a href="https://nodejs.org/">Node.js</a> in combination with <a
+        href="https://socket.io/">socket.io</a> as a thin wrapper around Websockets. I'm unsure yet whether I should
+    serve static files via Nginx or do it via <a href="https://expressjs.com/">Express</a> from within the Node server.
+</p>
+
+<p>For the front-end chrome, like lobby and chat system, I'll likely make do with just vanilla JavaScript plus the DOM.
+    If I feel adventurous, I may give <a href="https://vuejs.org/">Vue.js</a> a try.</p>
+
+<p>Daddy likes short iteration loops, so the biggest hurdle will be figuring out a good development workflow for all of
+    the above, including such newfangled things as IDE support (VS Code), debugging, and deployment.</p>
+
+<p>Since this is a networked real-time strategy game, there'll be plenty of opportunity to explore topics like networked
+    lockstep simulations, path finding, group movement, and basic RTS AI (in case I add a single player mode).</p>
+
+<h3>The plan</h3>
+<p>I'll just wing it. Which means I'll get the boring bits like the development workflow and deployment out of the way,
+    and then work out basic game infrastructure and mechanics. Once that's done, I'll have to tie it all together into
+    an actual game. I've <a href="https://github.com/badlogic/quantum">written an RTS before</a> so there's a good
+    chance I might actually finish this for once.</p>
+
+<p>I'll need help with graphics and audio and will try my luck outsourcing that for $$$ on Twitter. I may also team up
+    with someone who can create a coherent story for the world the game will be set in and possibly help with game
+    design-y things and balancing.</p>
+
+<p>I'll document my findings along the way on this very blog. I will likely curse a lot, both IRL and here. And maybe
+    some useful text articles on game dev-y topics may fall out at the end. The previously failed projects I documented
+    here mostly failed because writing about them became a burden. We'll see how this works out this time. I might just
+    prioritize actually work on the game.</p>
+
+<h3>Up next</h3>
+<p>Next time I'll take you on a wonderful journey of figuring out what the fuck a Node.js is and how to best stab myself
+    in the eye with it.</p>
+
+<p>Discuss this post on <a href="https://twitter.com/badlogicgames/status/1363151826464423936">Twitter</a>.</p>
+
+{{include "../../../_templates/post_footer.bt.html"}}
