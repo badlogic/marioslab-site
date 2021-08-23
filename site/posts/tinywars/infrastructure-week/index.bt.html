@@ -1,0 +1,649 @@
+{{
+metadata = {
+title: "tinywars - Infrastructure week",
+summary: "",
+image: "infra-week.jpeg",
+date: parseDate("2021/08/24 12:00"),
+published: true,
+}
+}}
+<!-- Hi! -->
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+
+{{post.figure("infra-week.jpeg", "Building a game on strong foundations.")}}
+
+<h2>tinywars - Infrastructure week</h2>
+
+<p>
+    So I've <a href="/tinywars/wtf-im-making-a-game/">foolishly decided to build a real-time strategy browser game</a> using elbow grease, spit, blood, tears, TypeScript and <a href="https://github.com/kevglass/gute">Gute</a> in the front, and TypeScript and Node.js in the back.
+</p>
+
+<p>
+    While I have quite some TypeScript experience, I never had the need for using 3rd party libraries or a bundler. The last time I touched Node.js, I was a young engineer trying my luck in San Francisco, 10 years ago. I worked for an aspiring mobile gaming start-up. The kind that would treat their team of 40 artists like shit, then fire them all in a single week, only to rehire most of them. Guess that's what happens, when your CEO thinks he's Steve Jobs (literally) but has zero experience in games, and the CTO keeps proposing innovative things like base64 encoding everything "because that compresses it to binary, and we'll call it ASSZIP", while doing nothing but hogging that sweet Xbox in the office that's "totally available to everyone at any time".
+</p>
+
+<p>
+    Oh hey, looks like I drifted off. Guess that's because my memory of that company is so closely tied to my experience with Node.js.
+</p>
+
+<p>
+    Fast forward 10 years, and here I am trying my luck with this magic technology! I'm sure it's matured since and is ready to go. I can't wait to transfer my usual workflows over to this unknown territory. Here's how that went.
+</p>
+
+<h3>Tell me what you want, what you really, really want.</h3>
+
+{{post.figure("tellmewhatyouwant.jpeg", "The 5 stages of grief, colorized.")}}
+
+<p>
+    I'm absolutely not picky about my work machine and tools. I used to work on a 10" netbook, hunched over on a bad IKEA table chair for years. Some would say that makes me a bad craftsman. I say this makes me flexible! Just not in my spine.
+</p>
+
+<p>
+    However, there's a baseline of functionality I require from my development tools for my development workflow. You see, the compositum "workflow" consists of the words "work" and "flow". Not having my baseline functionality disrupts my "flow", which negatively impacts my "work". So I better be able to get my workflow going. Here's what I need.
+</p>
+
+<p>
+    Some form of <strong>build system</strong> that let's me express which files in my project structure are source files, and how to compile them to whatever flavor of executable code the execution environment requires.
+</p>
+
+<p>
+    A <strong>dependency management system</strong>, that lets me pull in the fine code of my peers, so I can blame them when my code does not work. I can live with this being optional and just plunging a copy of the dependency's source code/precompiled binaries into my source tree, also known as vendoring, or "C and C++ dependency management - 2021 edition".
+</p>
+
+<p>
+    A <strong>code editor with code navigation and auto-complete</strong>. Because typing code, understanding other people's code, and understanding code of mine that's older than 24 hours, shouldn't be a massive pain in the butt. This naturally excludes Xcode for all my development purposes.
+</p>
+
+<p>
+    A <strong>debugger</strong>. No, <code>printf()</code> will not fucking do. Anyone telling you <code>printf()</code> debugging is good enough hates themselves and wants to unnecessarily suffer. Ideally, the debugger and its target environment allow code hot swapping or live editing/coding: the act of switching out code and possibly modify types while the program is running and keeps its state. This is usually where most development environments fall over and make your life miserable. These environments are often created by people who insist that <code>printf()</code> debugging is the gold standard. Fuck em, the Lispers were right, printf'ers are wrong. Let me illustrate that even one of the most hated combos in dev can do what printfdont, using trusty old Java and Eclipse.
+</p>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/AmQrgcQJBeM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" style="margin: 0 auto; margin-bottom: 1em; display: block;" allowfullscreen></iframe>
+
+<p>
+    Every time I press `CTRL+S`, Eclipse invokes its Java compiler, then tells the JVM "Hey, here's some new code for the method of this class". The JVM will happily replace the old code with the new, all while the app keeps jugging along, retaining all its state. This is an excellent way to prototype game mechanics, or debug more complex systems that require ad-hoc, one-off instrumentation. The JVM's implementation has a bunch of caveats, i.e. I can not change existing method signatures, and I can not add or remove fields. With a more functional mindset you can go beyond these limitations in many cases though.
+</p>
+
+<p>
+    This isn't a Java thing. You can have this in C#, C, C++, and many other environments. Surely, in JavaScript/TypeScript land, they'll have something like this, right?
+</p>
+
+<p>
+    Before I get into the thick of it, let me note that the below is written a bit tongue in cheek. Mostly because I experienced quite a bit of frustration during the process of figuring out how to best approach this. Partly because of my own fault, partly because of the quality of tools and their documentation. In the end, it's not all terrible, and I appreciate the uncountable hours poured into these tools by the community. So, no hard feelings, I'm just an old man yelling at clouds for fun and no profit.
+</p>
+
+<p>
+    Let's see how my target environments and the respective development tools stack up against my modest requirements.
+</p>
+
+<h3>Build and dependency management for code targeting the browser and Node.js</h3>
+
+<p>
+    Build and dependency management usually go hand in hand. Newer language entries like Go or Rust even go so far as to each offer only one true, sanctioned path to build and dependency management happiness. I think that's the right idea.
+</p>
+
+<p>
+    JavaScript (and by proxy TypeScript) sit at the opposite end of that spectrum. Apparently it's very en vogue to create new build and dependency management systems in JavaScript land.
+</p>
+
+<p>
+    The community didn't just reinvent the wheel. They reinvented the wheel multiple times without looking at each others' wheels, or old people's wheels. Sometimes an actual wheel popped out. Other times, the wheel was more triangle shaped, but if you squint hard enough, it's still kind of like a wheel. Some even managed to create a pancake instead of a wheel. It's all very impressive and tragic at the same time. So let me start with the least confusing and pretty much settled part.
+</p>
+
+<p>
+    Dependency management for both browser and Node.js is usually handled by <a href="https://nodejs.dev/learn/an-introduction-to-the-npm-package-manager">npm</a>. I'll refrain from going into detail about the company that's actually hosting the registry of packages. If you want a good laugh, just google "npm inc". The really cool kids have switched from npm to <a href="https://yarnpkg.com/">yarn</a>. Here's how you install yarn:
+</p>
+
+<pre><code>npm install -g yarn</code></pre>
+
+<p>
+    Alright, off to a marvelous start.
+</p>
+
+<p>
+    Both npm and yarn expect you to have a <code>package.json</code> file in your project. That file has some basic info on your project like its name, a list of dependencies your code depends on using name/version coordinates, and another list of dependencies that you only depend on for development, which will not go into the final output of your build.
+</p>
+
+<p>
+    You're not only managing code dependencies though, but also tools dependencies. E.g. to compile TypeScript to JavaScript, you need the TypeScript compiler. You can install it globally or local to your project as a development dependency via npm. That's not the worst idea in my book. It solves one issue with many other development environments: the installation and versioning of your development tools. People who have to manage a Visual Studio toolchain would cry for happiness if they had something like this. Alas, we get this:
+</p>
+
+{{post.figure("ohgod.png", "Dev tool installer or mine sweeper?")}}
+
+<p>
+    There's supposedly a CLI to do what the GUI offers. And I wish you good luck <a href="https://docs.microsoft.com/en-us/visualstudio/install/use-command-line-parameters-to-install-visual-studio?view=vs-2019">figuring that shit out</a>.
+</p>
+
+<p>
+    Assuming you have installed Node.js, which includes npm, you can simply run <code>npm install</code> after checking out an npm-managed project. If the creators did their job well, you'll now have all dependencies and development tools installed in a folder called <code>node_modules/</code> in your project root. So, good job, kids! Just don't look at the size of that <code>node_modules</code> folder, and the <code>package-lock.json</code> file next to it.
+</p>
+
+<p>
+    The community really seems to like CLIs for everything, and I think that's nice. Instead of adding dependencies to <code>package.json</code> manually like a peasant, I type <code>npm install &lt;dependency-name&gt;</code> and *poof* a new line appears in the file, including a version string I didn't have to type.
+</p>
+
+<p>
+    Finally, the <code>package.json</code> file also allows you to have a <code>scripts</code> section, where you can freely define commands in form of name/shell script pairs. This is where you usually invoke the build system(s).
+</p>
+
+<p>
+    Here's what the <a href="https://github.com/badlogic/tinywars/blob/82517622d866e55c1de9827933757f15911379e2/package.json">package.json</a> for tinywars looks like so far.
+</p>
+
+<pre><code>{
+    "scripts": {
+        "dev": "concurrently \"npm:dev-server\" \"npm:dev-client\"",
+        "dev-server": "tsc-watch -p tsconfig.server.json --onSuccess \"node ./build/server.js\"",
+        "dev-client": "./node_modules/.bin/esbuild client/tinywars.ts --bundle --outfile=assets/tinywars.js --sourcemap --watch"
+    },
+    "dependencies": {
+        "chokidar": "^3.5.2",
+        "express": "^4.17.1",
+        "gute": "^1.0.43",
+        "socket.io": "^4.1.3",
+        "socket.io-client": "^4.1.3"
+    },
+    "devDependencies": {
+        "@types/express": "^4.17.13",
+        "@types/websocket": "^1.0.4",
+        "@types/ws": "^7.4.7",
+        "concurrently": "^6.2.1",
+        "esbuild": "^0.12.20",
+        "tsc-watch": "^4.4.0"
+    }
+}</code></pre>
+
+<p>
+    Skip the <code>scripts</code> section and have a look at the dependencies sections. You'll notice that I have dependencies for both the frontend (Gute, socket.io-client) and backend (chokidar, express, socket.io) in the same <code>package.json</code> file. What gives?
+</p>
+
+<p>
+    I've played a bit with different project structure layouts, i.e. separating the client and server builds completely, sharing some bits, etc. In the end, this seemed to be the simplest setup for this project. I'm unlikely to end up with an Enterprise grade micro-service behemoth that requires a clear delineation of things so multiple teams can work on it. I'm not multiple teams. Everything just gets plunged into <code>node_modules</code>, from where it is referenced by the build tools, be they for the browser or for Node.js. Good enough.
+</p>
+
+<p>
+    Also note the <code>@types/xxx</code> development dependencies. That's how you pull in the TypeScript type definitions (<code>.ds.ts</code> files) to get that sweet sweet auto-completion in your TypeScript capable editor of choice. Dependency management ✓.
+</p>
+
+<p>
+    Let me segue to build systems without a segue! For the Node.js backend, I would not need a build system if I used JavaScript. Just write your <code>.js</code> files and tell Node.js where to find the file with your server code's entry point. Node will resolve dependencies you specify via <code>require()</code> or the more modern <code>import</code> statement relative to your <code>.js</code> files, and from the <code>node_modules</code> at runtime. That's called module resolution and we'll get back to that in a bit, it's kind of hilarious.
+</p>
+
+<p>
+    But since I'm using TypeScript for the backend, it's just a tiny bit more complicated. Node.js doesn't speak TypeScript natively (unless you use <a href="https://typestrong.org/ts-node/">ts-node</a>, which I'm not, as I want to avoid too many moving parts). I have to invoke the TypeScript compiler to spit out some good old JavaScript first. To do that, I need a <a href="https://github.com/badlogic/tinywars/blob/82517622d866e55c1de9827933757f15911379e2/tsconfig.client.json">tsconfig.json</a> file that specifies my source files and compiler options. Here it is in all its glory for the server code:
+</p>
+
+<pre><code>{
+    "compilerOptions": {
+        "sourceMap": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "rootDir": "./server",
+        "outDir": "build"
+    },
+    "include": [
+        "server/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules"
+    ],
+}</code></pre>
+
+<p>
+    Pretty straight forward, no big surprises. The <code>rootDir</code> and <code>esModuleInterop</code> options are a bit mysterious, but we can safely ignore them for this blog post. Trust me.
+</p>
+
+<p>
+    To turn my <code>.ts</code> files into <code>.js</code> for consumption by Node.js, I call <code>tsc -p tsconfig.server.json</code>. I can then start my Node app via <code>node build/server.js</code>. That's it.
+</p>
+
+<p>
+    Now, the frontend side... that's just bat shit crazy. Let's talk about JavaScript module systems.
+</p>
+
+<p>
+    Back in the old days, we'd just add a few lines of JavaScript code to our <code>.html</code> files inline and call it a day. Eventually, our JavaScript code got bigger and bigger because we wanted to be cool and have fancy interactive websites, and inlining became a bit unwidely. So we started putting the code into <code>.js</code> files and pulled them in via <code>&lt;script&gt;</code> tags with a <code>src</code> attribute and no inline code, and the world was kinda rosy again. Finally, we figured that we'd also want to use code by other people, like the very cool, totally not broken jquery library. And while we could just pull that in with another <code>&lt;script&gt;</code> tag, it wasn't ideal, as that'd mean another request to our already overwhelmed web 2.0 ready server. So we started merging those beautiful <code>.js</code> files into a single file. And we called it a bundle and thought ourselves very smart. But we were not, as in JavaScript, everyone and their mom is in global scope which is prone to name collisions. So we had to start isolating our code from each other with <code>(function() {})()</code>, which made us sad. Then Node.js came along, all without a browser, and was like "Look, we can define modules and have them resolved through references in code instead of all this duct tape shit and keep things in nicely separated files on disk". And thus <strong>JavaScript module systems and module loaders</strong> were born. Then the frontend people wanted that too, but bundle the module files into a single <code>.js</code> file, and pretend there's a module loader in the browser. And thus the <strong>frontend bundler</strong> was born. And then it all just got very blurry and sad.
+</p>
+
+<p>
+    Over the years we ended up with - let me count - 4 different module systems (and multiple corresponding loaders) that survived and are still in use.
+</p>
+
+<p>
+    <a href="https://nodejs.org/docs/latest/api/modules.html">CommonJS</a> is what Node uses, and it's somewhat sensible. <a href="https://requirejs.org/docs/whyamd.html">AMD</a> is a fork of CommonJS, by members of the team who created CommonJS. There was a dispute over async module loading and it got ugly, and then we had AMD, which only works in the browser. Then there's <a href="https://github.com/umdjs/umd">UMD</a>, which works in both the browser and in Node.js, and even lets you use it from vanilla JS without a module loader. And finally, the ECMAScript folks got their shit together and sanctioned the one true way to be supported by JavaScript out of the box called <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules">ECMAScript or ES2015 modules</a>. Plus new JavaScript syntax for defining imports and exports of modules. That's the same syntax TypeScript has always used.
+</p>
+
+<p>
+    Now that I know what those module systems do, I need to pick one of the many available bundlers. And, oh boy, I was not prepared for this.
+</p>
+
+<p>
+    You see, just as with module systems, the community decided they need a new "bundler" every month or so. You can now pick between <a href="https://webpack.js.org/">webpack</a>, <a href="https://rollupjs.org/guide/en/">rollup.js, <a href="https://browserify.org/">Browserify</a>, <a href="https://parceljs.org/">Parcel</a>, <a href="https://esbuild.github.io/">esbuild</a> and probably another dozen or so bundlers.
+</p>
+
+<p>
+    I went in descending order of perceived popularity and started with webpack. Well, that was a mistake. I'm sure not even webpack's creators can use webpack. Also, it's extremely slow, even for a tiny project like the current tinywars frontend which has 1 TypeScript file and 1 dependency, which itself has 0 dependencies. A turn around time of 7 seconds is simply unacceptable. Maybe I misconfigured it somehow? I'd be happy to fix my mistakes, but the documentation is as terrible as the out-of-the-box build times.
+</p>
+
+<p>
+    Then I looked at Parcel, which claimed zero config goodness out of the box. Well. It too is dog slow (5 seconds). And its docs are even worse than webpack's. Which wouldn't be an issue if it indeed was zero config. But it really isn't.
+</p>
+
+<p>
+    Finally, having spend way to much time getting webpack and Parcel to do supposedly simple tasks, and being mightily frustrated by their build times and documentation, I was told about esbuild on Twitter. And, by god, it is the first tool from this hellscape that is actually good. Zero surprises, to the point useful docs, and fast. 50ms fast. Unlike the others, it's not written in JavaScript but Go. I have a feeling the esbuild author was somehow forced to work on JavaScript bullshit and was so fed up with the state of things, they reached into a sane toolbox and just build something that would make them not want to run away screaming. esbuild author, you did it. Thank you.
+</p>
+
+<p>
+    So then, how does building for the frontend work? Again, we start with a <code>tsconfig.json</code> file:
+</p>
+
+<pre><code>{
+    "compilerOptions": {
+        "sourceMap": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "outDir": "build"
+    },
+    "include": [
+        "./client/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}
+</code></pre>
+
+<p>
+    And again, most of this is self-explanatory. However, we'll not invoke the TypeScript compiler to compile the <code>.ts</code> sources into <code>.js</code>. Instead, esbuild is called, which uses the <code>tsconfig.json</code> and the <code>node_modules</code> folder to look up dependencies. Here's how the <code>tinywars.js</code> bundle is build:
+</p>
+
+<pre><code>./node_modules/.bin/esbuild client/tinywars.ts --bundle --minify --sourcemap --outfile=assets/tinywars.js</code></pre>
+
+<p>
+    And surprisingly enough, this straight forward invocation works as intended. It merges all code and dependencies into <code>assets/tinywars.js</code> which can then be served along side <code>.html</code> and <code>.css</code> files to the user's browser, including <a href="https://developer.mozilla.org/en-US/docs/Tools/Debugger/How_to/Use_a_source_map">source maps</a>.
+</p>
+
+<p>
+    There's one caveat: esbuild doesn't do any type checking of the TypeScript sources. For me, that's not a problem, as I let my editor of choice do that for me while I code. And if I want to be extra sure, I just setup a GitHub Action that invokes the TypeScript compiler properly and fails on compilation errors.
+</p>
+
+<p>
+    Which leads me to...
+</p>
+
+<h3>Visual Studio Code - an adequate editor</h3>
+
+{{post.figure("vscode.png", "VS Code, you're adequate.")}}
+
+<p>
+    Apart from Microsoft's idiotic naming of their products, there's really nothing wrong with <a href="https://code.visualstudio.com/">VS Code</a>. Not even its Electron underbelly. It's reasonably fast and very capable out of the box, especially for Node.js and browser work. It supports code navigation, i.e. go to definition, or find all references. And it has debugging support for both Node.js and browser apps. There's really not much more to say. Except: will it offer me code hot swapping when debugging?
+</p>
+
+<h3>Death to printf</h3>
+
+<p>
+    Let's start with debugging a Node.js app in VS Code. Here's an innocent little barebones skeleton <code>server.ts</code>:
+</p>
+
+<pre><code>
+import { createServer } from "http";
+import express from "express";
+import { Server, Socket } from "socket.io";
+
+const port = 3000;
+const app = express()
+const server = createServer(app);
+
+// Setup express
+app.use(express.static("assets"));
+
+// Setup socket.io
+const io = new Server(server, { path: "/ws" });
+io.on("connection", (socket: Socket) => {
+    console.log("Client connected");
+    socket.on("disconnect", (reason: string) => console.log("Client disconnected"));
+});
+
+// Run server
+server.on("listening", () => console.log(`Server started on port ${port}`));
+server.listen(port);
+</code></pre>
+
+<p>
+    It uses <a href="https://expressjs.com/">Express</a> to serve static files, e.g. <code>.html</code>, <code>.css</code>, game image and audio files, as well as the bundled <code>tinywars.js</code> file that's generated from the frontend code via esbuild.
+</p>
+
+<p>
+    tinywars is going to be a multiplayer game, so I need to establish persistent connections between clients and the server. For that I use <a href="https://socket.io/">socket.io</a>, a nice wrapper around websockets which can fallback to long polling if websockets are not available for some reason.
+</p>
+
+<p>
+    Before being able to debug this little Node.js app, I have to compile it to JavaScript via the TypeScript compiler, i.e. <code>tsc -p tsconfig.server.json</code>. I'll end up with a <code>server.js</code> file and a <code>server.js.map</code> file, also known as a <a href="https://developer.mozilla.org/en-US/docs/Tools/Debugger/How_to/Use_a_source_map">source map</a>. The source map file is needed to map lines and variables in the <code>server.js</code> file that's being run by Node.js back to <code>server.ts</code>.
+</p>
+
+<p>
+    If I want to debug this through VS Code, I have multiple options. The simplest option I found was VS Code's <a href="https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_auto-attach">auto-attach</a>. When enabled, you simply open a terminal in VS Code, start your Node.js app via <code>node build/server.js</code>, and VS Code will automatically attach a debugger to the Node.js instance.
+</p>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/atxnYYZNpmo" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" style="margin: 0 auto; margin-bottom: 1em; display: block;" allowfullscreen></iframe>
+
+<p>
+    Alright, basic debugging seems to work, and I even got a tiny REPL via the debug console. But can I code hot swap?
+</p>
+
+<p>
+    The short answer to this is: fuck no. The longer answer is more complicated. There are two ways to achieve it.
+</p>
+
+<p>
+    The first one is a duct tape solution called <a href="https://webpack.js.org/concepts/hot-module-replacement/">hot module replacement (HMR)</a>. It seems the webpack folks are responsible for this specific fever dream, so naturally, others like Parcel also eventually started to support it. In both cases the word "support" can have very lenient interpretations.
+</p>
+
+<p>
+    Instead of using V8 debugging infrastructure to replace code in the JavaScript VM, HMR patches in new code by abusing the module loader in very fucking creative ways. It took me a night to try to go through all the motions only to realize that this is not a viable solution for my code hot swapping needs. It simply does not work. So I abandoned it, along with webpack and Parcel, as HMR was the only reason for me to consider using them.
+</p>
+
+<p>
+    The second approach is more similar to what the JVM offers as shown above. V8 has a TCP based debugging protocol called <a href="https://v8.dev/docs/inspector">inspector</a>. It's very capable and in my opinion beats e.g. the JVM's <a href="https://docs.oracle.com/javase/8/docs/platform/jpda/jdwp/jdwp-protocol.html">JDWP protocol</a>. One of the best parts of the inspector protocol is the fact that it allows multiple "inspectors" to attach to the same V8 instance, which opens up quite a few possibilities. And like the JDWP's <code>redefineClass</code>, the inspector protocol offers a command to reload a script on the fly while retaining state called <a href="https://chromedevtools.github.io/devtools-protocol/tot/Debugger/#method-setScriptSource"><code>setScriptSource</code></a>.
+</p>
+
+<p>
+    In theory that could be used with a Node.js instance started in debug mode via the <code>--inspect</code> flag (that's what VS Code adds automatically when auto-attach is enabled and you start Node.js in a terminal). However, VS Code's <a href="https://github.com/microsoft/vscode-js-debug">JavaScript debug engine</a>, which is build on top the inspector protocol, doesn't support that. Guess I could try to fix this up myself somehow. Maybe in a future blog post.
+</p>
+
+<p>
+    For now, I have to resort to what most frontend people do. Hard reload pages (or the Node.js backend) on code changes. That loses me all state, but at least I don't have to switch to the browser and F5 my way into depression.
+</p>
+
+<p>
+    As usual in this crazy environment, there are about a gazillion ways to achieve this. Here's what I found to be the least offensive way for me.
+</p>
+
+<p>
+    On the Node.js backend, I use a little package called <a href="https://github.com/gilamran/tsc-watch">tsc-watch</a>. It takes the <code>tsconfig.server.json</code> file, figures out what source files it consists of, and watches them for changes. In case of a change, it recompiles the TypeScript sources to JavaScript, then calls a freely definable command on success. In my case that's <code>node ./build/server.js</code>. Any processes tsc-watch started before will be killed. I do lose state that way, but at least I do not have to manually restart the Node.js server every time I make a code change. Also, VS Code's auto-attach will disconnect from the killed process and reconnect to the newly spawned process. I loose my debugging position, but such is life in this crazy new world.
+</p>
+
+<p>
+    Now for the frontend, I have a very special thing cooked up. You'll love it! In my defense, I first looked into all commonly used options. Like <a href="https://github.com/webpack/webpack-dev-middleware">webpack-dev-middleware</a>, when I was still trying to get webpack working. But that just made me very angry, because it's all very much not good, so I looked into alternatives. I found <a href="https://github.com/tapio/live-server">Live Server</a>, which is a little HTTP server that watches your HTML/CSS/JavaScript files for changes and makes the browser reload the page in case of a change. It does so by injecting some client/server communication JavaScript magic into the files it serves. I think. That's how I'd do it at least.
+</p>
+
+<p>
+    And since I already have a HTTP server with Express routing, that's also supposed to serve my static frontend files, I figured I'd just build that myself. Here, have your eyes bleed:
+</p>
+
+<pre><code>import { Express, Response } from "express";
+import * as fs from "fs";
+import * as path from "path";
+import chokidar from "chokidar"
+
+var lastChangeTimestamp = 0;
+
+export function setupLiveEdit(app: Express, assetPath: string) {
+    chokidar.watch(assetPath).on('all', () => lastChangeTimestamp = Date.now());
+
+    var reloadScript = `
+    &lt;script&gt;
+        (function () {
+            var lastChangeTimestamp = null;
+            setInterval(() => {
+                fetch("/live-edit")
+                    .then(response => response.text())
+                    .then(timestamp => {
+                        if (lastChangeTimestamp == null) {
+                            lastChangeTimestamp = timestamp;
+                        } else if (lastChangeTimestamp != timestamp) {
+                            location.reload();
+                        }
+                    });
+            }, 100);
+        })();
+    &lt;/script&gt;
+    `;
+
+    let sendFile = (filename: string, res: Response<any, Record<string, any>>) => {
+        fs.readFile(path.join(__dirname, "..", assetPath, filename), function (err, data) {
+            if (err) {
+                res.sendStatus(404);
+            } else {
+                res.setHeader("Content-Type", "text/html; charset=UTF-8");
+                res.send(Buffer.concat([data, Buffer.from(reloadScript)]));
+            }
+        });
+    };
+
+    app.get("/", (req, res, next) => sendFile("index.html", res));
+    app.get("/*.html", (req, res, next) => sendFile(req.path, res));
+    app.get("/live-edit", (req, res) => res.send(`${lastChangeTimestamp}`));
+}</code></pre>
+
+<p>
+    This will inject itself in between requests to HTML files from the client and Express replying with the respective file's content. It adds a tiny little JavaScript to the HTML file before returning it to the client, which will periodically poll the <code>/live-edit</code> route. That endpoint on the server tells the client when any of the static files served by the server has changed via a timestamp. I get that info by using <a href="https://github.com/paulmillr/chokidar">chokidar</a>, a file watching library. You'd think this stuff was built into Node.js, and it is. It's just broken.
+</p>
+
+<p>
+    So my Node.js server can now serve static files, and in debug mode injects JavaScript that will make the browser ask the server if a file has changed. If that's the case, the page reloads itself. Now I just need a thing similar to tsc-watch that recompiles my frontend TypeScript code to JavaScript in case of a change. Thankfully, esbuild has a watch mode, so I'm using that.
+</p>
+
+<p>
+    All of this is condensed into that mysterious <code>scripts</code> section in the <code>package.json</code> file above. Here it is again:
+</p>
+
+<pre><code>"scripts": {
+    "dev": "concurrently \"npm:dev-server\" \"npm:dev-client\"",
+    "dev-server": "tsc-watch -p tsconfig.server.json --onSuccess \"node ./build/server.js\"",
+    "dev-client": "./node_modules/.bin/esbuild client/tinywars.ts --bundle --outfile=assets/tinywars.js --sourcemap --watch"
+  },</code></pre>
+
+<p>
+    All I have to do when starting to work on tinywars is call <code>npm run dev</code>, and the scripts in the <code>package.json</code> will ensure my server is started, and all my source files are recompiled and reloaded one way or another when they change.
+</p>
+
+<p>
+    All that's left then is to rely on VS Code's auto-attach in case I need to debug the backend, and VS Code's <a href="https://code.visualstudio.com/docs/nodejs/browser-debugging">browser debugging support</a> for the frontend. No need to switch over to Chrome for frontend debugging. I can do all the debugging in VS Code!
+</p>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/N-B9FXd-CBc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" style="margin: 0 auto; margin-bottom: 1em; display: block;" allowfullscreen></iframe>
+
+<p>Is this my ideal debugging workflow? No, but it's workable. </p>
+
+<h3>Bonus: Rate my Docker setup!</h3>
+
+<p>
+    Since this is a web project, I need to deploy my wonderful code to some place on the internet for everyone to see and laugh at. Luckily, I have a trusty big Hetzner bare metal machine somewhere in Finland that hosts all my side hustles, including this blog.
+</p>
+
+<p>
+    Now, that Hetzner only has one port 80. So I need a reverse proxy to multiplex requests to all the different sites I host on that machine. Additionally, those sites may each rely on e.g. different database versions. Neither do I want to keep installing new shit on the host Linux running on the machine. So I want all my sites on that machine to be isolated from each other the best I can on a shoe string budget.
+</p>
+
+<p>
+    That's why a few years ago, I setup <a href="https://www.docker.com/">Docker</a> on that machine. I use this <a href="https://hub.docker.com/r/jwilder/nginx-proxy">nginx-proxy</a> image as the port 80 facing reverse proxy. Each of my sites are expressed as multi-container Docker applications via <a href="https://docs.docker.com/compose/">Docker Compose</a>, who get automatically registered with the reverse proxy. They also get SSL certs automatically via <a href="https://github.com/nginx-proxy/acme-companion">acme-companion</a> that plugs into nginx-proxy.
+</p>
+
+<p>
+    To add a new site, I create a <code>docker-compose.yaml</code> file, which specifies which services, like Postgres, Nginx, etc. my site is made of. Almost all services of a site come as prebuilt Docker images to which I only pass a config file, like nginx.conf for Nginx.
+</p>
+
+<p>
+    But since I like to code, my sites usually also feature a service written by yours truly. Naturally, that's also the case for tinywars. So let me give all you nice Docker people a healthy aneurysm. Let's start with my <code>docker-compose.yaml</code> for tinywars.
+</p>
+
+<pre><code>version: "3"
+services:
+    web:
+        image: nginx:latest
+        container_name: tinywars_nginx
+        restart: always
+        volumes:
+            - ./nginx.conf:/etc/nginx/conf.d/default.conf            
+            - ./data/logs:/logs
+        environment:
+            VIRTUAL_HOST: tinywars.io,www.tinywars.io
+            LETSENCRYPT_HOST: tinywars.io,www.tinywars.io
+            LETSENCRYPT_EMAIL: "badlogicgames@gmail.com"   
+    site:
+        build:
+            dockerfile: Dockerfile.site
+            context: .
+        container_name: tinywars_site
+        restart: always        
+        environment:
+            - TINYWARS_RESTART_PWD=${TINYWARS_RESTART_PWD}
+networks:
+    default:
+        external:
+            name: nginx-proxy</code></pre>
+
+<p>
+    Nothing too exciting just yet. I have an Nginx container (<code>web</code> ) that forwards requests to the <code>site</code> container. For the Nginx container, I specify the sites domains and some data to generate letsencrypt certificates. nginx-proxy and the acme-companion will do the rest to expose the Nginx instance to the web.
+</p>
+
+<p>
+    The <code>site</code> container is my tinwars Node.js server, that serves the tinywars frontend's HTML/CSS/JavaScript. How exactly the image for this container is constructed is specified in the <code>Dockerfile.site</code>. Take note of the <code>TINYWARS_RESTART_PWD</code>. This is going to be good, real disruptive innovation.
+</p>
+
+<p>
+    Alright, hold on to your butts. This is <code>Dockerfile.site</code>:
+</p>
+
+<pre><code>FROM node:16
+
+WORKDIR /tinywars
+RUN git clone https://github.com/badlogic/tinywars /tinywars
+RUN npm install -g typescript
+RUN npm install
+CMD ./docker/main.sh</code></pre>
+
+<p>
+    Boy, will Docker veterans be confused: "Why the fuck is he git cloning his repo into the container? The same repo that contains the Docker config files? Is this real life?"
+</p>
+
+<p>
+    The answer lies in tje <code>docker/main.sh</code> file. You got to be strong now:
+</p>
+
+<pre><code>#!/bin/bash
+set -e
+
+while :
+    do
+    git pull
+    npm install
+    rm -rf build
+    tsc -p tsconfig.server.json
+    ./node_modules/.bin/esbuild client/tinywars.ts --bundle --minify --sourcemap --outfile=assets/tinywars.js
+    NODE_DEV=production node build/server.js
+done</code></pre>
+
+<p>
+    No, I'm not kidding. This is an infinite loop, pulling in the latest changes from the git repository, then recompiling backend and front sources, and finally firing up the Node.js server. That is already insanity in Docker land. But wait, it gets better! Wonder why all of this is in an infinite loop? Why, remember <code>TINYWARS_RESTART_PWD</code>? Let's look at the related <code>server.ts</code> code:
+</p>
+
+<pre><code>app.get("/restart", (req, res) => {
+	if (restartPassword === req.query["pwd"]) {
+		res.sendStatus(200);
+		setTimeout(() => process.exit(0), 1000);
+	}
+});</code></pre>
+
+<p>
+    Anyone hitting the <code>/restart</code> endpoint with a query param <code>pwd</code> matching <code>$TINYWARS_RESTART_PWD</code> can magically restart the server. This will trigger a new iteration in the bash script above, which pulls in changes from git, any new dependencies, recompiles, and restarts everything. And I think that's beautiful.
+</p>
+
+<p>
+    To add a shit cherry to the Docker insult cake, I've also created a tiny control script that let's me do deployment-y stuff locally and on the Hetzner:
+</p>
+
+<pre><code>#!/bin/bash
+
+printHelp () {
+    echo "Usage: control.sh <command>"
+    echo "Available commands:"
+    echo
+    echo "   restart    Restarts the Node.js server, pulling in new assets."
+    echo "              Uses TINYWARS_RESTART_PWD env variable."
+    echo
+    echo "   start      Pulls changes, builds docker image(s), and starts"
+    echo "              the services (Nginx, Node.js)."
+    echo
+    echo "   stop       Stops the services."	
+    echo
+    echo "   logs       Tail -f services' logs."
+    echo
+    echo "   shell      Opens a shell into the Node.js container."
+}
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+pushd $dir > /dev/null
+
+case "$1" in
+restart) 
+    curl -X GET https://tinywars.io/restart?pwd=$TINYWARS_RESTART_PWD
+    ;;
+start)
+    git pull
+    docker-compose build --no-cache
+    docker-compose up -d
+    ;;
+stop)
+    docker-compose down
+    ;;
+shell)
+    docker exec -it tinywars_site bash
+    ;;
+logs)
+    docker-compose logs -f
+    ;;
+*) 
+    echo "Invalid command $1"
+    printHelp
+    ;;
+esac
+
+popd > /dev/null</code></pre>
+
+<p>
+    So, how do I deploy? I commit my changes to the git repo, then call <code>./docker/control.sh restart</code>. That will curl the server to death, and like Jesus, it will resurrect in a new and hopefully improved form.
+</p>
+
+<p>
+    Now, I do know how to use Docker "properly". But I'm telling you, this quick turn-around deployment feels like editing <code>.php</code> files on the live server, and that's exactly how I want to work on this project. I'm aware that I'm holding it wrong, thank you.
+</p>
+
+<h3>In summary</h3>
+<p>
+    Shit's fucked yo, but you can end up with a somewhat sane workflow (if you have a similarly shaped project to mine). So here's where things ended up:
+</p>
+
+<p>
+    npm for package management. <code>package.json</code> contains dependencies of both frontend and backend code. Scripts to setup the dev environment ready for live reload. YOLO.
+</p>
+
+<p>
+    TypeScript for both frontend and backend, using the TypeScript compiler directly to build for the backend, and esbuild to build and bundle dependencies for the frontend.
+</p>
+
+<p>
+    Visual Studio Code for editing, code navigation and debugging both frontend and backend.
+</p>
+
+<p>
+    A stupid simple custom live reload mechanism that doesn't require me to fuck with "middleware" or use a separate development server next to my Node server.
+</p>
+
+<p>A slightly insane Docker setup for deployment.</p>
+
+<p>Here's my final workflow.</p>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/6GepjeXBnII" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" style="margin: 0 auto; margin-bottom: 1em; display: block;" allowfullscreen></iframe>
+
+<p>I'm happy and can now carry on writing an actual game.</p>
+
+<h3>Up next</h3>
+<p>Not sure! The sky's the limit. I'll possibly prototype some networked lockstep simulation code and see how various JavaScript engines differ in floating point math. Fun!</p>
+
+<p>Discuss this post on <a href="https://twitter.com/badlogicgames/status/1426316432640462848">Twitter</a>.</p>
+{{include "../../../_templates/post_footer.bt.html"}}
