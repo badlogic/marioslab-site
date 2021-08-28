@@ -53,6 +53,11 @@ pre > code {
 	tab-size: 3;
 }
 
+code {
+	background: rgb(221, 221, 221);
+	padding: 0 2px;
+}
+
 /* Elements */
 ul {
 	padding: 2em;
