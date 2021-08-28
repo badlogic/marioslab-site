@@ -1,0 +1,63 @@
+{{
+metadata = {
+title: "tinywars - TypeScript code hot swapping with state retention",
+summary: "",
+image: "dunce.jpeg",
+date: parseDate("2021/08/24 12:00"),
+published: true,
+}
+}}
+<!-- Hi! -->
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+
+{{post.figure("dunce.jpeg", "Me. Learning new things.")}}
+
+<h2>tinywars - TypeScript code hot swapping with state retention</h2>
+
+<p>
+    <a href="/tinywars/infrastructure-week/">Last time</a>, I went a little overboard on the number of words. I posited that there's simply no way to code hot swap JavaScript/TypeScript while retaining state, even though V8's inspector protocol appears to support exactly that.
+</p>
+
+<p>
+    Well, turns out I was wrong, as usual. An hour after publishing the blog post, I figured it out. Here's how I hot swap my TypeScript frontend code:
+</p>
+
+<ol>
+    <li>Disable any <a a href="https://github.com/badlogic/tinywars/blob/c6b4c7e8f4da65c02db35cf421798c822b13fbab/server/server.ts#L14">live-editing functionality</a> that reloads the page, as that would lose state.</li>
+    <li>Build the frontend TypeScript source code in watch mode so the <code>.js</code> and <code>.js.map</code> output files gets updated when you change a TypeScript source file.</li>
+    <li>Start the server, serving the static frontend assets, including the <code>.js</code> and <code>js.map</code> files compiled from the TypeScript sources.</li>
+    <li>Open the page using the TypeScript code in Chrome, then open the Chrome DevTools on that page.</li>
+    <li>Click the <code>Sources</code> tab, then switch to <code>Filesystem</code>.{{post.figure("sources-filesystem.png", "")}}</li>
+    <li>Click <code>Add folder to workspace</code>, and add the folder(s) containing the <code>.ts</code> source files, as well as the folder(s) containing the compiled <code>.js</code> and <code>.js.map</code> files. For tinywars, that looks like this:
+        {{post.figure("added-sources.png", "")}}
+        The green dot on a file icon indicates that Chrome was able to link the file to a file loaded from the server. In this case, both <code>game.ts</code> and <code>tinywars.ts</code> get linked to <code>tinywars.js</code> through the <code>tinywars.js.map</code> source map.
+    </li>
+    <li>Switch back to VS Code. Whenever you now edit and save one of the source files, Chrome will pull in the changes and apply them to the running app, retaining its state!</li>
+</ol>
+
+<p>You can also use Chrome DevTools to do the same with a Node.js server:</p>
+
+<ol>
+    <li>Build your backend TypeScript source code in watch mode.</li>
+    <li>Start your Node.js server in debug mode with the <code>--inspect</code> CLI argument.</li>
+    <li>Go to <a href="chrome://inspect">chrome://inspect</a>, then click select your Node.js instance. This opens a Chrome DevTools instance attached to the Node.js server.</li>
+    <li>Click the <code>Sources</code> tab, then <code>Filesystem</code> and add your Node.js server's source code folder containing <code>.ts</code> files, as well as the build output folder containing the <code>.js</code> and <code>js.map</code> files.</li>
+    <li>Edit and save the <code>.ts</code> files in your code editor, and have the Node.js server receive and apply those code updates while retaining state.</li>
+</ol>
+
+<p>You can of course also edit the source files directly in Chrome DevTools. However, that doesn't give you auto-completion and other goodies.</p>
+
+<p>Here's a video demonstrating the process for those of you who hate reading.</p>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/Yk_RPgcNS2A" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" style="margin: 0 auto; margin-bottom: 1em; display: block;" allowfullscreen></iframe>
+
+<p>Nice, right? Well, there are a few caveats that make this a bit less useful than other similar systems. The only thing that reliably works, is modifying the bodies of existing functions and methods. Adding new methods on the fly, or properties, does not work. If you want to also set breakpoints and step through and inspect your app's state, you have to use Chrome DevTools, as VS Code will get confused by the hot swapping. Kind of sad that VS Code doesn't offer this functionality out of the box.</p>
+
+<h3>Up next</h3>
+<p>Prototype the networked lockstep simulation. Pinky promise.</p>
+
+<p>Discuss this post on <a href="https://twitter.com/badlogicgames/status/1426316432640462848">Twitter</a>.</p>
+{{include "../../../_templates/post_footer.bt.html"}}
