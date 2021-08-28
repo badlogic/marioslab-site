@@ -67,7 +67,7 @@ published: true,
 
 <p>And that means a bad time for anyone trying to implement code hot swapping. The only option is to match things by source code location, and that's error prone.</p>
 
-<p>So what does V8 do when code hot swapping? I start with the V8 inspector protocol spec, as described in the last post. The protocol includes a <code>setScriptSource</code> endpoint, which is underdocumented, but appears to be meant for code hot swapping.</p>
+<p>So what does V8 do when code hot swapping? The investigation starts with the V8 inspector protocol spec, as described in the last post. The protocol includes a <code>setScriptSource</code> endpoint, which is underdocumented, but appears to be meant for code hot swapping.</p>
 
 <p>We can find a bunch of <a href="https://github.com/v8/v8/search?q=setScriptSource">references to <code>setScriptSource</code></a> in V8's source code over on GitHub. Most of which are located in tests, so we ignore them. The last search result (literally on the last page, but hey, we got GitHub Autopilot!) is actually what we are interested in: <a href="https://github.com/v8/v8/blob/e6f7a3470f5798c6fe01a2bb88ae0c2ce46b5ce6/src/debug/debug.cc#L2225"><code>Debug::SetScriptSource</code></a>.</p>
 
