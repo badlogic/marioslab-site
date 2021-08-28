@@ -73,9 +73,11 @@ published: true,
 
 <p>That merely delegates to <a href="https://github.com/v8/v8/blob/e6f7a3470f5798c6fe01a2bb88ae0c2ce46b5ce6/src/debug/liveedit.cc#L975"><code>LiveEdit::PatchScript()</code></a>. That fetches all function literals from the abstract syntax trees of the old and new script, then calls <code>LiveEdit::CalculateFunctionLiteralChanges()</code> to identify possibly matching function literals. And what does that do? A <a href="https://github.com/v8/v8/blob/e6f7a3470f5798c6fe01a2bb88ae0c2ce46b5ce6/src/debug/liveedit.cc#L595">fuzzy source code location based diff match</a> of the function literals. The rest of <code>LiveEdit::PatchScript()</code> is making love to the JIT compiler to convince it to swap in the new code without crashing.</p>
 
-<p>That's obviously very prone to errors and explains why V8's code hot swapping isn't all that great. I.e. adding a new function (literal) before an old function (literal) is enough to confuse it.</p>
+<p>That's obviously very prone to errors and explains why V8's code hot swapping isn't all that great. I.e. adding a new function (literal) before an old function (literal) is enough to confuse it. For my use case, that's good enough. May whatever drives this universe have mercy on the poor souls that try this with something like React, Angular, or Vue. It's probably also why the <a href="https://developer.chrome.com/docs/devtools/workspaces/">Chome DevTools documentation</a> doesn't mention this feature at all. It's simply not that useful in "professional" frontend development.</p>
 
-<p>But that's not V8's fault. That's merely the tragedy of JavaScript. A language poised to give us super quick iteration times, but is entirely unfit to be coerced into a really nice live coding environment that allows state retention on code patching. Sad.</p>
+<p>But that's not V8's fault. That's merely the tragedy of JavaScript. A language poised to give us super quick iteration times, but is entirely unfit to be coerced into a really nice live coding environment that allows state retention on code patching. Sad. Or to say it in the words of the Chrome DevTools documentation author:</p>
+
+{{post.figure("wat.jpeg", "JavaScript - not a care in the world.")}}
 
 <h3>Up next</h3>
 <p>Prototype the networked lockstep simulation. Pinky promise.</p>
