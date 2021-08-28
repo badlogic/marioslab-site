@@ -56,7 +56,7 @@ published: true,
 
 <p>Nice, right? Well, there are a few caveats that make this a bit less useful than other similar systems. The only thing that reliably works, is modifying the bodies of existing functions and methods. Adding new methods on the fly, or properties, does not work. If you want to also set breakpoints and step through and inspect your app's state, you have to use Chrome DevTools, as VS Code will get confused by the hot swapping. Kind of sad that VS Code doesn't offer this functionality out of the box.</p>
 
-<h3>Bonus content: why JavaScript code hot swapping will never be cool</h3>>
+<h3>Bonus content: why JavaScript code hot swapping will never be cool</h3>
 <p><strong>Update:</strong> After posting this post, I wanted to better understand why V8's code hot swap isn't that great. I started with a theory that goes like this.</p>
 
 <p>In languages like C, C#, Java, and consorts, there's a pretty clear way to match up changes between an old source file and a new one: symbols. That can be a function or method signature, a variable or field signature and so on. I f a source file changes, you "simply" recompile it, then match the generated symbols to the symbols in the running app and swap out the implementation. This works exceptionally well for many use cases, like modifying or adding functions and method. Just replace or add new code for function and method bodies to the running app and call it a day. For modifying types, i.e. adding struct or class fields, symbols are only half the solution. The hard part is "migrating" data of a modified in the running app to the new layout. That's kinda similar to database schema migrations.</p>
