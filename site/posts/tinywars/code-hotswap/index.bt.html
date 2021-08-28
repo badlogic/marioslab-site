@@ -59,11 +59,13 @@ published: true,
 <h3>Bonus content: why JavaScript code hot swapping will never be cool</h3>
 <p><strong>Update:</strong> After posting this post, I wanted to better understand why V8's code hot swap isn't that great. I started with a theory that goes like this.</p>
 
-<p>In languages like C, C#, Java, and consorts, there's a pretty clear way to match up changes between an old source file and a new one: symbols. That can be a function or method signature, a variable or field signature and so on. I f a source file changes, you "simply" recompile it, then match the generated symbols to the symbols in the running app and swap out the implementation. This works exceptionally well for many use cases, like modifying or adding functions and method. Just replace or add new code for function and method bodies to the running app and call it a day. For modifying types, i.e. adding struct or class fields, symbols are only half the solution. The hard part is "migrating" data of a modified in the running app to the new layout. That's kinda similar to database schema migrations.</p>
+<p>In languages like C, C#, Java, and consorts, there's a pretty clear way to match up changes between an old source file and a new one: symbols (as in unique names a linker can use to match things up). That can be a function or method signature, a variable or field signature, and so on. If a source file changes, you "simply" recompile it, then match the generated symbols to the symbols in the running app and swap out the implementation.</p>
 
-<p>Now, JavaScript doesn't have these kind of cold hard symbols. What it does have is function literals that can be assigned to globally scoped variables, which is as close as one can get to something akin to symbols.</p>
+<p>This works exceptionally well for many use cases, like modifying or adding functions and method. Just replace or add new code for function and method bodies to the running app and call it a day. For modifying types, i.e. adding struct or class fields, symbols are only half the solution. The hard part is "migrating" data of a modified type in the running app to the new layout. That's kinda similar to database schema migrations. And we all know how "automatic" than can be done.</p>
 
-<p>Most often you don't even have a globally scoped variable holding on to a reference to a function, but a lose web of anonymous function literals stored in anonymous objects. And that means a bad time for anyone trying to implement code hot swapping. The only option is to match things by source code location, and that's error prone.</p>
+<p>JavaScript doesn't have these kind of cold hard symbols. What it does have is function literals that can be assigned to globally scoped variables, and prototypes, which is as close as one can get to something akin to symbols. But they are not unique identifiers at all.</p>
+
+<p>And that means a bad time for anyone trying to implement code hot swapping. The only option is to match things by source code location, and that's error prone.</p>
 
 <p>So what does V8 do when code hot swapping? I start with the V8 inspector protocol spec, as described in the last post. The protocol include <code>setScriptSource</code>, which is underdocumented, but appears to be for code hot swapping.</p>
 
