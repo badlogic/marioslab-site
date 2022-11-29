@@ -1,0 +1,87 @@
+{{
+metadata = {
+	title: "Rendering like it's 1996 - Baby steps",
+	summary: "Follow me down memory lane, as I bumble through algorithms I don't understand to reconstruct parts of my childhood, badly.",
+	image: "quake.png",
+	date: parseDate("2022/11/29 21:00"),
+	published: false,
+}
+}}
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("quake.png", "There's absolutely no chance we'll get to this level of quality.")}}
+
+<p>
+	In 1996, I was a teen without a gaming console. While my friends enjoyed their Crash Bandicoots, Tekens, and Turoks, I had a beige 486 DX 2 with a turbo button, 16Mb of RAM, a 256Mb hard disk, and a 2x CD-ROM drive running DOS. And then I got a copy of Quake. Did it run great? No. But it did run! And to my young eyes, it was the most beautiful thing I've ever seen on my computer screen. Ok, the most beautiful brown thing.
+</p>
+
+<p>
+	3D accelerator graphics cards were in their <a href="https://www.techspot.com/article/650-history-of-the-gpu/">infancy</a>. Most DOS PC games around that time would render their glorious pixels via the CPU to a dedicated area in RAM, e.g. starting at segment address 0xa000. The (pretty dumb) graphics card would then read and display the contents of that memory area on your bulky CRT.
+</p>
+
+<p>
+	I did dabble in some graphics programming back then. I even managed to create a <a href="/projects/return-to-marchfeld">Wolfenstein style first person shooter</a> in QBasic with some assembly before the end of the century.
+</p>
+
+{{post.figure("rtm.png", "Actually not a raycasting engine, but a polygonal 3D engine with terrible affine texture mapping.")}}
+
+<p>
+	But I never really dove into the depths of contemporary graphics technology. And while my subsequent professional career featured plenty of graphics programming, it was mostly the GPU accelerated kind, not the "worry about each cycle in your inner loops" software rasterizer kind of type.
+</p>
+
+<h2>Goals</h2>
+<p>
+	In this entirely unplanned series of blog posts, I want to close my knowledge gap. I'll be trying my hands on plotting pixels, drawing scaled and rotated images, raycasting, voxel terrain, and maybe even Quake-style 3D rendering. And I want to document both the theory and practice, as there's a distinct lack of that kind of information on the web these days. At least Google is terrible at spitting out relevant information which I know used to be there. You'll be able to follow along both here, and by playing with the <a href="https://github.com/badlogic/r96">code on GitHub</a>.
+</p>
+
+<h2>What we'll use</h2>
+<p>
+	Our weapon of choice will be C99 for aesthetic and practical reasons. In theory, I want all the code produced throughout this series to run on anything, so C99 is a good choice. In practice, I'll limit myself to Windows, macOS, Linux, and browsers supporting WASM and the Canvas API.
+</p>
+
+<p>
+	On the desktop, I'll be using <a href="https://github.com/emoon/minifb">minifb</a>, a minimal cross-platform library that lets me open a window, process keyboard and mouse input. It will happily take a bunch of pixels and just draw them onto the window. It can even upscale the pixels nicely. Here's how that looks like.
+</p>
+
+
+{{post.code(
+"
+#include <MiniFB.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main() {
+	// Resultion 320x240 pixels, minifb should scale it up 3x
+	int resX = 320, resY = 240, resScale = 3;
+
+	// Open a window
+	struct mfb_window *window = mfb_open(\"00-drawing-a-pixel\", resX * resScale, resY * resScale);
+
+	// Allocate memory for 320x240 pixels, 4 bytes each
+	uint32_t *pixels = (uint32_t *) malloc(resX * resY * sizeof(uint32_t));
+
+	// While the window hasn't been closed
+	do {
+		// Clear the pixels with the color black
+		memset(pixels, 0x0, resX * resY * sizeof(uint32_t));
+
+		// Draw a pink pixel at location (160, 120)
+		pixels[160 + 120 * resX] = 0xffff0000;
+
+		// Tell minifb to draw our pixels to the screen. It will automatically
+		// upscale them to the window resolution (3x)
+		if (mfb_update_ex(window, pixels, resX, resY) < 0) break;
+	} while (true);
+
+	return 0;
+}
+"
+)}}
+
+<p>With tremendous results.</p>
+
+{{post.figure("pixel.png", "Baby's first pixel.")}}
+
+{{include "../../../_templates/post_footer.bt.html"}}

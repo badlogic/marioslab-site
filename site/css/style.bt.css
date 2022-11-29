@@ -41,9 +41,13 @@ h3 {
 	font-size: 120%;
 }
 
-div, p, li, a {
+p, li, a {
 	font-size: 100%;
 	line-height: 1.8em;
+}
+
+pre {
+	line-height: 1.15em;
 }
 
 pre > code {
@@ -244,4 +248,14 @@ html {
 
 *, *:before, *:after {
 	box-sizing: inherit;
+}
+
+.hljs-ln-numbers {
+	border-right: 1px solid #444;
+	padding-right: 6px !important;	
+	text-align: right;
+}
+
+.hljs-ln-code {
+	padding-left: 6px !important;
 }

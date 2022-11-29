@@ -7,6 +7,10 @@
 </div>
 {{end}}
 
+{{macro code(src)}}
+<pre><code>{{src.trim().replace("<", "&lt;").replace(">", "&gt;")}}</code></pre>
+{{end}}
+
 <div class="content">
 
 <div class="post_header">
