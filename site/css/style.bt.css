@@ -7,7 +7,7 @@
 	color_text = "#bbbbbb"
 	color_note = "#ddd"
 	color_link = "rgb(254, 121, 5)"
-	font_size = "18px"
+	font_size = "16px"
 	content_width = "90ch"
 }}
 
@@ -23,7 +23,7 @@ a, a:visited {
 
 /* Fonts */
 body {
-	font: 200 16px/1.5 "fira mono",monospace;
+	font: 200 16px/1.5 monospace;
 	font-feature-settings: "kern" 1;
     font-kerning: normal;
 	font-weight: 400;
