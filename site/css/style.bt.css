@@ -3,10 +3,10 @@
 
 /* Defines **/
 {{
-	color_background = "#FFF7EA"
-	color_text = "#555"
+	color_background = "#292d3e"
+	color_text = "#d8dee7"
 	color_note = "#ddd"
-	color_link = "#629755"
+	color_link = "rgb(254, 121, 5)"
 	font_size = "18px"
 	content_width = "45em"
 }}
@@ -23,7 +23,9 @@ a, a:visited {
 
 /* Fonts */
 body {
-	font-family: sans-serif;
+	font: 200 16px/1.5 "Courier New",Courier,monospace;
+	font-feature-settings: "kern" 1;
+    font-kerning: normal;
 	font-weight: 400;
 	font-size: {{font_size}};
 	color: {{color_text}};
@@ -43,7 +45,7 @@ h3 {
 
 p, li, a {
 	font-size: 100%;
-	line-height: 1.8em;
+	line-height: 1.6em;
 }
 
 pre {
@@ -59,6 +61,7 @@ pre > code {
 
 code {
 	background: rgb(221, 221, 221);
+	color: #222222;
 	padding: 0 2px;
 }
 
@@ -220,13 +223,17 @@ ul {
 	margin: 0;
 }
 
-.post_content p code, .post_content ul code {
+.post_content p code, .post_content ul code, .post_content li code {
 	padding: 0.2em 0.4em;
     margin: 0;
     font-size: 85%;
-    background-color: rgba(27,31,35,0.05);
+    background-color: rgb(196 196 196);
 	border-radius: 3px;
 	font-family: "SFMono-Regular",Consolas,"Liberation Mono",Menlo,Courier,monospace;
+}
+
+a > code {
+	background: {{color_link}} !important;
 }
 
 .post_content video {
