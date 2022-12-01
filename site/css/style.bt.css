@@ -122,7 +122,9 @@ ul {
 
 .note {
 	border-left: solid 4px {{color_note}};
-	padding: 0 1em 0 1em;
+	padding: 1em;
+	font-style: italic;
+	background: #222;
 }
 
 .quote {
