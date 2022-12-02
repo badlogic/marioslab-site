@@ -51,8 +51,13 @@ p, li, a {
 	line-height: 1.5em;
 }
 
-pre {
+.codeblock pre {
 	line-height: 1.15em;
+	margin-top: 0em;
+}
+
+li .codeblock pre {	
+	margin-top: 1em;
 }
 
 .codeblock {
@@ -65,13 +70,10 @@ pre > code {
 	font-size: 90%;
 	line-height: initial;
 	border-radius: 3px;
-	tab-size: 3;
-	background: #191919 !important;
+	tab-size: 3;	
 }
 
 code {
-	background: rgb(221, 221, 221);
-	color: #222222;
 	padding: 0 2px;
 }
 
@@ -235,9 +237,9 @@ ul {
 .post_content p code, .post_content ul code, .post_content li code {
 	padding: 0.2em 0.4em;
     margin: 0;
-    font-size: 85%;
-    background-color: rgb(196 196 196);
+    font-size: 85%;    
 	border-radius: 3px;
+	border: 1px solid rgb(196 196 196);
 	font-family: "fira mono",monospace;
 }
 

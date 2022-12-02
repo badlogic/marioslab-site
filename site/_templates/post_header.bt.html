@@ -7,9 +7,16 @@
 </div>
 {{end}}
 
-{{macro code(filename,src)}}
-<div class="codeblock">	
-	<pre><code>{{src.trim().replace("<", "&lt;").replace(">", "&gt;")}}</code></pre>
+{{macro figureMaxWidth(src, caption, maxWidth)}}
+<div class="figure" style="max-width: {{maxWidth}}; margin-left: auto; margin-right: auto;">
+	<img src="{{src}}">
+	<span>{{caption}}</span>
+</div>
+{{end}}
+
+{{macro code(filename, lang, src)}}
+<div class="codeblock">
+	<pre><code class="language-{{lang}}">{{src.trim().replace("<", "&lt;").replace(">", "&gt;")}}</code></pre>
 </div>
 {{end}}
 

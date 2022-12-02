@@ -25,7 +25,7 @@ metadata = {
 	I did dabble in some graphics programming back then. I even managed to create a <a href="/projects/return-to-marchfeld">Wolfenstein style first person shooter</a> in QBasic with some assembly before the end of the century.
 </p>
 
-{{post.figure("rtm.png", "Actually not a ray casting engine, but a polygonal 3D engine with terrible affine texture mapping.")}}
+{{post.figureMaxWidth("rtm.png", "Actually not a ray casting engine, but a polygonal 3D engine with terrible affine texture mapping.", "320px")}}
 
 <p>
 	But I never really dove into the depths of contemporary graphics technology. And while my subsequent professional career featured plenty of graphics programming, it was mostly the GPU accelerated kind, not the "worry about each cycle in your inner loops" software rasterizer kind of type.
@@ -104,9 +104,14 @@ metadata = {
 	Finally, to test things in the browser, you'll need to install <a href="https://emscripten.org/docs/getting_started/downloads.html">emscripten</a>. Welcome to cross-platform development.
 </p>
 
-<p>If you know your way around cross-platform C/C++ development with CMake and already have a preferred editor/IDE setup, skip the next section.</p>
+<p>
+	If you know your way around cross-platform C/C++ development with CMake and already have a preferred editor/IDE setup, skip the next section.
+</p>
 
 <h2>Setting up VS Code for C development</h2>
+<p>
+	Yes, we could do all development from the command line. But I'm old and cranky and need my UI safe space. Don't @ me.
+</p>
 <p>
 	I'm not religious in general, but for C/C++ work I now exclusively use <a href="https://www.jetbrains.com/clion/">CLion</a>. However, that has a price tag, and since I want everyone to be able to follow along, we'll be using <a href="https://code.visualstudio.com/">Visual Studio Code</a> (or VS Code for short), which is available for Windows, Linux, and macOS. Here's how that's setup:
 </p>
@@ -119,21 +124,23 @@ metadata = {
 			<li><a href="https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd">clangd</a>. Provides good intellisense</li>
 		</ul>
 	</li>
-	<li>Re-open VS Code</li>
+	<li>Re-open VS Code for good measure</li>
 	<li>Open the command palette (<code>CTRL+SHIFT+P</code> or <code>CMD+SHIFT+P</code> on macOS), type <code>user setting</code> and select <code>Preferences: Open User-Settings (JSON)</code></li>
 	<li>At the bottom of the freshly opened <code>settings.json</code> file, add the following lines before the closing <code>}</code>:
-		{{post.code("settings.json", 
+		{{post.code("settings.json", "json",
 "
 \"C_Cpp.intelliSenseEngine\": \"Disabled\"
 \"cmake.configureOnOpen\": true,
 \"cmake.configureArgs\": [\"-DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE\"],
 "
 		)}}
-	This will disable the bad intellisense of the C/C++ extension, ensures that CMake projects are automatically configured when opened in VS Code, and that CMake always builds a <code>compile_commands.json</code> file, which the clangd extension needs to provide intellisense/autocompletetion.
+	This will disable the bad intellisense of the C/C++ extension, ensures that CMake projects are automatically configured when opened in VS Code, and that CMake always builds a <code>compile_commands.json</code> file, which the clangd extension needs to provide intellisense/auto-completion.
 	</li>	
 </ul>
 
-<p>With everything installed and set up, let's briefly have a look how we can use VS Code for C development.</p>
+<p>
+	With everything installed and set up, let's briefly have a look at how we can use VS Code for C development.
+</p>
 
 <h2>Using VS Code for C development</h2>
 <p>
@@ -144,7 +151,7 @@ metadata = {
 	<li>Create a folder <code>quickstart</code> somewhere on your hard disk</li>
 	<li>Open the folder in VS Code</li>
 	<li>Create a folder called <code>src</code>, and within it a file called <code>quickstart.c</code> with the following content:
-	{{post.code("quickstart.c",
+	{{post.code("quickstart.c", "c",
 "
 #include <stdio.h>
 
@@ -158,7 +165,7 @@ int main(void) {
 	)}}
 	</li>
 	<li>Create a file called <code>CMakeLists.txt</code> in the root of the folder with the following content:
-		{{post.code("CMakeLists.txt",
+		{{post.code("CMakeLists.txt", "cmake",
 "
 cmake_minimum_required(VERSION 3.21.1)
 project(quickstart)
@@ -172,8 +179,6 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
 
-include_directories(src)
-
 add_executable(quickstart \"src/quickstart.c\")
 "
 		)}}
@@ -185,23 +190,23 @@ add_executable(quickstart \"src/quickstart.c\")
 </p>
 
 <p>
-	The <code>CMakeLists.txt</code> file defines our build. Line 1 defines the minimally required CMake version. Line 2 specifies, the project name. Lines 4 and 5 ensure that the compiler supports the C99 standard. Lines 7 to 11 set the warning level to "extremely pedantic, warnings are errors". These flags will be added to any target we build. A target is usually a library or an executable. Line 13 ensures that any include files in the <code>src</code> directory can be found. And finally, line 15 defines an executable target called <code>quickstart</code>, which is build from the <code>src/quickstart.c</code> file.
+	The <code>CMakeLists.txt</code> file defines our build. Line 1 defines the minimally required CMake version. Line 2 specifies the project name. Lines 4 and 5 ensure that the compiler uses and must support the C99 standard. Lines 7 to 11 set the warning level to "extremely pedantic, warnings are errors", the Microsoft C++ compiler way as well as the Clang/GCC way. These flags will be added to any target we build. A target is (usually) a library or an executable from a set of source files. We can add as many targets as we want, build them all at once, or build just one specifically. Targets can also depend on each other. CMake is smart enough to figure out which targets need to be build when building a specific target. In line 13 we define an executable target called <code>quickstart</code>, which is build from the <code>src/quickstart.c</code> file.
 </p>
 
 <p>
-	To clean, build, run and debug, we can either use the CMake extension commands in from the command palette (search for <code>cmake</code> to see what's available), or use the CMake UI at the bottom of the VS Code window:
+	To clean, build, run and debug, we can either use the CMake extension commands  from the command palette (search for <code>cmake</code> in the palette to see what's available), or use the CMake UI at the bottom of the VS Code window:
 </p>
 
 {{post.figure("cmake-ui.png", "The CMake extension UI.")}}
 
 <p>
-Let's run through the CMake UI real quick, then the respective commands from the palette will also make sense if you choose to use them:
+	Let's run through the CMake UI real quick:
 </p>
 
 <ul>
 	<li><code>[Debug]</code>: Let's you select the currently active variant. A variant is a fancy name for build type, e.g. release or debug</li>
 	<li><code>No active kit</code>: Let's you select the currently active kit. A kit is a compiler toolchain for a specific architecture, e.g. Clang for x86_64, Visual Studio for ARM64, etc. Always select a specific toolchain, otherwise the debugger won't work!</li>
-	<li><code>Build</code>: Triggers a build of the target(s) specified in the next setting, using the currently active variant and kit</li>
+	<li><code>Build</code>: Triggers a build of the target(s) specified in the next setting, using the currently selected variant and kit</li>
 	<li><code>[all]</code>: Specifies which targets will be build, like our <code>quickstart</code> executable target. For small projects, it's fine to leave this as <code>[all]</code></li>
 	<li><code>Debug</code>: Builds the selected target(s) as specified by the previous settings, then starts a debugging session for the target specified in the last setting of the ui (in the screenshot that's <code>[quickstart]</code>)</li>
 	<li><code>Run</code>: Builds the selected target(s) as specified by the previous settings, then starts a debugging session for the target specified in the last setting of the ui (in the screenshot that's <code>[quickstart]</code>)</li>
@@ -234,7 +239,7 @@ Let's run through the CMake UI real quick, then the respective commands from the
 <ul>
 	<li>Run the <code>CMake: Edit User-Local Kits</code> commands</li>
 	<li>At the end of the <code>cmake-tools-kits.json</code> file, add the following lines before the closing <code>]</code>:
-		{{post.code("cmake-tools-kits.json",
+		{{post.code("cmake-tools-kits.json", "json",
 "
 ,{
 	\"name\": \"Emscripten\",
@@ -243,14 +248,24 @@ Let's run through the CMake UI real quick, then the respective commands from the
 "
 		)}}
 	</li>
-	<li>Replace the placeholder path for the <code>"toolchainFile"</code> with the path to your emscripten installation's toolchain file.</li>
+	<li>Replace the <code>"toolchainFile"</code> path with the path to your emscripten installation's toolchain file.</li>
 </ul>
 
-<p>Congratulations, you can now also compile your C code for the web! You likely don't know how to run it, but we'll have a look at that in the next section.</p>
+<p>
+	Congratulations, you can now also compile your C code for the web by selecting the emscripten kit! The emscripten toolchain doesn't output executables, but a pair of <code>.js</code> and <code>.wasm</code> files. On their own, they can't be run or debugged. They need to be loaded with a little JavaScript within a HTML document. We'll have a look at how that works in the next section.
+</p>
 
-<p>When a build completes, you can find all its output in the <code>build/</code> folder.</p>
+<p>
+	When a build completes, you can find all its output in the <code>build/</code> folder.
+</p>
 
-<p>For our final trick, let's set a breakpoint anywhere in <code>src/quickstart.c</code> and start a debugging session either through the CMake UI or the corresponding command from the palette:</p>
+<p class="note">
+	<strong>Note:</strong> The clangd intellisense/auto-completion will only start working correctly once we've build the project at least once. It requires the <code>compile_commands.json</code> file that the build will generate.
+</p>
+
+<p>
+	For our final trick, let's set a breakpoint anywhere in <code>src/quickstart.c</code> and start a debugging session either through the CMake UI or the corresponding command from the palette:
+</p>
 
 {{post.figure("debug.png", "This will do pig, this will do.")}}
 
@@ -259,6 +274,78 @@ Let's run through the CMake UI real quick, then the respective commands from the
 </p>
 
 <h2>The r96 project scaffold</h2>
+<p>
+	Like any good TV cook, I've already prepared a little something. Clone the <code>r96</code> repository and check out the <code>babys-first-pixel-00</code> branch.
+</p>
 
+{{post.code("", "bash",
+"
+git clone https://github.com/badlogic/r96 --branch babys-first-pixel-00
+"
+)}}
+
+<p>
+	Then open it in VS Code. You'll be asked to select a kit. Select whatever makes sense for your host OS. Here's what you'll get.
+</p>
+
+{{post.figureMaxWidth("r96-files.png", "Initial file tree of r96.", "200px")}}
+
+<p>
+	The <code>.gitignore</code>, <code>LICENSE</code>, and <code>README.md</code> files are pretty self-explanatory. The <code>.clang-format</code> file stores the formatting settings used to format the code via ... <a href="https://clang.llvm.org/docs/ClangFormat.html">clang-format</a>. The C/C++ extension uses the settings in that file whenever you format a C/C++ source file.
+</p>
+
+<p>Next we have the <code>CMakeLists.txt</code> file. Here it is in all its glory:</p>
+
+{{post.code("CMakeLists.txt", "cmake",
+"
+cmake_minimum_required(VERSION 3.21.1)
+project(r96)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED TRUE)
+
+include(FetchContent)
+FetchContent_Declare(minifb GIT_REPOSITORY https://github.com/badlogic/minifb GIT_TAG web)
+set(MINIFB_BUILD_EXAMPLES CACHE INTERNAL FALSE)
+FetchContent_MakeAvailable(minifb)
+
+if(MSVC)
+    add_compile_options(/W4 /WX)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+
+    if(EMSCRIPTEN)
+        add_link_options(
+                -sSTRICT=1
+                -sENVIRONMENT=web
+                -sLLD_REPORT_UNDEFINED
+                -sMODULARIZE=1
+                -sALLOW_MEMORY_GROWTH=1
+                -sALLOW_TABLE_GROWTH
+                -sMALLOC=emmalloc
+                -sEXPORT_ALL=1
+                -sEXPORTED_FUNCTIONS=[\"_malloc\",\"_free\",\"_main\"]
+                -sASYNCIFY
+                --no-entry
+        )
+    endif()
+endif()
+
+add_library(r96 \"src/r96/r96.c\")
+
+add_executable(r96_00_basic_window \"src/00_basic_window.c\")
+target_link_libraries(r96_00_basic_window LINK_PUBLIC minifb r96)
+
+if(EMSCRIPTEN)
+    add_custom_target(r96_web_assets
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/web
+            ${CMAKE_CURRENT_BINARY_DIR}
+    )
+    add_dependencies(r96_00_basic_window r96_web_assets)
+    target_link_options(r96_00_basic_window PRIVATE -sEXPORT_NAME=r96_00_basic_window)
+endif()
+"
+)}}
 
 {{include "../../../_templates/post_footer.bt.html"}}
