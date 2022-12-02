@@ -55,11 +55,18 @@ pre {
 	line-height: 1.15em;
 }
 
+.codeblock {
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+}
+
 pre > code {
 	font-size: 90%;
 	line-height: initial;
 	border-radius: 3px;
 	tab-size: 3;
+	background: #191919 !important;
 }
 
 code {

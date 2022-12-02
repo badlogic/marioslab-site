@@ -7,8 +7,10 @@
 </div>
 {{end}}
 
-{{macro code(src)}}
-<pre><code>{{src.trim().replace("<", "&lt;").replace(">", "&gt;")}}</code></pre>
+{{macro code(filename,src)}}
+<div class="codeblock">	
+	<pre><code>{{src.trim().replace("<", "&lt;").replace(">", "&gt;")}}</code></pre>
+</div>
 {{end}}
 
 <div class="content">
