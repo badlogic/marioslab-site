@@ -13,7 +13,7 @@ metadata = {
 
 {{post.figure("quake.png", "There's absolutely no chance we'll get to this level of quality.")}}
 
-<p> 
+<p>
 	In 1996, I was a teen without a gaming console. While my friends enjoyed their Crash Bandicoots, Tekens, and Turoks, I had a beige 486 DX 2 with a turbo button, 16Mb of RAM, a 256Mb hard disk, and a 2x CD-ROM drive running DOS. And then I got a copy of Quake. Did it run great? No. But it did run! And to my young eyes, it was the most beautiful thing I've ever seen on my computer screen. Ok, the most beautiful brown thing.
 </p>
 
@@ -31,7 +31,7 @@ metadata = {
 	But I never really dove into the depths of contemporary graphics technology. And while my subsequent professional career featured plenty of graphics programming, it was mostly the GPU accelerated kind, not the "worry about each cycle in your inner loops" software rasterizer kind of type.
 </p>
 
-<h2>(Non-)Goals</h2>
+<h2 id="goals">(Non-)Goals</h2>
 <p>
 	I want to explore the ins and outs of software rasterization, starting from first principles, i.e. getting a pixel on screen. From there, I want to delve into topics like simple demo effects, primitive rasterization, ray casting, voxel terrain, maybe even Quake-style 3D rendering, and whatever else comes to mind.
 </p>
@@ -43,7 +43,7 @@ metadata = {
 <p>
 	The end product(s) should work on Windows, Linux, macOS, and common browsers. Ideally, a little software rasterizer library and demos will fall out at the end, that can serve both as an example implementation of common techniques, or as the basis for other demos or games with DOS game aesthetics.
 </p>
-	
+
 <p>
 	You'll be able to follow along both here, and by playing with the <a href="https://github.com/badlogic/r96">code on GitHub</a>.
 </p>
@@ -52,9 +52,9 @@ metadata = {
 	What I do not want to do is dabble in things like assembly or SIMD optimizations. While that can be fun too, it is unlikely to be necessary on today's hardware, given that I'll target common DOS resolutions like 320x240, or 640x480. I might however inspect and discuss the compiler's assembly output to identify areas that can be improved performance wise in the higher level code.
 </p>
 
-<h2>Tools of the trade</h2>
+<h2 id="tools">Tools of the trade</h2>
 <p>
-	The weapon of choice will be C99 for aesthetic and practical reasons. I want all the code produced throughout this series to run on anything, so C99 is a good choice. 
+	The weapon of choice will be C99 for aesthetic and practical reasons. I want all the code produced throughout this series to run on anything, so C99 is a good choice.
 </p>
 
 <p>
@@ -80,11 +80,11 @@ metadata = {
 			<li><a href="https://visualstudio.microsoft.com/vs/features/cplusplus/">Visual Studio with C++ support</a></li>
 			<li><a href="https://cmake.org/download/">CMake</a>. Make sure you add CMake to the system PATH during installation, so you can execute it from the command line</li>
 			<li><a href="https://github.com/ninja-build/ninja/releases">Ninja</a>. Put the <code>ninja.exe</code> file somewhere and make sure it's available on the command line via your system PATH.</li>
-			<li><a href="https://www.python.org/">Python</a>. Make sure it's available on the command line via your system PATH.</li>	
+			<li><a href="https://www.python.org/">Python</a>. Make sure it's available on the command line via your system PATH.</li>
 		</ul>
 	</li>
 	<li><strong>Linux:</strong>
-		<ul>			
+		<ul>
 			<li><a href="https://gcc.gnu.org/">GCC</a> and Git. On Ubuntu <code>sudo apt install build-essential git gdb</code> will do</li>
 			<li>x11-dev library. On Ubuntu: <code>sudo apt install libx11-dev</code></li>
 			<li><a href="https://cmake.org/download/">CMake</a>. On Ubuntu: <code>sudo apt install cmake</code></li>
@@ -108,7 +108,7 @@ metadata = {
 	If you know your way around cross-platform C/C++ development with CMake and already have a preferred editor/IDE setup, skip the next section.
 </p>
 
-<h2>Setting up VS Code for C development</h2>
+<h2 id="setting-up-vs-code-for-c">Setting up VS Code for C development</h2>
 <p>
 	Yes, we could do all development from the command line. But I'm old and cranky and need my UI safe space. Don't @ me.
 </p>
@@ -135,7 +135,7 @@ metadata = {
 "
 		)}}
 	This will disable the bad intellisense of the C/C++ extension, ensures that CMake projects are automatically configured when opened in VS Code, and that CMake always builds a <code>compile_commands.json</code> file, which the clangd extension needs to provide intellisense/auto-completion.
-	</li>	
+	</li>
 </ul>
 
 <p>
@@ -160,7 +160,7 @@ int main(void) {
 	printf(\"%s\", text);
 	return 0;
 }
-	
+
 "
 	)}}
 	</li>
@@ -197,7 +197,7 @@ add_executable(quickstart \"src/quickstart.c\")
 	To clean, build, run and debug, we can either use the CMake extension commands  from the command palette (search for <code>cmake</code> in the palette to see what's available), or use the CMake UI at the bottom of the VS Code window:
 </p>
 
-{{post.figure("cmake-ui.png", "The CMake extension UI.")}}
+{{post.figureMaxWidth("cmake-ui.png", "The CMake extension UI.", "80%")}}
 
 <p>
 	Let's run through the CMake UI real quick:
@@ -230,7 +230,7 @@ add_executable(quickstart \"src/quickstart.c\")
 
 <p>You may be asked by the CMake extension to select a kit, or in case no kits have been configured yet, scan for kits:</p>
 
-{{post.figure("scan-kits.png", "")}}
+{{post.figureMaxWidth("scan-kits.png", "", "80%")}}
 
 <p><a href="https://github.com/microsoft/vscode-cmake-tools/blob/main/docs/kits.md#how-kits-are-found-and-defined">Scanning for kits</a> means searching for compiler toolchains on your system. Once the scan is complete, you'll be able to select a specific kit to build, run, and debug your targets with.</p>
 
@@ -252,7 +252,7 @@ add_executable(quickstart \"src/quickstart.c\")
 </ul>
 
 <p>
-	Congratulations, you can now also compile your C code for the web by selecting the emscripten kit! The emscripten toolchain doesn't output executables, but a pair of <code>.js</code> and <code>.wasm</code> files. On their own, they can't be run or debugged. They need to be loaded with a little JavaScript within a HTML document. We'll have a look at how that works in the next section.
+	Congratulations, you can now also compile your C code for the web by selecting the emscripten kit! The emscripten toolchain doesn't output executables, but a pair of <code>.js</code> and <code>.wasm</code> files. On their own, they can't be run or debugged. They need to be loaded with a little JavaScript within an HTML document. We'll have a look at how that works in the next section.
 </p>
 
 <p>
@@ -267,15 +267,26 @@ add_executable(quickstart \"src/quickstart.c\")
 	For our final trick, let's set a breakpoint anywhere in <code>src/quickstart.c</code> and start a debugging session either through the CMake UI or the corresponding command from the palette:
 </p>
 
-{{post.figure("debug.png", "This will do pig, this will do.")}}
+{{post.figureMaxWidth("debug.png", "This will do pig, this will do.", "80%")}}
 
 <p>
 	We're ready to build the scaffold of our little "Rendering like it's 1996" project. And since that's a mouthful, the project shall henceforth be known as <code>r96</code>
 </p>
 
 <h2>The r96 project scaffold</h2>
+
 <p>
-	Like any good TV cook, I've already prepared a little something. Clone the <code>r96</code> repository and check out the <code>babys-first-pixel-00</code> branch.
+	These are the goals for the project scaffold:
+</p>
+
+<ul>
+	<li>Allow adding new demo apps that work without code modification on both the desktop and in the browser</li>
+	<li>Make creating re-usable code easy, to be used by demo apps.</li>
+	<li>Make building for the desktop and the web trivial</li>
+</ul>
+
+<p>
+	Like any good TV cook, I've already prepared a little something. Clone the <a href="https://github.com/badlogic/r96"><code>r96</code></a> repository and check out the <code>babys-first-pixel-00</code> branch.
 </p>
 
 {{post.code("", "bash",
@@ -285,16 +296,48 @@ git clone https://github.com/badlogic/r96 --branch babys-first-pixel-00
 )}}
 
 <p>
-	Then open it in VS Code. You'll be asked to select a kit. Select whatever makes sense for your host OS. Here's what you'll get.
+	Open it in VS Code. You'll be asked to select a kit. Select whatever makes sense for your host OS. Here's what you'll get.
+</p>
+
+<h3>File structure</h3>
 </p>
 
 {{post.figureMaxWidth("r96-files.png", "Initial file tree of r96.", "200px")}}
 
 <p>
-	The <code>.gitignore</code>, <code>LICENSE</code>, and <code>README.md</code> files are pretty self-explanatory. The <code>.clang-format</code> file stores the formatting settings used to format the code via ... <a href="https://clang.llvm.org/docs/ClangFormat.html">clang-format</a>. The C/C++ extension uses the settings in that file whenever you format a C/C++ source file.
+	The <code>.gitignore</code>, <code>CMakeLists.txt</code>, <code>LICENSE</code>, and <code>README.md</code> files are pretty self-explanatory. The <code>.clang-format</code> file stores the formatting settings used to format the code via, you guessed it, <a href="https://clang.llvm.org/docs/ClangFormat.html">clang-format</a>. The C/C++ extension uses the settings in that file whenever you format a C/C++ source file in VS Code. The file can also be used to format the entire code base from the command line.
 </p>
 
-<p>Next we have the <code>CMakeLists.txt</code> file. Here it is in all its glory:</p>
+<p>
+	The <code>src</code> folder contains our code. Re-usable code goes into <code>src/r96/</code>. Demo apps go into the root of the <code>src/</code> folder. There's one demo app so far called <code>00_basic_window.c</code>. Any demo apps we write in subsequent blog posts will also go into <code>src/</code> and start with a sequential number, so we immediately see in which order they were written.
+</p>
+
+<p>
+	The <code>web/</code> folder may be weird, even scary to seasoned C veterans. But we need it to run our demo apps on the web. A small price to pay. It contains one <code>.html</code> file per demo app. The purpose of that file is to:
+</p>
+
+<ul>
+	<li>Load the <code>.js</code> and <code>.wasm</code> files generated by emscripten for the demo app executable target</li>
+	<li>Provide the demo app with a HTML5 canvas element to draw to</li>
+	<li>Kick off the demo apps execution by calling its <code>main()</code> function</li>
+</ul>
+<p>
+	For any demo app we write in the future, we'll add a source file to the <code>src/</code> folder, and a corresponding <code>.html</code> file to the <code>web/</code> folder.
+</p>
+
+<p>The <code>web/index.html</code> file is just a plain listing linking to all the <code>.html</code> files of our demo apps. The <code>web/r96.css</code> file is a CSS style sheet used to make the elements in the demo app <code>.html</code> files a little prettier.</p>
+
+<p>
+	When you build the project for the first time through CMake, a transient <code>build/</code> folder will be created. It contains the build output: executable files for desktop builds, <code>.js</code>/<code>.wasm</code>/<code>.html</code> files for web builds.
+</p>
+
+<p>
+	To run a desktop build, just run the executable file. To run a web build, have a web browser of your choice serve the contents of the <code>build/</code> folder and point your browser at it. E.g. serve the files via <code>python -m http.server --directory build</code>, open <a href="http://localhost:8000">http://localhost:8000</a> in your browser.
+</p>
+
+<h3>Dissecting the CMakeLists.txt file</h3>
+
+<p>To understand how the build is setup, we need to dissect the <code>CMakeLists.txt</code> file. Here it is in all its glory, section by section.</p>
 
 {{post.code("CMakeLists.txt", "cmake",
 "
@@ -303,12 +346,28 @@ project(r96)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED TRUE)
+"
+)}}
 
+<p>
+	The first few lines we already know from our quickstart example project above. The project name is <code>r96</code> and we force C99.
+</p>
+
+{{post.code("", "cmake",
+"
 include(FetchContent)
 FetchContent_Declare(minifb GIT_REPOSITORY https://github.com/badlogic/minifb GIT_TAG web)
 set(MINIFB_BUILD_EXAMPLES CACHE INTERNAL FALSE)
 FetchContent_MakeAvailable(minifb)
+"
+)}}
 
+<p>
+	Next we pull in minifb via CMake's <a href="https://cmake.org/cmake/help/latest/module/FetchContent.html">FetchContent</a> mechanism. CMake veterans may sneer at this and rather use a Git submodule. But I like it that way, thank you very much. This magic incantation will clone my minifb fork with web support, disable the minifb example targets, and finally make the remaining minifb library target available to the targets defined in our own <code>CMakeLists.txt</code>. Nice.
+</p>
+
+{{post.code("", "cmake",
+"
 if(MSVC)
     add_compile_options(/W4 /WX)
 else()
@@ -316,35 +375,421 @@ else()
 
     if(EMSCRIPTEN)
         add_link_options(
-                -sSTRICT=1
-                -sENVIRONMENT=web
-                -sLLD_REPORT_UNDEFINED
-                -sMODULARIZE=1
-                -sALLOW_MEMORY_GROWTH=1
-                -sALLOW_TABLE_GROWTH
-                -sMALLOC=emmalloc
-                -sEXPORT_ALL=1
-                -sEXPORTED_FUNCTIONS=[\"_malloc\",\"_free\",\"_main\"]
-                -sASYNCIFY
-                --no-entry
+			-sSTRICT=1
+			-sENVIRONMENT=web
+			-sLLD_REPORT_UNDEFINED
+			-sMODULARIZE=1
+			-sALLOW_MEMORY_GROWTH=1
+			-sALLOW_TABLE_GROWTH
+			-sMALLOC=emmalloc
+			-sEXPORT_ALL=1
+			-sEXPORTED_FUNCTIONS=[\"_malloc\",\"_free\",\"_main\"]
+			-sASYNCIFY
+			--no-entry
         )
     endif()
 endif()
+"
+)}}
 
+<p>
+	In the next section, we set the "pedantic warnings are errors" compiler flags again. If we build with the emscripten toolchain, we add additional linker flags specific to emscripten via <code>add_link_options()</code>. These linker flags will get used by all subsequently defined executable targets. These are the flags I use for all my WASM projects after about a year of playing with emscripten and WASM. You can learn more about them in emscripten's <a href="https://github.com/emscripten-core/emscripten/blob/main/src/settings.js">settings.js</a> file.
+</p>
+
+{{post.code("", "cmake",
+"
 add_library(r96 \"src/r96/r96.c\")
+"
+)}}
 
+<p>
+	Next we add a library target called <code>r96</code>. It's compiled from the <code>r96/r96.c</code> source file. Any re-usable code we write during the course of this blog post series will go in there. Any of our demo app executable targets can then depend on the <code>r96</code> library target to pull in its code.
+</p>
+
+{{post.code("", "cmake",
+"
 add_executable(r96_00_basic_window \"src/00_basic_window.c\")
 target_link_libraries(r96_00_basic_window LINK_PUBLIC minifb r96)
+"
+)}}
 
+<p>
+	That's exactly what we do in the next two lines! First we declare an executable target for our first demo app called <code>r96_00_basic_window</code>. It's compiled from <code>00_basic_window.c</code> and links to the <code>minifb</code> and <code>r96</code> library targets. We'll follow this exact pattern for all future demo apps.
+</p>
+
+{{post.code("", "cmake",
+"
 if(EMSCRIPTEN)
     add_custom_target(r96_web_assets
             COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_CURRENT_SOURCE_DIR}/web
             ${CMAKE_CURRENT_BINARY_DIR}
     )
+
     add_dependencies(r96_00_basic_window r96_web_assets)
     target_link_options(r96_00_basic_window PRIVATE -sEXPORT_NAME=r96_00_basic_window)
 endif()
+"
+)}}
+
+<p>
+	In the final section of the <code>CMakeLists.txt</code> file, we again do something emscripten specific. First, we add a custom target called <code>r96_web_assets</code>. It copies the files from the <code>web/</code> folder to the build output folder <code>build/</code>, so the <code>.html</code> file of each demo app ends up with its <code>.js</code> and <code>.wasm</code> counter parts in the <code>build/</code> folder.
+</p>
+
+<p>
+	The <code>r96_web_assets</code> target is added as a dependency to the <code>r96_00_basic_window</code> demo app target. Anytime the demo app target is build through emscripten, the custom asset target will be executed as well.
+</p>
+
+<p>
+	Finally, we add an emscripten specific linker flag <code>-sEXPORT_NAME</code> for the <code>r96_00_basic_window</code> target via <code>target_link_options()</code>. It specifies the module name by which the JavaScript code in the corresponding <code>.html</code> file can load and run the demo app's <code>.wasm</code> code.
+</p>
+
+<p>
+	You can switch between the desktop and web build by simply choosing the corresponding kit aka compiler toolchain in the CMake UI in VS Code.
+</p>
+
+<h3>The first demo app: 00_basic_window</h3>
+
+<p>
+	Before we can get our hands dirty with programmatically creating the most beautiful pixels in the world, we need to understand how minifb works and how a demo app is structured in terms of code. With no further ado, here's <code>src/00_basic_window.c</code>:
+</p>
+
+{{post.code("00_basic_window.c", "c",
+"
+#include <MiniFB.h>
+#include <stdlib.h>
+
+int main(void) {
+	const int res_x = 320, res_y = 240;
+	struct mfb_window *window = mfb_open(\"00_basic_window\", res_x, res_y);
+	uint32_t *pixels = (uint32_t *) malloc(sizeof(uint32_t) * res_x * res_y);
+	do {
+		mfb_update_ex(window, pixels, res_x, res_y);
+	} while (mfb_wait_sync(window));
+	return 0;
+}
+
+"
+)}}
+
+<p>
+	This is a minimal minifb app that opens a window with a drawing area of 320x240 pixels (line 6). It then allocates a buffer of 320x240 <code>unit32_t</code> elements (line 7). Each <code>uint32_t</code> element encodes the color of a pixel. Next, we keep drawing the contents of the buffer to the window via <code>mfb_update_ex()</code> (line 9) until <code>mfb_wait_sync()</code> returns false (line 10), e.g. because the user pressed the ESC key to quit the app. It can't get any simpler.
+</p>
+
+<h3>Running the demo app on the desktop</h3>
+
+<p>
+	To compile and run (or debug) our little demo app on the desktop, select the desktop compiler toolchain kit in the CMake UI at the bottom of VS Code, select the <code>r96_00_basic_window</code> target as the target that's going to be run, and finally click on the debug or play button, or run <code>CMake: Debug</code> or <code>CMake: Run Without Debugging</code> from the command palette. You'll get this:
+</p>
+
+{{post.figureMaxWidth("desktop.png", "r96_00_basic_window on the desktop.", "320px")}}
+
+<p>
+	Most impressive. Now how do we run the same demo app in the browser?
+</p>
+
+<h3>Running the demo app on the web</h3>
+
+<p>
+	First, select the emscripten kit in the CMake UI. Next, open a terminal in VS Code and start a web server. Yes, you read that right. Since you have Python installed it's easy:
+</p>
+
+{{post.code("", "bash",
+"
+python3 -m http.server --directory build
+"
+)}}
+
+<p>
+	The server serves all files in the <code>build/</code> folder and listens for incoming connections on port 80 on localhost. Opening <a href="https://localhost:8000">https://localhost:8000</a> in a browser will show you the <code>build/index.html</code> file. Keep the server running in the background while you work on the web version of a demo app.
+</p>
+<p>
+	Next, click the <code>Build</code> button in the CMake GUI, or run the <code>CMake: Build</code> command from the command palette. This will copy the files from the <code>web/</code> folder over to the <code>build/</code> folder. It will also use emscripten to compile the demo app code (and its dependencies) to <code>.js</code> and <code>.wasm</code> files, which also get copied to the <code>build/</code> folder.
+</p>
+
+<p>Now open a browser, go to <a href="http://localhost:8000/00_basic_window.html">http://localhost:8000/00_basic_window.html</a> and tada!
+</p>
+
+{{post.figureMaxWidth("browser.png", "r96_00_basic_window running in the browser.", "80%")}}
+
+
+<p class="note">
+	<strong>Note:</strong> you can not use the debug or run functionality in VS Code, as the C/C++ extension doesn't know how to do that for emscripten generated "executables". If you want to test a code change, saved the changed source files, trigger a CMake build using the emscripten kit, and refresh the page in the browser.
+</p>
+
+<h3>How the web version works</h3>
+
+<p>
+	It's kind of magic. Here's how the <code>00_basic_window.html</code> file for the <code>00_basic_window.c</code> demo app looks like:
+</p>
+
+{{post.code("00_basic_window.html", "html",
+"
+<html>
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' href='r96.css'>
+    <script src='r96_00_basic_window.js'></script>
+</head>
+<body class='r96_content'>
+    <h2>Basic window</h2>
+    <canvas id='00_basic_window'></canvas>
+</body>
+<script>
+    async function init() {
+        await r96_00_basic_window()
+    }
+
+    init();
+</script>
+</html>
+"
+)}}
+
+<p>
+	Ignoring the boring HTML boilerplate, we see that the <code>r96_00_basic_window.js</code> file is loaded via a <code>&lt;script&gt;</code> tag. Then we define a <code>&lt;canvas&gt;</code> with the id <code>00_basic_window</code>. A little JavaScript kicks of a call to <code>r96_00_basic_window()</code> in an asynchronous function. This call will load the <code>r96_00_basic_window.wasm</code> file and run its <code>main()</code> method.
+</p>
+
+<p>
+	How does minifb know to render to the canvas? In our C code we have this line:
+</p>
+
+{{post.code("", "c",
+"
+struct mfb_window *window = mfb_open(\"00_basic_window\", res_x, res_y);
+"
+)}}
+
+<p>
+	Instead of opening a window with "00_basic_window" as the title, the minifb web backend uses the first argument passed to <code>mfb_open()</code> to search a canvas element with that string as its id. Any calls to <code>mfb_update_ex()</code> will then draw the contents of the provided buffer to this canvas.
+</p>
+
+<p>
+	Also of note: We didn't have to modify our C code at all, it just "works". If you've ever done any front-end development, that may be very weird to you. The app basically has an infinite loop! If you do that in JavaScript, the browser tab (or the whole browser) will freeze, because the browser engine's event loop will never get a chance to run and process events. How does this magic work?
+</p>
+
+<p>
+	The minifb web backend I wrote uses an emscripten feature called <a href="https://emscripten.org/docs/porting/asyncify.html">Asyncify</a>. In the implementation of <code>mfb_wait_sync()</code>, I call <code>emscripten_sleep(0)</code>. This gives back control to the browser engine, so it can process any DOM events and not freeze. Our native C code will then resume again, without our C code ever knowing that it was actually put to sleep. The Asyncify feature rewrites our C code (or rather its WASM representation) to use continuations. That allows pausing and resuming the C code transparently. Super cool!
+</p>
+
+<p>
+	Bonus point: I use <a href="https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame"><code>requestAnimationFrame()</code></a> as the "yielding" primitive. This means that our main loop will be synced to the screen refresh rate (unless the browser implements it as a software vsync, which is usually the case, but doesn't matter for our purpose).
+</p>
+
+<h3>Can I debug the C code in the browser?</h3>
+<p>
+	Yes, we can in Chrome. When we build using the debug variant, emscripten will emit DWARF information in the resulting <code>.wasm</code> file. Chrome can use that information to provide native code debugging right in the developer tools. To get that working:
+</p>
+
+<ul>
+	<li>Install Chrome</li>
+	<li>Install the <a href="https://chrome.google.com/webstore/detail/cc%20%20-devtools-support-dwa/pdcpmagijalfljmkmjngeonclgbbannb">C/C++ DevTools Support (DWARF) extension</a> in Chrome</li>
+	<li>Open Chrome Developer Tools, click the gear (⚙) icon in the top right corner of dev tools pane, go to the experiments panel and tick <code>WebAssembly Debugging: Enable DWARF support</code>
+	{{post.figureMaxWidth("chrome.png", "", "400px")}}
+	</li>
+	<li>Restart Chrome</li>
+</ul>
+
+<p>
+	Make sure the demo app was build using the debug variant, (re-)load the demo app <code>.html</code> file in the browser, then open the dev tools, and click on the <code>Sources</code> tab. You can find all the <code>.c</code> files that make up our little demo app under the <code>file://</code> node, including the minifb sources. Open up <code>00_basic_window.c</code> and set a breakpoint inside the loop:
+</p>
+
+{{post.figureMaxWidth("chrome-debug.png", "C/C++ debugging in Chrome", "80%")}}
+
+<p>
+	And there you have it: C/C++ debugging in Chrome! Since the C code runs the same on both the desktop and in the browser, we'll likely never need this functionality, unless we implement web specific features.
+</p>
+
+<p>
+	Speaking of features, let's add a second demo app and draw our first pixel!
+</p>
+
+<h2>Demo app: drawing a pixel</h2>
+
+<p>
+	Let's add a new demo app to draw a pixel:
+</p>
+
+<ul>
+	<li>Add a file <code>src/01_drawing_a_pixel.c</code> and copy the contents from <code>src/00_basic_window.c</code> to it
+		<ul>
+			<li>Change the first argument to <code>mfb_open()</code> to <code>"01_drawing_a_pixel"</code></li>
+		</ul>
+	</li>
+	<li>Add a file to <code>web/01_drawing_a_pixel.html</code> and copy the contents from <code>web/00_basic_window.html</code> to it
+		<ul>
+			<li>Change the <code>src</code> of the <code>&lt;script&gt;</code> element to <code>'r96_01_drawing_a_pixel.js'</code></li>
+			<li>Change the canvas <code>id</code> to <code>'01_drawing_a_pixel'</code></li>
+			<li>Change the call to <code>r96_00_basic_window()</code> to <code>r96_01_drawing_a_pixel()</code></li>
+		</ul>
+	</li>
+	<li>In the <code>web/index.html</code> file, </li>
+	<li>In the <code>CMakeLists.txt</code> file
+		<ul>
+			<li>Add a new executable target in the <code>CMakeLists.txt</code> file after the definition of the <code>r96_00_basic_window</code> executable target:
+			{{post.code("CMakeLists.txt", "cmake",
+"
+add_executable(r96_01_drawing_a_pixel \"src/01_drawing_a_pixel.c\")
+target_link_libraries(r96_01_drawing_a_pixel LINK_PUBLIC minifb r96)
+"
+			)}}</li>
+			<li>
+				Add the custom <code>r96_web_assets</code> target as a dependency to the <code>r96_01_drawing_a_pixel</code> target, and set the <code>EXPORT_NAME</code> linker flag to <code>r96_01_drawing_a_pixel</code>:
+		{{post.code("CMakeLists.txt", "cmake",
+"
+add_dependencies(r96_00_basic_window r96_web_assets)
+target_link_options(r96_00_basic_window PRIVATE -sEXPORT_NAME=r96_00_basic_window)
+"
+	)}}
+			</li>
+		</ul>
+	</li>
+</ul>
+
+<p class="note">
+	Going forward, anytime we add a new demo app, we'll repeat the above process. I won't spell it out in detail, but simply state the demo app's name, from which we can derive all the file names and ids needed.
+</p>
+
+<p>
+	I've written a lot of words to get to this point. But I can promise you, from here on out, we can focus on the code!
+</p>
+
+<h3>Colors, pixels, and rasters</h3>
+
+<p>
+	What's a pixel? Rumor has it that pixel is a stylized abbreviation of "(pic)ture (el)ement". A precise answer is actually quite involved and may even depend on the decade you are living in.
+</p>
+
+<p>
+	Here, we lazily and imprecisely define a pixel as the smallest "atomic" area within a raster for which we can define a color. A raster is a rectangular area made up  of pixels. Each pixel in the raster is assumed to have the same size. The width of a raster equals the number of pixels in a row, the height equals the number of pixels in a column. The below raster has a width of 23 pixels and a height of 20 pixels. To locate a pixel inside the raster, we use an integer coordinate system, with the x-axis pointing to the right, and the y-axis pointing down. The top left pixel in the raster is at coordinate <code>(0, 0)</code>, the top right pixel is at coordinate <code>(22, 0)</code> (or <code>(width - 1, 0)</code>), the bottom right pixel is at coordinate <code>(22, 19)</code> (or <code>(width - 1, height -1)</code>), and so on.
+</p>
+
+{{post.figureMaxWidth("raster.png", "A fishy raster. <a href='https://commons.wikimedia.org/wiki/File:Raster_graphic_fish_20x23squares_sdtv-example.png'>Source: Wikipedia</a>", "320px")}}
+
+<p>
+	A raster can be a display device's output area, a piece of grid paper, etc. The rasters we'll work with are two-dimensional arrays in memory. Each array element stores the color of the pixel in some encoding.
+</p>
+
+<p>
+	We encode the color of a pixel using the <a href="https://en.wikipedia.org/wiki/RGBA_color_model">RGBA color model</a>, where a color is represented as an additive mix of its red, green, and blue components, and an additional alpha component specifying the pixel's opacity. The opacity comes into play when we blend pixels of one raster with pixels from another raster. That's a topic for another blog post.
+</p>
+
+<p>
+	More specifically, we use an ARGB8888 encoding that fits in a 32-bit unsigned integer (or <code>uint32_t</code> in C). Each color component is encoded as an 8-bit integer in the range 0 (no contribution) to 255 (highest contribution). For the alpha component, 0 means "fully transparent" and 255 means "fully opaque".
+</p>
+
+<p>
+	Here's how the components are stored in a 32-bit unsigned integer. The most significant byte stores the alpha component, then come the red, green, and blue bytes.
+</p>
+
+{{post.figure("argb8888.png", "Storage layout of an ARGB8888 color in a 32-bit unsigned integer. <a href='https://commons.wikimedia.org/wiki/File:PixelSamples32bppRGBA.png'>Source: Wikipedia</a>")}}
+
+Here are a few colors in C:
+
+{{post.code("", "c",
+"
+uint32_t red = 0xffff0000;
+uint32_t green = 0xff00ff00;
+uint32_t blue = 0xff0000ff;
+uint32_t pink = 0xffff00ff;
+uint32_t fifty_percent_transparent_white = 0x80ffffff;
+"
+)}}
+
+<p>
+	More generally, we can compose a color by bit shifting and or'ing its individual components:
+</p>
+
+{{post.code("", "c",
+"
+uint8_t alpha = 255; // fully opaque
+uint8_t red = 20;    // a little red
+uint8_t green = 200; // a lot of green
+uint8_t blue = 0;    // no blue
+uint32_t color = (alpha << 24) | (red << 16) | (green << 8) | blue;
+"
+)}}
+
+<p>
+	That looks like a great candidate for a re-usable macro! Why a macro? Because C99 support in Microsoft's C++ compiler is still meh and who knows how it does with inlined functions defined in a header. The macro guarantees that the code is inlined at the use site. Let's put the following in <code>src/r96/r96.h</code>
+</p>
+
+{{post.code("", "c",
+"
+#include <stdint.h>
+
+#define R96_ARGB(alpha, red, green, blue) (((uint8_t)alpha << 24) | ((uint8_t)red << 16) | ((uint8_t)green << 8) | (uint8_t)blue)
+
+"
+)}}
+
+<p>
+	Defining a color then becomes:
+</p>
+
+{{post.code("", "c",
+"
+uint32_t color = R96_ARGB(255, 20, 200, 0);
+"
+)}}
+
+<h3>Adressing a pixel in a raster</h3>
+
+<p>
+	We now can define colors easily. But how do we work with rasters in code and manipulate the colors of its pixels? We already did! Remember this line from our <code>00_basic_window</code> demo app?
+</p>
+
+{{post.code("", "c",
+"
+const int res_x = 320, res_y = 240;
+...
+uint32_t *pixels = (uint32_t *)malloc(res_x * res_y * sizeof(uint32_t))
+"
+)}}
+
+<p>
+	This allocates memory to store a 320x240 raster where each pixel is stored in a <code>uint32_t</code>. Each row of pixels is stored after the other. We can think of it as a one-dimensional array storing a two-dimensional raster.
+</p>
+
+<p>
+This raster is passed to <code>mfb_update_ex()</code> to be drawn to the window. The reason the window content remains black is that the pixels all have the color <code>0x00000000</code> aka black (at least when building the debug variant or for emscripten).
+</p>
+
+<p>
+	We can set the pixel in the top left corner at coordinate <code>(0, 0)</code> to the color red like this:
+</p>
+
+{{post.code("", "c",
+"
+pixels[0] = R96_ARGB(255, 255, 0, 0);
+"
+)}}
+
+<p>
+	OK, that was obvious. But how about a pixel at an arbitrary coordinate? Our raster is a one dimensional block of memory. The pixel rows are stored one behind the other. The 320 pixels of the first pixel row at y-coordinate 0 are stored in <code>pixels[0]</code> to <code>pixels[319]</code>. The index of a pixel in the first row is simply its x-coordinate. E.g. the pixel at coordinate <code>(231, 0)</code> is stored in <code>pixels[231]</code>.
+</p>
+
+<p>
+	What about pixels in other rows? The pixels of the second row at y-coordinate 1 are stored in <code>pixels[320]</code> to <code>pixels[639]</code>. The pixels of the third row at y-coordinate 2 are stored in <code>pixels[640]</code> to <code>pixels[959]</code>. In general, the first pixel of a row at y-coordinate <code>y</code> is located at <code>pixels[y * 320]</code>! And to address any pixel inside a row, we just add its x-coordinate! The general formula to go from a pixel's <code>(x, y)</code> coordinate to an index in the one dimensional array representing the raster is thus <code>x + y * raster_width</code>!
+</p>
+
+<p class="note">
+	<strong>Note:</strong> this is generally also how two-dimensional (and higher dimensional) array indexing is handled under the hood by C. A continuous block of memory is allocated and array indices like <code>array[x][y]</code> are translated into an index into the one dimensional address space of the memory block accordingly.
+</p>
+
+<p>
+	If we want to set the color of the pixel at <code>(160, 120)</code> to red in our 320x240 pixel raster, we do it like this:
+</p>
+
+{{post.code("", "c",
+"
+const int res_x = 320, res_y = 240;
+...
+pixels[160 + 120 * res_x] = R96_ARGB(255, 255, 0, 0);
 "
 )}}
 

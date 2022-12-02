@@ -244,7 +244,7 @@ ul {
 }
 
 a > code {
-	background: {{color_link}} !important;
+	border-color: {{color_link}} !important;
 }
 
 .post_content video {
@@ -276,4 +276,8 @@ html {
 
 .hljs-ln-code {
 	padding-left: 6px !important;
+}
+
+.hljs {
+	background: #191919 !important;
 }
