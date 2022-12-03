@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+</head>
+<body>
+
+<script src="/js/p5.min.js"></script>
+<script>
+
+const twoDToOneD = p => {
+    let resX = 920;
+    let resY = 200;
+
+    p.setup = () => {
+        p.createCanvas(resX, resY);
+    }
+
+    p.draw = () => {
+        p.background(220);
+
+        w = 40; h = 40;
+        p.translate(w * 2, resY / 2 - (h * 3) / 2)
+        colors = [ "red", "green", "blue"]
+        p.textAlign(p.CENTER, p.CENTER)
+        for (y = 0; y < 3; y++) {
+            for(x = 0; x < 4; x++) {
+                p.fill(colors[y])
+                p.rect(x * w, y * h, w, h);
+                p.fill("white")
+                p.text("(" + x + "," + y + ")", x * w + w / 2, y * h + h / 2)
+            }
+        }
+        p.resetMatrix()
+
+        p.fill("#222")
+        p.text("width = 4", 160, 20)
+        p.text("height = 3", 40, 100)
+
+        p.text("index = x + y * width", 8 * w, 80)
+        p.text("uint32_t *pixels", 16 * w, 60)
+
+        p.strokeWeight(2)
+        p.line(6 * w + w / 2, 100, 10 * w - w / 2, 100)
+        p.line(10 * w - w / 2, 100, 10 * w - w / 2 - 10, 95)
+        p.line(10 * w - w / 2, 100, 10 * w - w / 2 - 10, 105)
+        p.strokeWeight(1)
+
+        p.translate(w * 4 + w * 4 + w * 2, resY / 2 - h / 2)
+        let rx = 0
+        for (y = 0; y < 3; y++) {
+            for(x = 0; x < 4; x++) {
+                p.fill(colors[y])
+                p.rect(rx, 0, w, h);
+                p.fill("white")
+                p.text("" + rx / w, rx + w / 2, h / 2)
+                rx += w
+            }
+        }
+        resetMatrix()
+    }
+}
+new p5(twoDToOneD);
+</script>
+</body>
+</html>
