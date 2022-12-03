@@ -13,6 +13,8 @@ metadata = {
 
 {{post.figure("quake.png", "There's absolutely no chance we'll get to this level of quality.")}}
 
+<div class="table_of_contents"></div>
+
 <p>
 	In 1996, I was a teen without a gaming console. While my friends enjoyed their Crash Bandicoots, Tekens, and Turoks, I had a beige 486 DX 2 with a turbo button, 16Mb of RAM, a 256Mb hard disk, and a 2x CD-ROM drive running DOS. And then I got a copy of Quake. Did it run great? No. But it did run! And to my young eyes, it was the most beautiful thing I've ever seen on my computer screen. Ok, the most beautiful brown thing.
 </p>
@@ -31,7 +33,7 @@ metadata = {
 	But I never really dove into the depths of contemporary graphics technology. And while my subsequent professional career featured plenty of graphics programming, it was mostly the GPU accelerated kind, not the "worry about each cycle in your inner loops" software rasterizer kind of type.
 </p>
 
-<h2 id="goals">(Non-)Goals</h2>
+<h2>(Non-)Goals</h2>
 <p>
 	I want to explore the ins and outs of software rasterization, starting from first principles, i.e. getting a pixel on screen. From there, I want to delve into topics like simple demo effects, primitive rasterization, ray casting, voxel terrain, maybe even Quake-style 3D rendering, and whatever else comes to mind.
 </p>
@@ -52,7 +54,7 @@ metadata = {
 	What I do not want to do is dabble in things like assembly or SIMD optimizations. While that can be fun too, it is unlikely to be necessary on today's hardware, given that I'll target common DOS resolutions like 320x240, or 640x480. I might however inspect and discuss the compiler's assembly output to identify areas that can be improved performance wise in the higher level code.
 </p>
 
-<h2 id="tools">Tools of the trade</h2>
+<h2>Tools of the trade</h2>
 <p>
 	The weapon of choice will be C99 for aesthetic and practical reasons. I want all the code produced throughout this series to compile anywhere. It should also be easy to re-use the code in other languages through an <a href="https://en.wikipedia.org/wiki/Foreign_function_interface">FFI</a>. C99 is a good choice for both objectives.
 </p>
@@ -108,7 +110,7 @@ metadata = {
 	If you know your way around cross-platform C/C++ development with CMake and already have a preferred editor/IDE setup, skip the next section.
 </p>
 
-<h2 id="setting-up-vs-code-for-c">Setting up VS Code for C development</h2>
+<h2>Setting up VS Code for C development</h2>
 <p>
 	Yes, we could do all development from the command line. But I'm old and cranky and need my UI safe space. Don't @ me.
 </p>
@@ -628,9 +630,11 @@ struct mfb_window *window = mfb_open(\"00_basic_window\", res_x, res_y);
 
 {{post.figureMaxWidth("raster.png", "A fishy raster. <a href='https://commons.wikimedia.org/wiki/File:Raster_graphic_fish_20x23squares_sdtv-example.png'>Source: Wikipedia</a>", "320px")}}
 
-<p> <!---->
+<p>
 	A raster can be a display device's output area, a piece of grid paper, etc. The rasters we'll work with are two-dimensional arrays in memory. Each array element stores the color of the pixel in some encoding.
 </p>
+
+<h3>Color encodings</h3>
 
 <p>
 	We encode the color of a pixel using the <a href="https://en.wikipedia.org/wiki/RGBA_color_model">RGBA color model</a>, where a color is represented as an additive mix of its red, green, and blue components, and an additional alpha component specifying the pixel's opacity. The opacity comes into play when we blend pixels of one raster with pixels from another raster. That's a topic for another blog post.
@@ -876,7 +880,7 @@ int main(void) {
 
 {{post.code("", "bash",
 "
-git checkout babys-first-pixel-00
+git checkout babys-first-pixel-01
 "
 )}}
 
@@ -888,5 +892,7 @@ git checkout babys-first-pixel-00
 <p>
 	Discuss this post on <a href="https://twitter.com/badlogicgames/status/1598843445472550912">Twitter</a> or <a href="">Mastodon</a>.
 </p>
+
+<script>tableOfContents()</script>
 
 {{include "../../../_templates/post_footer.bt.html"}}

@@ -8,7 +8,7 @@
 	color_note = "#ddd"
 	color_link = "rgb(254, 121, 5)"
 	font_size = "16px"
-	content_width = "90ch"
+	content_width = "80ch"
 }}
 
 body {
@@ -18,7 +18,7 @@ body {
 
 a, a:visited {
 	color: {{color_link}};
-	text-decoration: none; 
+	text-decoration: none;
 }
 
 /* Fonts */
@@ -56,7 +56,7 @@ p, li, a {
 	margin-top: 0em;
 }
 
-li .codeblock pre {	
+li .codeblock pre {
 	margin-top: 1em;
 }
 
@@ -70,7 +70,7 @@ pre > code {
 	font-size: 90%;
 	line-height: initial;
 	border-radius: 3px;
-	tab-size: 3;	
+	tab-size: 3;
 }
 
 code {
@@ -214,15 +214,15 @@ ul {
 }
 
 .post_content h2 {
-	font-weight: 300;	
+	font-weight: 300;
 }
 
 .post_content h3 {
-	font-weight: 300;	
+	font-weight: 300;
 }
 
 .post_content h4 {
-	font-weight: 300;	
+	font-weight: 300;
 }
 
 .post_content ul {
@@ -237,7 +237,7 @@ ul {
 .post_content p code, .post_content ul code, .post_content li code {
 	padding: 0.2em 0.4em;
     margin: 0;
-    font-size: 85%;    
+    font-size: 85%;
 	border-radius: 3px;
 	border: 1px solid rgb(196 196 196);
 	font-family: "fira mono",monospace;
@@ -270,7 +270,7 @@ html {
 
 .hljs-ln-numbers {
 	border-right: 1px solid #444;
-	padding-right: 6px !important;	
+	padding-right: 6px !important;
 	text-align: right;
 }
 
@@ -280,4 +280,11 @@ html {
 
 .hljs {
 	background: #191919 !important;
+}
+
+.table_of_contents {
+	margin: 2em 0;
+	display: flex;
+	flex-direction: column;
+	padding: 1em;
 }
