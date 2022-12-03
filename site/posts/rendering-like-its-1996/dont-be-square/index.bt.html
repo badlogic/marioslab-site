@@ -1,0 +1,311 @@
+{{
+metadata = {
+	title: "Rendering like it's 1996 - Don't be a square",
+	summary: "On drawing horizontal lines and rectangles.",
+	image: "dont-be-a-square.png",
+	date: parseDate("2022/11/29 21:00"),
+	published: false,
+}
+}}
+
+{{include "../../../_templates/post_header.bt.html"}}
+{{include "../../../_templates/post_header.bt.html" as post}}
+
+{{post.figure("dont-be-a-square.png", "Cool kids draw their rectangles themselves.")}}
+
+<div class="table_of_contents"></div>
+
+<p><a href="../babys-first-pixel/">Last time</a>, we set up our development environment and explored concepts like pixels and rasters. Today, we're going to build on that great experience and figure out how to draw rectangles. Exciting!</p>
+
+<p>But before we do that, let's abstract rasters, setting and getting pixels, and a few other small things so we'll never have to think about them hard ever again.</p>
+
+<p class="note">
+	You can follow along by checking out the <code>dont-be-square-00</code> tag in your clone of the <a href="https://github.com/badlogic/r96">r96</a> repository.</br></br>
+	<code>git checkout dont-be-square-00</code>
+</p>
+
+<h2>Putting more stuff in r96.h</h2>
+
+<p>
+	Nope, we aren't going to build a super duper re-usable DOS-like game development framework. But we could do with stuffing a few things into <code>src/r96</code> folder, where re-usable stuff used by the demo apps lives. In this section, we'll add a bunch of stuff to <code>src/r96/r96.h</code> and <code>src/r96/r96.h</code>. I'll just highlight the additions through excerpting and link to lines in the corresponding file on GitHub.
+</p>
+
+<h3>Stellar memory management</h3>
+<p>
+	Remember this line from the previous demo apps?
+</p>
+
+{{post.code("", "c",
+"
+uint32_t *pixels = (uint32_t *) malloc(sizeof(uint32_t) * res_x * res_y);
+"
+)}}
+
+<p>
+	Direct call to <code>malloc()</code>, <code>sizeof()</code>, casting, yuck! How about we wrap all this in a handful of simple macros. I did just that in <a href="https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h#L12-L14"><code>src/r96/r96.h</code></a>:
+</p>
+
+{{post.code("r96.h", "c",
+"
+#define R96_ALLOC(type) (type *) malloc(sizeof(type))
+#define R96_ALLOC_ARRAY(type, numElements) (type *) malloc(sizeof(type) * numElements)
+#define R96_FREE(ptr) free(ptr)
+"
+)}}
+
+<p>
+	<code>R96_ALLOC(type)</code> allocates one instance of <code>type</code> for you. If you want an array of something, use <code>R96_ALLOC_ARRAY(type, numElements)</code>. We also want to clean up after ourselves, so we also have <code>R96_FREE(ptr)</code>. E.g.:
+</p>
+
+{{post.code("", "c",
+"
+typedef struct rectangle {
+	float x, y, width, height;
+} rectangle;
+
+rectangle *rect = R9_ALLOC(rectangle);
+uint32_t *pixels = R9_ALLOC_ARRAY(uint32_t, 320 * 240);
+R96_FREE(rect);
+"
+)}}
+
+<p>
+	Apart from a little less typing, these macros also allow us to replace our allocator, should we want that down the road, e.g. for leak detection, or arena allocations, or whatever we can think of. It won't cover all bases, but it sure beats finding and replacing all the places in our code that call <code>malloc()</code> and <code>free()</code>.
+</p>
+
+<h3>Poking colors</h3>
+<p>
+	Getting the individual color components out of a color constructed with <code>R96_ARGB()</code> is a bit tedious. Let's fix that with more macros in <a href="https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h#L7-L10"><code>src/r96/r96.h</code></a>:
+</p>
+
+{{post.code("src/r96/r96.h", "c",
+"
+#define R96_A(color) ((uint8_t) (color >> 24))
+#define R96_R(color) ((uint8_t) (color >> 16))
+#define R96_G(color) ((uint8_t) (color >> 8))
+#define R96_B(color) ((uint8_t) (color))
+"
+)}}
+
+<p>
+	Usage should be obvious:
+</p>
+
+{{post.code("", "c",
+"
+uint32_t color = R96_ARGB(255, 128, 38, 4);
+uint8_t alpha = R96_A(color); // 255
+uint8_t red = R96_R(color);   // 128
+uint8_t green = R96_G(color); // 38
+uint8_t blue = R96_B(color);  // 4
+"
+)}}
+
+<h3>A struct for rasters</h3>
+<p>
+	It's a bit annoying to keep track of the width, height and pixels of rasters we work with, like in our previous demo apps. We'll continue working with rasters a lot, so it makes sense to bundle all that info up into a struct, as you can now find in <a href="https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h#L16-L19"><code>src/r96/r96.h</code></a>:
+</p>
+
+{{post.code("src/r96/r96.h", "c",
+"
+typedef struct r96_raster {
+	int32_t width, height;
+	uint32_t *pixels;
+} r96_raster;
+"
+)}}
+
+<p>
+	Why use signed integers for width and height? Many of the algorithms we'll be building will work using signed integers or even floats. Casting from <code>uint32_t</code> or <code>size_t</code> all the time isn't fun. We surely won't ever put a negative value in those fields, right?
+</p>
+
+<p>
+	To ease the tedium of initializing a raster struct and allocating and freeing the heap memory for its pixels, we add initialization and disposal functions. This also makes it less likely that some joker constructs a negative with raster through using asserts.
+</p>
+
+{{post.code("src/r96/r96.c", "c",
+"
+void r96_raster_init(r96_raster *raster, uint32_t width, uint32_t height) {
+	assert(width > 0);
+	assert(height > 0);
+
+	raster->width = width;
+	raster->height = height;
+	raster->pixels = R96_ALLOC_ARRAY(uint32_t, width * height);
+}
+
+void r96_raster_dispose(r96_raster *raster) {
+	R96_FREE(raster->pixels);
+}
+"
+)}}
+
+<p>
+	Creating rasters has never been so easy:
+</p>
+
+{{post.code("", "c",
+"
+r96_raster raster;
+r96_raster_init(&raster, 320, 240);
+r96_raster_dispose(&raster);
+
+r96_raster *heapRaster = R96_ALLOC(r96_raster);
+r96_raster_init(heapRaster, 64, 64);
+r96_raster_dispose(heapRaster);
+R96_FREE(heapRaster);
+"
+)}}
+
+<p>
+	As illustrated by the snippet above, we can initialize and dispose both stack and heap allocated <code>r96_raster</code> instances. Which leads me into a little excurse into memory and resource life-time management.
+</p>
+
+<h3>A word on memory and resource life-time management</h3>
+
+<p>
+	In C, we don't have the luxury of a borrow checker like in Rust, or a garbage collector like in Java. We don't even have RAII, like in C++. Heap allocated memory blocks and other resources like file handles must be carefully managed. With great power comes great responsibility, yada, yada.
+</p>
+
+<p>
+	C, the language, doesn't really give us the tools to build water tight management of resources. Instead, we must come up with rules to adhere to, that make it less likely that we'll shoot ourselves in the foot. From these rules we derive an API design that helps enforce the rules as best as possible.
+</p>
+
+<p>
+	Keeping too many rules in our head is hard, so let's only have a few:
+</p>
+
+<ol>
+	<li>There are no naked resources (e.g. a pointer to heap allocated memory)</li>
+	<li>A resource is owned by a single instance of a resource-owning type (e.g. heap memory storing pixels is owned by a single r96_raster instance)</li>
+	<li>Prefer stack allocation over heap allocation</li>
+	<li>Prefer value types over reference types</li>
+</ol>
+
+<p>
+	While we won't go for a full <a href="https://floooh.github.io/2018/06/17/handles-vs-pointers.html">"handles instead of pointers"</a> for the <code>r96</code> library, we'll strive to make our code as pointer- and allocation-free as possible. This will enable building apps on top of the <code>r96</code> library code, that themselves can then implement a handle based system.
+</p>
+
+<p>
+	For our demo apps, we'll have no trouble tracking life-times of objects, as resource-like data will pretty much always be allocated on start-up. There's no need to complicate things.
+</p>
+
+<p>
+	How does this translate to the <code>r96</code> API?
+</p>
+
+<ul>
+	<li>Resource-owning types are initialized and disposed with corresponding initializer and disposal functions. E.g. <code>r96_raster</code>, <code>r96_raster_init()</code>, and <code>r96_raster_dispose()</code></li>
+	<li>Resource-owning types are always passed and returned by reference</li>
+	<li>Non-resource-owning types are initialized with <a href="https://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Designated-Inits.html">C99 designated initializers</a></li>
+	<li>Non-resource-owning types are passed to and returned from functions by value, unless performance considerations make it prohibitive</li>
+</ul>
+
+<p>The first two items make it less likely that two instances of a resource-owning type point to the same resource and provide a single location where the resource is acquired and released. The latter two items make it more likely that we store much of our data on the stack instead of the heap. Let's try to stick with this until everything falls apart and we'll need to re-evaluate.</p>
+
+<h3>Reading and writting pixels, the safe way</h3>
+<p>
+	Manually calculating the address of a pixel is annoying, so let's add functions that can read and write pixels from and to a <code>r96_raster</code>:
+</p>
+
+{{post.code("src/r96/r96.c", "c",
+"
+void r96_set_pixel(r96_raster *raster, int32_t x, int32_t y, uint32_t color) {
+	if (x < 0 || x >= raster->width || y < 0 || y > raster->height) return;
+	raster->pixels[x + y * raster->width] = color;
+}
+
+uint32_t r96_get_pixel(r96_raster *raster, int32_t x, int32_t y) {
+	if (x < 0 || x >= raster->width || y < 0 || y > raster->height) return 0;
+	return raster->pixels[x + y * raster->width];
+}
+"
+)}}
+
+<p>
+	In the last demo app we made sure to draw pixels within the bounds of the raster. For the two more general purpose functions <code>r96_set_pixel()</code> and <code>r96_get_pixel()</code> we can not assume that the input is valid. We therefore make sure that the provided <code>x</code> and <code>y</code> coordinates are within the bounds of the raster, before actually accessing the pixel. This is known as <a href="https://en.wikipedia.org/wiki/Clipping_(computer_graphics)">clipping</a>. Clipping will be a permanent, very annoying companion of ours throughout this journey.
+</p>
+
+<p>
+	Obviously, since we do more work (clipping), using these functions is slower than manually (and unsafely) poking at pixels in the raster ourselves. But they come in handy when we implement naive versions of more complex rendering algorithms.
+</p>
+
+<h3>Demo app: drawing pixels, again</h3>
+
+<p>
+	Let's put our new fancy API to use and create a new demo app called <code>02_raster</code> (see <a href="/posts/rendering-like-its-1996/babys-first-pixel/#Demo%20app:%20drawing%20a%20pixel">the last article</a> on how to add a new demo app to the project). It does the exact same thing as the last demo app, except it uses the new API.
+</p>
+
+{{post.code("src/02_raster.c", "c",
+"
+#include \"r96/r96.h\"
+#include <MiniFB.h>
+#include <stdio.h>
+
+int main(void) {
+	r96_raster raster;
+	r96_raster_init(&raster, 320, 240);
+	struct mfb_window *window = mfb_open(\"02_raster\", raster.width, raster.height);
+	do {
+		for (int i = 0; i < 200; i++) {
+			int32_t x = rand() % raster.width;
+			int32_t y = rand() % raster.height;
+			uint32_t color = R96_ARGB(255, rand() % 255, rand() % 255, rand() % 255);
+			r96_set_pixel(&raster, x, y, color);
+		}
+
+		if (mfb_get_mouse_button_buffer(window)[MOUSE_BTN_1]) {
+			int32_t mouse_x = mfb_get_mouse_x(window);
+			int32_t mouse_y = mfb_get_mouse_y(window);
+			uint32_t color = r96_get_pixel(&raster, mouse_x, mouse_y);
+			printf(\"(%i, %i) = { alpha: %i, red: %i, green: %i, blue: %i }\\n\", mouse_x, mouse_y, R96_A(color), R96_R(color), R96_G(color), R96_B(color));
+		}
+
+		mfb_update_ex(window, raster.pixels, raster.width, raster.height);
+	} while (mfb_wait_sync(window));
+	r96_raster_dispose(&raster);
+	return 0;
+}
+"
+)}}
+
+<p>
+	In lines 6-8, we create a new <code>r96_raster</code> instance and initialize it to have 320x240 pixels. The pixel rendering in line 14 now uses <code>r96_set_pixel()</code> instead of manually calculating the pixel address. To exercise the new <code>r96_get_pixel()</code> function and the color component macros, we print the current color at the mouse position if the left mouse button is pressed. Finally, we dispose of the raster in line 26. Click the demo below to start it.
+</p>
+
+<div style="display: flex; flex-direction: column; align-items: center; margin: 1em; max-width: 100%;">
+	<canvas id="02_raster" style="width: 640px; height: 480px; background: black;"></canvas>
+	<pre id="console" style="margin-top: 1em; width: 640px; height: 40ch; background: black; color: #bbbbbb; font-size: 14px; overflow: scroll;"></pre>
+</div>
+<script src="demo/r96_02_raster.js"></script>
+<script>
+	let started = false;
+	let init = async () => {
+		if (started) return;
+		started = true;
+		await r96_02_raster();
+		let canvas = document.getElementById("02_raster")
+		canvas.style.width = "640px";
+		canvas.style.height = "480px";
+	}
+	document.getElementById("02_raster").addEventListener("click", () => init());
+	let consoleDiv = document.getElementById("console");
+	let oldLog = console.log;
+	console.log = function(data) {
+		oldLog(data);
+		consoleDiv.innerHTML += data + "</br>";
+		consoleDiv.scrollTop = consoleDiv.scrollHeight;
+	}
+</script>
+
+<p>
+	Have a look at <a href="https://github.com/badlogic/r96/blob/dont-be-square-00/web/02_raster.html"><code>02_raster.html</code></a> to see the magic that gets the <code>printf()</code> output into the div below the canvas. Yes, nasty. But working.
+</p>
+
+<p>
+	Discuss this post on <a href="https://twitter.com/badlogicgames/status/1598843445472550912">Twitter</a> or <a href="">Mastodon</a>.
+</p>
+
+<script>tableOfContents()</script>
+
+{{include "../../../_templates/post_footer.bt.html"}}
