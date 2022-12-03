@@ -45,7 +45,7 @@ metadata = {
 </p>
 
 <p>
-	You'll be able to follow along both here, and by playing with the <a href="https://github.com/badlogic/r96">code on GitHub</a>.
+	You'll be able to follow along both here, and by playing with the <a href="https://github.com/badlogic/r96">code on GitHub</a>. In addition to the render-y bits, I'll also show you around how I set up a cross-platform C project and show you how I structure, build, and debug C code in such a project. I love seeing and learning from other people's workflows. Maybe that's true for you too.
 </p>
 
 <p>
@@ -54,11 +54,11 @@ metadata = {
 
 <h2 id="tools">Tools of the trade</h2>
 <p>
-	The weapon of choice will be C99 for aesthetic and practical reasons. I want all the code produced throughout this series to run on anything, so C99 is a good choice.
+	The weapon of choice will be C99 for aesthetic and practical reasons. I want all the code produced throughout this series to compile anywhere. It should also be easy to re-use the code in other languages through an <a href="https://en.wikipedia.org/wiki/Foreign_function_interface">FFI</a>. C99 is a good choice for both objectives.
 </p>
 
 <p>
-	I'll use <a href="https://cmake.org/">CMake</a> as the build tool, not because I love it, but because my favorite C/C++ IDE <a href="https://www.jetbrains.com/clion/">CLion</a> has first class support it. Other development environments understand CMake as well these days, including <a href="https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-170">Visual Studio</a> if that's your kink.
+	I'll use <a href="https://cmake.org/">CMake</a> as the build tool, not because I love it, but because my favorite C/C++ IDE <a href="https://www.jetbrains.com/clion/">CLion</a> has first class support for it. Other development environments understand CMake as well these days, including <a href="https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-170">Visual Studio</a> if that's your kink.
 </p>
 
 <p>
@@ -70,7 +70,7 @@ metadata = {
 </p>
 
 <p>
-	To follow along by compiling, running and debugging the code of this tutorial series, you'll need to install a few things:
+	To follow along by compiling, running and debugging the code of this series, you'll need to install a few things:
 </p>
 
 <ul>
@@ -79,8 +79,8 @@ metadata = {
 			<li><a href="https://git-scm.com/download/win">Git for Windows</a>. Make sure its available on the command line via the system PATH.</li>
 			<li><a href="https://visualstudio.microsoft.com/vs/features/cplusplus/">Visual Studio with C++ support</a></li>
 			<li><a href="https://cmake.org/download/">CMake</a>. Make sure you add CMake to the system PATH during installation, so you can execute it from the command line</li>
-			<li><a href="https://github.com/ninja-build/ninja/releases">Ninja</a>. Put the <code>ninja.exe</code> file somewhere and make sure it's available on the command line via your system PATH.</li>
-			<li><a href="https://www.python.org/">Python</a>. Make sure it's available on the command line via your system PATH.</li>
+			<li><a href="https://github.com/ninja-build/ninja/releases">Ninja</a>. Put the <code>ninja.exe</code> file somewhere and make sure it's available on the command line via your system PATH</li>
+			<li><a href="https://www.python.org/">Python</a>. Make sure it's available on the command line via your system PATH</li>
 		</ul>
 	</li>
 	<li><strong>Linux:</strong>
@@ -93,7 +93,7 @@ metadata = {
 	</li>
 	<li><strong>macOS:</strong>
 		<ul>
-			<li><a href="https://developer.apple.com/xcode/">Xcode</a>. Make sure to also install the <a href="https://mac.install.guide/commandlinetools/4.html">command line tools</a>.</li>
+			<li><a href="https://developer.apple.com/xcode/">Xcode</a>. Make sure to also install the <a href="https://mac.install.guide/commandlinetools/4.html">command line tools</a></li>
 			<li><a href="https://cmake.org/download/">CMake</a>, e.g. via <a href="https://brew.sh/">brew</a> <code>brew install cmake</code></li>
 			<li><a href="https://github.com/ninja-build/ninja/releases">Ninja</a>, e.g. via brew <code>brew install ninja</code></li>
 		</ul>
@@ -113,7 +113,7 @@ metadata = {
 	Yes, we could do all development from the command line. But I'm old and cranky and need my UI safe space. Don't @ me.
 </p>
 <p>
-	I'm not religious in general, but for C/C++ work I now exclusively use <a href="https://www.jetbrains.com/clion/">CLion</a>. However, that has a price tag, and since I want everyone to be able to follow along, we'll be using <a href="https://code.visualstudio.com/">Visual Studio Code</a> (or VS Code for short), which is available for Windows, Linux, and macOS. Here's how that's setup:
+	I'm not religious in general, but for C/C++ work I now exclusively use <a href="https://www.jetbrains.com/clion/">CLion</a>. However, that has a price tag, and since I want everyone to be able to follow along, we'll be using <a href="https://code.visualstudio.com/">Visual Studio Code</a> (or VS Code for short), which is available for Windows, Linux, and macOS. Here's how that's set up:
 </p>
 
 <ul>
@@ -190,7 +190,15 @@ add_executable(quickstart \"src/quickstart.c\")
 </p>
 
 <p>
-	The <code>CMakeLists.txt</code> file defines our build. Line 1 defines the minimally required CMake version. Line 2 specifies the project name. Lines 4 and 5 ensure that the compiler uses and must support the C99 standard. Lines 7 to 11 set the warning level to "extremely pedantic, warnings are errors", the Microsoft C++ compiler way as well as the Clang/GCC way. These flags will be added to any target we build. A target is (usually) a library or an executable from a set of source files. We can add as many targets as we want, build them all at once, or build just one specifically. Targets can also depend on each other. CMake is smart enough to figure out which targets need to be build when building a specific target. In line 13 we define an executable target called <code>quickstart</code>, which is build from the <code>src/quickstart.c</code> file.
+	The <code>CMakeLists.txt</code> file defines our build. Line 1 defines the minimally required CMake version. Line 2 specifies the project name. Lines 4 and 5 ensure that the compiler uses and must support the C99 standard. Lines 7 to 11 set the warning level to "extremely pedantic, warnings are errors", the Microsoft C++ compiler way as well as the Clang/GCC way. These flags will be added to any target we build.
+</p>
+
+<p>
+	A target is (usually) a library or an executable from a set of source files. We can add as many targets as we want, build them all at once, or build just one specifically. Targets can also depend on each other. CMake is smart enough to figure out which targets need to be build when building a specific target.
+</p>
+
+<p>
+In line 13 we define an executable target called <code>quickstart</code>, which is build from the <code>src/quickstart.c</code> file.
 </p>
 
 <p>
@@ -205,11 +213,11 @@ add_executable(quickstart \"src/quickstart.c\")
 
 <ul>
 	<li><code>[Debug]</code>: Let's you select the currently active variant. A variant is a fancy name for build type, e.g. release or debug</li>
-	<li><code>No active kit</code>: Let's you select the currently active kit. A kit is a compiler toolchain for a specific architecture, e.g. Clang for x86_64, Visual Studio for ARM64, etc. Always select a specific toolchain, otherwise the debugger won't work!</li>
+	<li><code>No active kit</code>: Let's you select the currently active kit. A kit is a compiler toolchain for a specific architecture, e.g. Clang for x86_64, Visual Studio for ARM64, etc. Always select a specific toolchain, otherwise the debugger may not work!</li>
 	<li><code>Build</code>: Triggers a build of the target(s) specified in the next setting, using the currently selected variant and kit</li>
 	<li><code>[all]</code>: Specifies which targets will be build, like our <code>quickstart</code> executable target. For small projects, it's fine to leave this as <code>[all]</code></li>
 	<li><code>Debug</code>: Builds the selected target(s) as specified by the previous settings, then starts a debugging session for the target specified in the last setting of the ui (in the screenshot that's <code>[quickstart]</code>)</li>
-	<li><code>Run</code>: Builds the selected target(s) as specified by the previous settings, then starts a debugging session for the target specified in the last setting of the ui (in the screenshot that's <code>[quickstart]</code>)</li>
+	<li><code>Run</code>: Builds the selected target(s) as specified by the previous settings, then starts the target specified in the last setting of the ui (in the screenshot that's <code>[quickstart]</code>)</li>
 	<li><code>[quickstart]</code>: Let's you specify which target will be run or debugged when clicking one of the previous two buttons or using the corresponding command from the palette.</li>
 </ul>
 
@@ -226,7 +234,7 @@ add_executable(quickstart \"src/quickstart.c\")
 	<li><code>CMake: Run Without Debugging</code></li>
 </ul>
 
-<p>I usually use the UI to set the variant, kit, targets to be build, and target to be debugged/run, and the commands from the palette for building, debugging and running.</p>
+<p>I usually use the UI to set the variant, kit, targets to be build, and target to be debugged/run, as I do not change these settings often. I use the commands from the palette for building, debugging and running as I do that frequently. Using hot keys to do these tasks saves a lot of time.</p>
 
 <p>You may be asked by the CMake extension to select a kit, or in case no kits have been configured yet, scan for kits:</p>
 
@@ -605,60 +613,10 @@ struct mfb_window *window = mfb_open(\"00_basic_window\", res_x, res_y);
 </p>
 
 <p>
-	Speaking of features, let's add a second demo app and draw our first pixel!
+	Speaking of features, let's add a second demo app and draw our first pixel! But first, some very practical "theory".
 </p>
 
-<h2>Demo app: drawing a pixel</h2>
-
-<p>
-	Let's add a new demo app to draw a pixel:
-</p>
-
-<ul>
-	<li>Add a file <code>src/01_drawing_a_pixel.c</code> and copy the contents from <code>src/00_basic_window.c</code> to it
-		<ul>
-			<li>Change the first argument to <code>mfb_open()</code> to <code>"01_drawing_a_pixel"</code></li>
-		</ul>
-	</li>
-	<li>Add a file to <code>web/01_drawing_a_pixel.html</code> and copy the contents from <code>web/00_basic_window.html</code> to it
-		<ul>
-			<li>Change the <code>src</code> of the <code>&lt;script&gt;</code> element to <code>'r96_01_drawing_a_pixel.js'</code></li>
-			<li>Change the canvas <code>id</code> to <code>'01_drawing_a_pixel'</code></li>
-			<li>Change the call to <code>r96_00_basic_window()</code> to <code>r96_01_drawing_a_pixel()</code></li>
-		</ul>
-	</li>
-	<li>In the <code>web/index.html</code> file, </li>
-	<li>In the <code>CMakeLists.txt</code> file
-		<ul>
-			<li>Add a new executable target in the <code>CMakeLists.txt</code> file after the definition of the <code>r96_00_basic_window</code> executable target:
-			{{post.code("CMakeLists.txt", "cmake",
-"
-add_executable(r96_01_drawing_a_pixel \"src/01_drawing_a_pixel.c\")
-target_link_libraries(r96_01_drawing_a_pixel LINK_PUBLIC minifb r96)
-"
-			)}}</li>
-			<li>
-				Add the custom <code>r96_web_assets</code> target as a dependency to the <code>r96_01_drawing_a_pixel</code> target, and set the <code>EXPORT_NAME</code> linker flag to <code>r96_01_drawing_a_pixel</code>:
-		{{post.code("CMakeLists.txt", "cmake",
-"
-add_dependencies(r96_00_basic_window r96_web_assets)
-target_link_options(r96_00_basic_window PRIVATE -sEXPORT_NAME=r96_00_basic_window)
-"
-	)}}
-			</li>
-		</ul>
-	</li>
-</ul>
-
-<p class="note">
-	Going forward, anytime we add a new demo app, we'll repeat the above process. I won't spell it out in detail, but simply state the demo app's name, from which we can derive all the file names and ids needed.
-</p>
-
-<p>
-	I've written a lot of words to get to this point. But I can promise you, from here on out, we can focus on the code!
-</p>
-
-<h3>Colors, pixels, and rasters</h3>
+<h2>Of colors, pixels, and rasters</h2>
 
 <p>
 	What's a pixel? Rumor has it that pixel is a stylized abbreviation of "(pic)ture (el)ement". A precise answer is actually quite involved and may even depend on the decade you are living in.
@@ -778,11 +736,11 @@ pixels[0] = R96_ARGB(255, 255, 0, 0);
 </p>
 
 <p class="note">
-	<strong>Note:</strong> this is generally also how two-dimensional (and higher dimensional) array indexing is handled under the hood by C. A continuous block of memory is allocated and array indices like <code>array[x][y]</code> are translated into an index into the one dimensional address space of the memory block accordingly.
+	<strong>Note:</strong> this is how C implements two-dimensional arrays under the hood as well. The principle also applies to higher dimensional arrays.
 </p>
 
 <p>
-	If we want to set the color of the pixel at <code>(160, 120)</code> to red in our 320x240 pixel raster, we do it like this:
+	If we want to set the color of the pixel at <code>(160, 120)</code> to red in our 320x240 pixel raster, we can do it like this:
 </p>
 
 {{post.code("", "c",
@@ -792,5 +750,138 @@ const int res_x = 320, res_y = 240;
 pixels[160 + 120 * res_x] = R96_ARGB(255, 255, 0, 0);
 "
 )}}
+
+<p>Alright, time to draw some pixels!</p>
+
+<h2>Demo app: drawing a pixel</h2>
+
+<p>
+	Let's add a new demo app to draw a pixel:
+</p>
+
+<ul>
+	<li>Add a file <code>src/01_drawing_a_pixel.c</code> and copy the contents from <code>src/00_basic_window.c</code> to it
+		<ul>
+			<li>Change the first argument to <code>mfb_open()</code> to <code>"01_drawing_a_pixel"</code></li>
+		</ul>
+	</li>
+	<li>Add a file to <code>web/01_drawing_a_pixel.html</code> and copy the contents from <code>web/00_basic_window.html</code> to it
+		<ul>
+			<li>Change the <code>src</code> of the <code>&lt;script&gt;</code> element to <code>'r96_01_drawing_a_pixel.js'</code></li>
+			<li>Change the canvas <code>id</code> to <code>'01_drawing_a_pixel'</code></li>
+			<li>Change the call to <code>r96_00_basic_window()</code> to <code>r96_01_drawing_a_pixel()</code></li>
+		</ul>
+	</li>
+	<li>In the <code>web/index.html</code> file, </li>
+	<li>In the <code>CMakeLists.txt</code> file
+		<ul>
+			<li>Add a new executable target in the <code>CMakeLists.txt</code> file after the definition of the <code>r96_00_basic_window</code> executable target:
+			{{post.code("CMakeLists.txt", "cmake",
+"
+add_executable(r96_01_drawing_a_pixel \"src/01_drawing_a_pixel.c\")
+target_link_libraries(r96_01_drawing_a_pixel LINK_PUBLIC minifb r96)
+"
+			)}}</li>
+			<li>
+				Add the custom <code>r96_web_assets</code> target as a dependency to the <code>r96_01_drawing_a_pixel</code> target, and set the <code>EXPORT_NAME</code> linker flag to <code>r96_01_drawing_a_pixel</code>:
+		{{post.code("CMakeLists.txt", "cmake",
+"
+add_dependencies(r96_01_drawing_a_pixel r96_web_assets)
+target_link_options(r96_00_basic_window PRIVATE -sEXPORT_NAME=r96_01_drawing_a_pixel)
+"
+	)}}
+			</li>
+		</ul>
+	</li>
+</ul>
+
+<p class="note">
+	Going forward, anytime we add a new demo app, we'll repeat the above process. I won't spell it out in detail, but simply state the demo app's name, from which we can derive all the file names and ids needed.
+</p>
+
+<p>
+	Drawing a single pixel is a bit boring, so how about we flood the screen with a gazillion pixels instead?
+</p>
+
+{{post.code("01_drawing_a_pixel.c", "c",
+"
+#include <MiniFB.h>
+#include <stdlib.h>
+#include <string.h>
+#include \"r96/r96.h\"
+
+int main(void) {
+	const int res_x = 320, res_y = 240;
+	struct mfb_window *window = mfb_open(\"01_drawing_a_pixel\", res_x, res_y);
+	uint32_t *pixels = (uint32_t *) malloc(sizeof(uint32_t) * res_x * res_y);
+	do {
+		for (int i = 0; i < 200; i++) {
+			int32_t x = rand() % res_x;
+			int32_t y = rand() % res_y;
+			uint32_t color = R96_ARGB(255, rand() % 255, rand() % 255, rand() % 255);
+			pixels[x + y * res_x] = color;
+		}
+
+		if (mfb_get_mouse_button_buffer(window)[MOUSE_BTN_1]) {
+			memset(pixels, 0, sizeof(uint32_t) * res_x *  res_y);
+		}
+
+		mfb_update_ex(window, pixels, res_x, res_y);
+	} while (mfb_wait_sync(window));
+	return 0;
+}
+"
+)}}
+
+<p>
+	The interesting bit happens in lines 10 to 15. Each frame, we generate 200 pixels at random coordinates with random colors. We ensure that the coordinates are within the raster bounds by <code>% res_x</code> and <code>% res_y</code>. We also clamp the color components to the range 0-255 via modulo.
+</p>
+
+<p>
+	We also introduce some light input handling by checking if the left mouse button is pressed. If so, we set all pixels to the color black, giving the "user" a way to restart the glorious demo.
+</p>
+
+<p>
+	And here it is live in your browser, because why would we spend so much time getting the WASM build to work so nicely. Click/touch to start!
+</p>
+
+<div style="display: flex; flex-direction: column; align-items: center; margin: 1em;">
+	<canvas id="01_drawing_a_pixel" style="width: 640px; height: 480px; background: black;"></canvas>
+</div>
+<script src="demo/r96_01_drawing_a_pixel.js"></script>
+<script>
+	let started = false;
+	let init = async () => {
+		if (started) return;
+		started = true;
+		await r96_01_drawing_a_pixel();
+		document.getElementById("01_drawing_a_pixel").style.width = "640px";
+		document.getElementById("01_drawing_a_pixel").style.height = "480px";
+	}
+	document.getElementById("01_drawing_a_pixel").addEventListener("click", () => init());
+</script>
+
+<p>
+	I sure feel all this build up paid off, don't you?
+</p>
+
+<p>
+	You can checkout the <code>babys-first-pixel-01</code> tag and diff it against the <code>babys-first-pixel-00</code> tag to view all the code changes that were made to add this demo.
+</p>
+
+{{post.code("", "bash",
+"
+git checkout babys-first-pixel-00
+"
+)}}
+
+<h2>Mario, WTF</h2>
+<p>
+	Yeah, I'm sorry. I sometimes just drift off. But we learned a lot! Next time I likely won't be so wordy. We'll have a looksy at how to draw rectangles. Exciting!
+</p>
+
+<p>
+	Discuss this post on <a href="">Twitter</a> or <a href="">Mastodon</a>.
+</p>
 
 {{include "../../../_templates/post_footer.bt.html"}}
