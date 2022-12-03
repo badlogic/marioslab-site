@@ -728,11 +728,16 @@ pixels[0] = R96_ARGB(255, 255, 0, 0);
 )}}
 
 <p>
-	OK, that was obvious. But how about a pixel at an arbitrary coordinate? Our raster is a one dimensional block of memory. The pixel rows are stored one behind the other. The 320 pixels of the first pixel row at y-coordinate 0 are stored in <code>pixels[0]</code> to <code>pixels[319]</code>. The index of a pixel in the first row is simply its x-coordinate. E.g. the pixel at coordinate <code>(231, 0)</code> is stored in <code>pixels[231]</code>.
+	OK, that was obvious. But how about a pixel at an arbitrary coordinate? Let's look at a smaller 4x3 pixel raster:
 </p>
 
+{{post.figure("coordstoindex.png", "Going from 2D coordinates to 1D array indices.")}}
+
 <p>
-	What about pixels in other rows? The pixels of the second row at y-coordinate 1 are stored in <code>pixels[320]</code> to <code>pixels[639]</code>. The pixels of the third row at y-coordinate 2 are stored in <code>pixels[640]</code> to <code>pixels[959]</code>. In general, the first pixel of a row at y-coordinate <code>y</code> is located at <code>pixels[y * 320]</code>! And to address any pixel inside a row, we just add its x-coordinate! The general formula to go from a pixel's <code>(x, y)</code> coordinate to an index in the one dimensional array representing the raster is thus <code>x + y * raster_width</code>!
+Our raster is a one dimensional block of memory. The pixel rows are stored one behind the other. The 4 pixels of the first pixel row at y-coordinate 0 are stored in <code>pixels[0]</code> to <code>pixels[3]</code>. The index of a pixel in the first row is simply its x-coordinate. E.g. the pixel at coordinate <code>(2, 0)</code> is stored in <code>pixels[2]</code>.
+</p>
+
+<p>The pixels of the second row at y-coordinate 1 are stored in <code>pixels[4]</code> to <code>pixels[7]</code>. The pixels of the third row at y-coordinate 2 are stored in <code>pixels[8]</code> to <code>pixels[11]</code>. In general, the first pixel of a row at y-coordinate <code>y</code> is located at <code>pixels[y * width]</code>. And to address any pixel inside a row, we just add its x-coordinate! The general formula to go from a pixel's <code>(x, y)</code> coordinate to an index in the one dimensional array representing the raster is thus <code>x + y * width</code>!
 </p>
 
 <p class="note">
