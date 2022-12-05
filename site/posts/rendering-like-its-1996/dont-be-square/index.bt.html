@@ -256,49 +256,50 @@ uint32_t r96_get_pixel(r96_image *image, int32_t x, int32_t y) {
 <h3>Demo app: drawing pixels, again</h3>
 
 <p>
-	Let's put our new fancy API to use and create a new demo app called <code>02_raster</code> (see <a href="/posts/rendering-like-its-1996/babys-first-pixel/#Demo%20app:%20drawing%20a%20pixel">the last article</a> on how to add a new demo app to the project). It does pretty much the same thing as the last demo app, except it uses the new API.
+	Let's put our new fancy API to use and create a new demo app called <a href=""><code>02_raster.c</code></a> (see <a href="/posts/rendering-like-its-1996/babys-first-pixel/#Demo%20app:%20drawing%20a%20pixel">the last article</a> on how to add a new demo app to the project). It does pretty much the same thing as the last demo app, except it uses the new API.
 </p>
 
 {{post.code("src/02_raster.c", "c",
 `
-#include "r96/r96.h"
 #include <MiniFB.h>
 #include <stdio.h>
+#include "r96/r96.h"
 
 int main(void) {
-	r96_raster raster;
-	r96_raster_init(&raster, 320, 240);
-	struct mfb_window *window = mfb_open("02_raster", raster.width, raster.height);
+	r96_image image;
+	r96_image_init(&image, 320, 240);
+	struct mfb_window *window = mfb_open("02_image", image.width * 2, image.height * 2);
 	do {
 		for (int i = 0; i < 200; i++) {
-			int32_t x = rand() % raster.width;
-			int32_t y = rand() % raster.height;
+			int32_t x = rand() % image.width;
+			int32_t y = rand() % image.height;
 			uint32_t color = R96_ARGB(255, rand() % 255, rand() % 255, rand() % 255);
-			r96_set_pixel(&raster, x, y, color);
+			r96_set_pixel(&image, x, y, color);
 		}
 
 		if (mfb_get_mouse_button_buffer(window)[MOUSE_BTN_1]) {
 			int32_t mouse_x = mfb_get_mouse_x(window);
 			int32_t mouse_y = mfb_get_mouse_y(window);
-			uint32_t color = r96_get_pixel(&raster, mouse_x, mouse_y);
-			printf(\"(%i, %i) = { alpha: %i, red: %i, green: %i, blue: %i }\\n\", mouse_x, mouse_y, R96_A(color), R96_R(color), R96_G(color), R96_B(color));
+			uint32_t color = r96_get_pixel(&image, mouse_x, mouse_y);
+			printf("(%i, %i) = { alpha: %i, red: %i, green: %i, blue: %i }\n", mouse_x, mouse_y, R96_A(color), R96_R(color), R96_G(color), R96_B(color));
 		}
 
-		mfb_update_ex(window, raster.pixels, raster.width, raster.height);
+		mfb_update_ex(window, image.pixels, image.width, image.height);
 	} while (mfb_wait_sync(window));
-	r96_raster_dispose(&raster);
+	r96_image_dispose(&image);
 	return 0;
 }
+
 `
 )}}
 
 <p>
-	In lines 6-8, we create a new <code>r96_raster</code> instance and initialize it to have 320x240 pixels. The pixel rendering in line 14 now uses <code>r96_set_pixel()</code> instead of manually calculating the pixel address. To exercise the new <code>r96_get_pixel()</code> function and the color component macros, we print the current color at the mouse position if the left mouse button is pressed. Finally, we dispose of the raster in line 26. Click the demo below to start it.
+	In lines 6-8, we create a new <code>r96_imafe</code> instance and initialize it to have 320x240 pixels. The pixel rendering in line 14 now uses <code>r96_set_pixel()</code> instead of manually calculating the pixel address. To exercise the new <code>r96_get_pixel()</code> function and the color component macros, we print the current color at the mouse position if the left mouse button is pressed. Finally, we dispose of the image in line 26. Click the demo below to start it.
 </p>
 
 <div style="display: flex; flex-direction: column; align-items: center; margin: 1em; max-width: 100%;">
 	<canvas id="02_raster" style="width: 640px; height: 480px; background: black;"></canvas>
-	<pre id="console" style="margin-top: 1em; width: 640px; height: 40ch; background: black; color: #bbbbbb; font-size: 14px; overflow: scroll;"></pre>
+	<pre id="console" style="margin-top: 1em; width: 640px; height: 10ch; background: black; color: #bbbbbb; font-size: 14px; overflow: scroll;"></pre>
 </div>
 <script src="demo/r96_02_raster.js"></script>
 <script>
@@ -358,7 +359,7 @@ void r96_clear_with_color(r96_image *image, uint32_t color) {
 </p>
 
 <p>
-	Luckily, profiling <code>r96_clear()</code> and <code>r96_clear_with_color()</code> is comparatively trivial. All we need is a <a href="http://www.songho.ca/misc/timer/timer.html">high-resolution timer</a> that can give us nano-second precision. MiniFB comes with such a <a href="https://github.com/emoon/minifb#timers-and-target-fps">high precision timer</a>. Let's write a command line app called that tests how fast <code>r96_clear()</code> and <code>r96_clear_with_color()</code> are:
+	Luckily, profiling <code>r96_clear()</code> and <code>r96_clear_with_color()</code> is comparatively trivial. All we need is a <a href="http://www.songho.ca/misc/timer/timer.html">high-resolution timer</a> that can give us nano-second precision. MiniFB comes with such a <a href="https://github.com/emoon/minifb#timers-and-target-fps">high precision timer</a>. Let's write a command line app called <a href=""><code>03_clear_profiling.c</code></a> that tests how fast <code>r96_clear()</code> and <code>r96_clear_with_color()</code> are:
 </p>
 
 {{post.code("src/03_clear_profiling.c", "c",
@@ -376,12 +377,12 @@ int main(void) {
 	mfb_timer_reset(timer);
 	for(int i = 0; i < num_iterations; i++)
 		r96_clear(&image);
-	printf(\"r96_clear() took %f secs\\n\", mfb_timer_delta(timer));
+	printf("r96_clear() took %f secs\n", mfb_timer_delta(timer));
 
 	mfb_timer_reset(timer);
 	for(int i = 0; i < num_iterations; i++)
 		r96_clear_with_color(&image, 0x0);
-	printf(\"r96_clear_with_color() took %f secs\\n\", mfb_timer_delta(timer));
+	printf("r96_clear_with_color() took %f secs\n", mfb_timer_delta(timer));
 
 	r96_image_dispose(&image);
 	return 0;
@@ -390,7 +391,7 @@ int main(void) {
 )}}
 
 <p>
-	We create a 320x200 pixels image and the timer. As a base-line, we measure how long it takes to clear the image <code>200000</code> times using <code>r96_clear()</code>. Then we measure how long it takes to do the same with <code>r96_clear_with_color()</code>. We always profile our code using the release build. Here's what I get on my machine:
+	We create a 320x200 pixels image and a timer. As a base-line, we measure how long it takes to clear the image <code>200000</code> times using <code>r96_clear()</code>. Then we measure how long it takes to do the same with <code>r96_clear_with_color()</code>. We always profile our code using the release build. Here's what I get on my machine:
 </p>
 
 {{post.code("", "",
@@ -577,11 +578,286 @@ r96_clear_with_color:                   # @r96_clear_with_color
 <h2>Drawing horizontal lines</h2>
 
 <p>
-	With our housekeeping out of the way, it's time to get back to the actual goal of this post: drawing rectangles. Before we can walk, we need to learn to crawl. So let's start with drawing horizontal lines.
+	With our housekeeping out of the way, it's time to get back to the actual goal of this post: drawing rectangles. But first, we need to learn how to draw horizontal lines. Teheh.
 </p>
 
 <p>
-	Discuss this post on <a href="https://twitter.com/badlogicgames/status/1598843445472550912">Twitter</a> or <a href="">Mastodon</a>.
+	We define a horizontal line by a start point <code>(x1, y)</code> and end <code>(x2, y)</code>, where <code>x1 <= x2</code>. Since it's a horizontal line, the y-coordinate is the same for both points. The pixels the start and end point are located in, as well as the pixels in between the two points are all part of the horizontal line. A few example horizontal lines on a small 16x12 raster.
+</p>
+
+<div id="hline-example"></div>
+<script>
+{
+let resX = 800; resY = 650;
+let q5 = q5Diagram(resX, resY, "hline-example");
+
+q5.grid(2, 2, 16, 12, "#bbb");
+
+q5.textSize(12)
+for (let x = 0; x < 16; x++) q5.blockText("" + x, x + 2, 1, "#ddd");
+for (let y = 0; y < 12; y++) q5.blockText("" + y, 1, y + 2, "#ddd");
+
+q5.textSize(14)
+for (let x = 0; x <= 3; x++) q5.block(x, 0, "#00e");
+q5.blockText("(x1, y)", 0, 0, "#ddd")
+q5.blockText("(x2, y)", 3, 0, "#ddd")
+
+for (let x = 18; x <= 19; x++) q5.block(x, 8, "#e00");
+q5.blockText("(x1, y)", 18, 8, "#ddd")
+q5.blockText("(x2, y)", 19, 8, "#ddd")
+
+for (let x = 0; x <= 1; x++) q5.block(x, 12, "#e00");
+q5.blockText("(x1, y)", 0, 12, "#ddd")
+q5.blockText("(x2, y)", 1, 12, "#ddd")
+
+for (let x = 8; x <= 12; x++) q5.block(x, 15, "#00e");
+q5.blockText("(x1, y)", 8, 15, "#ddd")
+q5.blockText("(x2, y)", 12, 15, "#ddd")
+
+for (let x = 3; x <= 10; x++) q5.block(x, 5, "#070");
+q5.blockText("(x1, y)", 3, 5, "#ddd")
+q5.blockText("(x2, y)", 10, 5, "#ddd")
+
+for (let x = 8; x <= 10; x++) q5.block(x, 9, "#070");
+q5.blockText("(x1, y)", 8, 9, "#ddd")
+q5.blockText("(x2, y)", 10, 9, "#ddd")
+
+for (let x = 0; x <= 18; x++) q5.block(x, 3, "#e0e");
+q5.blockText("(x1, y)", 0, 3, "#ddd")
+q5.blockText("(x2, y)", 18, 3, "#ddd")
+
+for (let x = 14; x <= 18; x++) q5.block(x, 12, "#e0e");
+q5.blockText("(x1, y)", 14, 12, "#ddd")
+q5.blockText("(x2, y)", 18, 12, "#ddd")
+}
+</script>
+
+<p>
+	Some of the lines are "problematic", as they aren't entirely inside the raster. Before we can draw their pixels, we need to clip them!
+</p>
+
+<p>
+	The two <span style="color: rgb(41, 41, 255)">blue</span> lines have y-coordinates <code>y &lt; 0</code> and <code>y &gt; height - 1</code>. Any horizontal line with a y-coordinate outside the raster can be entirely ignored.
+<p>
+	The two <span style="color: red">red</span> lines share a similar fate. They are outside the raster on the x-axis. Any horizontal line with either <code>x2 < 0</code> or <code>x1 > width - 1</code> can be entirely ignored.
+</p>
+
+<p>
+	The two <span style="color: green">green</span> lines are all good. Both their endpoints are inside the raster.
+</p>
+
+<p>
+	The <span style="color: #e0e">ping</span> lines are ... weird. They are partially in the raster. How do we deal with them? We clip them! For the left point, we snap <code>x1</code> to <code>0</code>. For the right point, we snap <code>x2</code> to <code>width - 1</code>. Here are all the pixels we actually have to draw.
+</p>
+
+<div id="hline-example-clipped"></div>
+<script>
+{
+let resX = 760; resY = 560;
+let q5 = q5Diagram(resX, resY, "hline-example-clipped");
+
+q5.translate(-20, 0);
+q5.grid(2, 1, 16, 12, "#bbb");
+
+q5.textSize(12)
+for (let x = 0; x < 16; x++) q5.blockText("" + x, x + 2, 0, "#ddd");
+for (let y = 0; y < 12; y++) q5.blockText("" + y, 1, y + 1, "#ddd");
+
+q5.textSize(14)
+
+for (let x = 3; x <= 10; x++) q5.block(x, 4, "#070");
+q5.blockText("(x1, y)", 3, 4, "#ddd")
+q5.blockText("(x2, y)", 10, 4, "#ddd")
+
+for (let x = 8; x <= 10; x++) q5.block(x, 8, "#070");
+q5.blockText("(x1, y)", 8, 8, "#ddd")
+q5.blockText("(x2, y)", 10, 8, "#ddd")
+
+for (let x = 2; x <= 17; x++) q5.block(x, 2, "#e0e");
+q5.blockText("(x1', y)", 2, 2, "#ddd")
+q5.blockText("(x2', y)", 17, 2, "#ddd")
+
+for (let x = 14; x <= 17; x++) q5.block(x, 11, "#e0e");
+q5.blockText("(x1, y)", 14, 11, "#ddd")
+q5.blockText("(x2', y)", 17, 11, "#ddd")
+}
+</script>
+
+<p>
+	Once we've clipped a line, we just need to draw all the pixels between its start and end point.
+</p>
+
+<h3>Demo app: horizontal lines, naive version</h3>
+
+<p>
+	Let's add a new demo app called <a href=""><code>04_hline.c</code></a>:
+</p>
+
+{{post.code("src/04_hline.c", "c",
+`
+#include <MiniFB.h>
+#include <stdio.h>
+#include "r96/r96.h"
+
+void hline(r96_image *image, int32_t x1, int32_t x2, int32_t y, uint32_t color) {
+	if (x1 > x2) {
+		int32_t tmp = x2;
+		x2 = x1;
+		x1 = tmp;
+	}
+
+	if (x1 >= image->width) return;
+	if (x2 < 0) return;
+	if (y < 0) return;
+	if (y >= image->height) return;
+
+	if (x1 < 0) x1 = 0;
+	if (x2 >= image->width) x2 = image->width - 1;
+
+	for (int32_t x = x1; x <= x2; x++)
+		r96_set_pixel(image, x, y, color);
+}
+
+int main(void) {
+	r96_image image;
+	r96_image_init(&image, 320, 240);
+	struct mfb_window *window = mfb_open("04_hline", image.width * 2, image.height * 2);
+	struct mfb_timer *timer = mfb_timer_create();
+	do {
+		srand(0);
+		mfb_timer_reset(timer);
+		for (int i = 0; i < 200000; i++) {
+			uint32_t color = R96_ARGB(255, rand() % 255, rand() % 255, rand() % 255);
+			hline(&image, rand() % image.width, rand() % image.width, rand() % image.height, color);
+		}
+		printf("Took: %f\n", mfb_timer_delta(timer));
+
+		if (mfb_update_ex(window, image.pixels, image.width, image.height) < 0) break;
+	} while (mfb_wait_sync(window));
+	r96_image_dispose(&image);
+	return 0;
+}
+`
+)}}
+
+<p>
+	The <code>hline()</code> function first ensures that <code>x1 < x2</code> in lines 6-10. If we didn't guarantee this, the following code would be quite a bit more complicated.
+</p>
+
+<p>
+	Next, we reject all lines that are entirely outside the image, applying the rules we established above (lines 12-15)
+</p>
+
+<p>
+	Lines that are partially inside the image get clipped in lines 17 and 18.
+</p>
+
+<p>
+	With all the clipping out of the way, we know that the start and end point (and the pixels between them) are entirely within the bounds of the image. We finish the function by drawing all the pixels at and in between the start and end point in lines 20-21 using <code>r96_set_pixel</code>
+</p>
+
+<p>
+	In the <code>main()</code> function, we draw <code>200000</code> lines at random positions and measure how long it takes to do so. The call to <code>srand()</code> sets the seed for the function <code>rand()</code>. We'll always get the same sequence of "random" numbers that way. If we measure something to later improve it, we have to ensure that what you measured is the same each time, even if it involves "fake" randomness. Here's the output of a release build on my machine:
+</p>
+
+{{post.code("", "bash",
+"
+Took: 0.032682
+Took: 0.033261
+Took: 0.032935
+Took: 0.032707
+")}}
+
+<p>
+	Not a scientific benchmark, but good enough as a ballpark estimate. This time, we have no base-line to compare against. So, let's take this version of <code>hline()</code> and see if we can improve upon it!
+</p>
+
+<h3>Demo app: horizontal lines, optimized</h3>
+
+<p>
+	Looking real hard at the <code>hline()</code> implementation, the only thing that stands out is the call to <code>r96_set_pixel()</code>. What's that do again?
+</p>
+
+{{post.code("src/r96/r96.c", "c",
+"
+void r96_set_pixel(r96_image *image, int32_t x, int32_t y, uint32_t color) {
+	if (x < 0 || x >= image->width || y < 0 || y >= image->height) return;
+	image->pixels[x + y * image->width] = color;
+}
+"
+)}}
+
+<p>
+	Oh right, it actually does clipping and it calculates the address of the pixel, which adds an addition and multiplication. That's not good! The <code>hline()</code> function already ensures that all pixels we are drawing are inside the raster. The extra clipping in <code>r96_set_pixel()</code> is thus unnecessary. And once we know the address of the start pixel at <code>x1, y</code>, the address of each subsequent pixel on the line can be can be calculated by an increment of 1. Remember: pre-calculate all loop invariants! Here's the optimized <code>hline()</code> version from <a href=""><code>05_hline_opt.c</code></a>:
+</p>
+
+{{post.code("src/05_hline_opt.c", "c",
+`
+void hline(r96_image *image, int32_t x1, int32_t x2, int32_t y, uint32_t color) {
+	if (x1 > x2) {
+		int32_t tmp = x2;
+		x2 = x1;
+		x1 = tmp;
+	}
+
+	if (x1 >= image->width) return;
+	if (x2 < 0) return;
+	if (y < 0) return;
+	if (y >= image->height) return;
+
+	if (x1 < 0) x1 = 0;
+	if (x2 >= image->width) x2 = image->width - 1;
+
+	uint32_t *pixels = image->pixels + y * image->width + x1;
+	int32_t num_pixels = x2 - x1 + 1;
+	while(num_pixels--) {
+		*pixels++ = color;
+	}
+}
+`
+)}}
+
+<p>
+	On my machine, I get these timings:
+</p>
+
+{{post.code("", "bash",
+"
+Took: 0.011275
+Took: 0.011216
+Took: 0.011437
+Took: 0.011545
+")}}
+
+<p>A nice improvement! Let's have some live lines to celebrate (click to start)</p>
+
+<div style="display: flex; flex-direction: column; align-items: center; margin: 1em; max-width: 100%;">
+	<canvas id="05_hline_opt" style="width: 640px; height: 480px; background: black;"></canvas>
+	<pre id="console2" style="margin-top: 1em; width: 640px; height: 10ch; background: black; color: #bbbbbb; font-size: 14px; overflow: scroll;"></pre>
+</div>
+<script src="demo/r96_05_hline_opt.js"></script>
+<script>
+{
+	let started = false;
+	let init = async () => {
+		if (started) return;
+		started = true;
+		let consoleDiv = document.getElementById("console2");
+        let module = {};
+        module.print = module.printErr = (data) => {
+            console.log(data);
+            consoleDiv.innerHTML += data + "</br>";
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+		await r96_05_hline_opt(module);
+	}
+	document.getElementById("05_hline_opt").addEventListener("click", () => init());
+}
+</script>
+
+<p>
+	Discuss this post on <a href="https://twitter.com/badlogicgames/status/1598843445472550912">Twitter</a>
+	or <a href="">Mastodon</a>.
 </p>
 
 <script>tableOfContents()</script>

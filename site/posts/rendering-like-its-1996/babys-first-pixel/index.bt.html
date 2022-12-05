@@ -735,22 +735,12 @@ pixels[0] = R96_ARGB(255, 255, 0, 0);
 </p>
 
 <div id="coords_to_index"></div>
-
 <script>
-let q5 = new Q5("offscreen");
-let resX = 920;
-let resY = 200;
-let canvas = q5.createCanvas(resX, resY);
-document.getElementById("coords_to_index").appendChild(canvas);
-q5.pixelDensity(2);
-q5.textSize(16);
-canvas.style["max-width"] = "100%";
-canvas.style.width = "";
-canvas.style.height = "";
-
- w = 40; h = 40;
+let resX = 920, resY = 200;
+let q5 = q5Diagram(920, 200, "coords_to_index")
+let w = 40; h = 40;
 q5.translate(w * 2, resY / 2 - (h * 3) / 2)
-colors = [ "blue", "#020", "#00b"]
+colors = [ "#b00", "#020", "#00b"]
 q5.textAlign(q5.CENTER, q5.CENTER)
 for (y = 0; y < 3; y++) {
     for(x = 0; x < 4; x++) {
@@ -764,15 +754,15 @@ for (y = 0; y < 3; y++) {
 }
 q5.resetMatrix()
 
-q5.fill("red")
+q5.fill("#bbb")
 q5.text("width = 4", 160, 20)
-q5.text("height = 3", 40, 100)
+q5.text("height = 3", 35, 100)
 
 q5.text("index = x + y * width", 8 * w, 80)
 q5.text("uint32_t *pixels", 16 * w, 60)
 
 q5.strokeWeight(2)
-q5.stroke("white")
+q5.stroke("#bbb")
 q5.line(6 * w + w / 2, 100, 10 * w - w / 2, 100)
 q5.triangle(10 * w - w / 2, 100, 10 * w - w / 2 - 10, 95, 10 * w - w / 2 - 10, 105)
 q5.strokeWeight(1)
@@ -784,14 +774,13 @@ for (y = 0; y < 3; y++) {
         q5.stroke("black")
         q5.fill(colors[y])
         q5.rect(rx, 0, w, h);
-        q5.fill("white")
+        q5.fill("#bbb")
         q5.noStroke()
         q5.text("" + rx / w, rx + w / 2, h / 2)
         rx += w
     }
 }
 q5.resetMatrix()
-q5.noLoop()
 </script>
 
 <p>
