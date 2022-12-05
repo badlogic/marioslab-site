@@ -818,7 +818,7 @@ void hline(r96_image *image, int32_t x1, int32_t x2, int32_t y, uint32_t color) 
 )}}
 
 <p>
-	On my machine, I get these timings:
+	We keep all the clipping from before, but are a bit smarter regarding our inner loop. We precalculate the address of the pixel at coordinates <code>(x1, y)</code> in line 16. We also precalculate the number of pixels we are going draw. The inner loop then counts down the number of pixels, while assigning the color to the current pixel and incremening the address by one. Pretty tight. On my machine, I get these timings:
 </p>
 
 {{post.code("", "bash",
