@@ -19,7 +19,6 @@ import io.marioslab.basis.arguments.Arguments.ParsedArguments;
 import io.marioslab.basis.site.BasisSite;
 import io.marioslab.basis.site.processors.TemplateFileProcessor;
 import io.marioslab.basis.site.processors.TemplateFileProcessor.BuiltinFunctionProvider;
-import io.marioslab.processors.ImageCropProcessor;
 
 public class MariosLab {
     private static Map<WebSocketHandler, WsSession> wsClients = new ConcurrentHashMap<>();
@@ -41,7 +40,6 @@ public class MariosLab {
             site.replaceProcessor(new TemplateFileProcessor(Arrays.asList((file, context) -> {
                 context.set("reloadWS", parsed.has(reloadArg));
             }, new BuiltinFunctionProvider(site.getGenerator()))));
-            site.addProcessor(new ImageCropProcessor());
         } catch (Throwable e) {
             Log.error(e.getMessage());
             Log.debug("Exception", e);
