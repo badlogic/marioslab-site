@@ -1,7 +1,7 @@
 {{
 metadata = {
-	title: "Rendering like it's 1996 - Don't be a square",
-	summary: "On drawing horizontal lines and rectangles.",
+	title: "Rendering like it's 1996 - Rectangles",
+	summary: "Drawing horizontal lines and rectangles.",
 	image: "dont-be-a-square.png",
 	date: parseDate("2022/11/29 21:00"),
 	published: false,
@@ -15,19 +15,19 @@ metadata = {
 
 <div class="table_of_contents"></div>
 
-<p><a href="../babys-first-pixel/">Last time</a>, we set up our development environment and explored concepts like pixels and rasters. Today, we're going to build on that great experience and figure out how to draw rectangles. Exciting!</p>
+<p><a href="../babys-first-pixel/">Last time</a>, we set up our development environment and explored concepts like pixels and rasters. Today, we're going to build on that knowledge and figure out how to draw rectangles. Exciting!</p>
 
-<p>But before we do that, let's abstract rasters, setting and getting pixels, and a few other small things so we'll never have to think about them hard ever again.</p>
+<p>But before we do that, let's abstract pixel rasters, setting and getting pixels, and a few other small things so we'll never have to think about them hard ever again.</p>
 
 <p class="note">
 	You can follow along by checking out the <code>dont-be-square-00</code> tag in your clone of the <a href="https://github.com/badlogic/r96">r96</a> repository.</br></br>
 	<code>git checkout dont-be-square-00</code>
 </p>
 
-<h2>Putting more stuff in r96.h</h2>
+<h2>Putting more stuff r96.h/r96.c</h2>
 
 <p>
-	Nope, we aren't going to build a super duper re-usable DOS-like game development framework. But we could do with stuffing a few things into <code>src/r96</code> folder, where re-usable stuff used by the demo apps lives. In this section, we'll add a bunch of stuff to <code>src/r96/r96.h</code> and <code>src/r96/r96.h</code>. I'll just highlight the additions through excerpting and link to lines in the corresponding file on GitHub.
+	Let's stuff a few things into <code>src/r96/r96.h</code> and <code>src/r96/r96.c</code>, where re-usable code used by the demo apps lives. I'll just highlight the additions through excerpting and link to lines in the corresponding file on GitHub.
 </p>
 
 <h3>Stellar memory management</h3>
@@ -65,15 +65,16 @@ typedef struct rectangle {
 
 rectangle *rect = R9_ALLOC(rectangle);
 uint32_t *pixels = R9_ALLOC_ARRAY(uint32_t, 320 * 240);
+R96_FREE(pixels);
 R96_FREE(rect);
 "
 )}}
 
 <p>
-	Apart from a little less typing, these macros also allow us to replace our allocator, should we want that down the road, e.g. for leak detection, or arena allocations, or whatever we can think of. It won't cover all bases, but it sure beats finding and replacing all the places in our code that call <code>malloc()</code> and <code>free()</code>.
+	Apart from a little less typing, these macros also allow us to replace our allocator, should we want that down the road.
 </p>
 
-<h3>Poking colors</h3>
+<h3>Destructuring colors</h3>
 <p>
 	Getting the individual color components out of a color constructed with <code>R96_ARGB()</code> is a bit tedious. Let's fix that with more macros in <a href="https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h#L7-L10"><code>src/r96/r96.h</code></a>:
 </p>
@@ -101,17 +102,25 @@ uint8_t blue = R96_B(color);  // 4
 "
 )}}
 
-<h3>A struct for rasters</h3>
+<h3>A struct for (raster) images</h3>
 <p>
-	It's a bit annoying to keep track of the width, height and pixels of rasters we work with, like in our previous demo apps. We'll continue working with rasters a lot, so it makes sense to bundle all that info up into a struct, as you can now find in <a href="https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h#L16-L19"><code>src/r96/r96.h</code></a>:
+	It's a bit annoying to keep track of the width, height and pixels of rasters, like in our previous demo apps. The term "raster" is also a bit to "scientific". Colloquially, what we are dealing with are images.
+</p>
+
+<p class="note">
+	<strong>Note:</strong> if we wanted to be super precise, we'd have to say "raster images". Images can also be represented in other ways, e.g. as a list of shapes with color information, aka vector images. In this series however, we'll only deal with raster images. Raster, raster image, and image are all synonymous for us.
+</p>
+
+<p>
+	Let's create a struct in <a href="https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h#L16-L19"><code>src/r96/r96.h</code></a> to ease the pain:
 </p>
 
 {{post.code("src/r96/r96.h", "c",
 "
-typedef struct r96_raster {
+typedef struct r96_image {
 	int32_t width, height;
 	uint32_t *pixels;
-} r96_raster;
+} r96_image;
 "
 )}}
 
@@ -125,23 +134,23 @@ typedef struct r96_raster {
 
 {{post.code("src/r96/r96.c", "c",
 "
-void r96_raster_init(r96_raster *raster, uint32_t width, uint32_t height) {
+void r96_image_init(r96_image *image, uint32_t width, uint32_t height) {
 	assert(width > 0);
 	assert(height > 0);
 
-	raster->width = width;
-	raster->height = height;
-	raster->pixels = R96_ALLOC_ARRAY(uint32_t, width * height);
+	image->width = width;
+	image->height = height;
+	image->pixels = R96_ALLOC_ARRAY(uint32_t, width * height);
 }
 
-void r96_raster_dispose(r96_raster *raster) {
-	R96_FREE(raster->pixels);
+void r96_image_dispose(r96_image *image) {
+	R96_FREE(image->pixels);
 }
 "
 )}}
 
 <p>
-	Creating rasters has never been so easy:
+	Creating raster images has never been so easy:
 </p>
 
 {{post.code("", "c",
@@ -158,7 +167,7 @@ R96_FREE(heapRaster);
 )}}
 
 <p>
-	As illustrated by the snippet above, we can initialize and dispose both stack and heap allocated <code>r96_raster</code> instances. Which leads me into a little excurse into memory and resource life-time management.
+	As illustrated by the snippet above, we can initialize and dispose both stack and heap allocated <code>r96_image</code> instances. Which leads me into a little excurse into memory and resource life-time management.
 </p>
 
 <h3>A word on memory and resource life-time management</h3>
@@ -177,13 +186,13 @@ R96_FREE(heapRaster);
 
 <ol>
 	<li>There are no naked resources (e.g. a pointer to heap allocated memory)</li>
-	<li>A resource is owned by a single instance of a resource-owning type (e.g. heap memory storing pixels is owned by a single r96_raster instance)</li>
+	<li>A resource is owned by a single instance of a resource-owning type (e.g. heap memory storing pixels is owned by a single <code>r96_image</code> instance)</li>
 	<li>Prefer stack allocation over heap allocation</li>
 	<li>Prefer value types over reference types</li>
 </ol>
 
 <p>
-	While we won't go for a full <a href="https://floooh.github.io/2018/06/17/handles-vs-pointers.html">"handles instead of pointers"</a> for the <code>r96</code> library, we'll strive to make our code as pointer- and allocation-free as possible. This will enable building apps on top of the <code>r96</code> library code, that themselves can then implement a handle based system.
+	While we won't go for a full <a href="https://floooh.github.io/2018/06/17/handles-vs-pointers.html">"handles instead of pointers"</a> system for the <code>r96</code> library, we'll strive to make our code as pointer- and allocation-free as possible. This will enable building apps on top of the <code>r96</code> library code, that themselves can then implement a handle based system.
 </p>
 
 <p>
@@ -195,39 +204,53 @@ R96_FREE(heapRaster);
 </p>
 
 <ul>
-	<li>Resource-owning types are initialized and disposed with corresponding initializer and disposal functions. E.g. <code>r96_raster</code>, <code>r96_raster_init()</code>, and <code>r96_raster_dispose()</code></li>
+	<li>Resource-owning types are initialized and disposed with corresponding initializer and disposal functions. E.g. <code>r96_image</code>, <code>r96_image_init()</code>, and <code>r96_image_dispose()</code></li>
 	<li>Resource-owning types are always passed and returned by reference</li>
 	<li>Non-resource-owning types are initialized with <a href="https://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Designated-Inits.html">C99 designated initializers</a></li>
 	<li>Non-resource-owning types are passed to and returned from functions by value, unless performance considerations make it prohibitive</li>
 </ul>
 
-<p>The first two items make it less likely that two instances of a resource-owning type point to the same resource and provide a single location where the resource is acquired and released. The latter two items make it more likely that we store much of our data on the stack instead of the heap. Let's try to stick with this until everything falls apart and we'll need to re-evaluate.</p>
+<p>
+	The first two items make it less likely that two instances of a resource-owning type point to the same resource. The initialization and disposal functions give us a single location where a resource of a specific type is acquired and released.
+</p>
+
+<p>
+	The latter two items make it more likely that we store much of our data on the stack instead of the heap (or as value types instead of reference types). Insert sad trombone that C doesn't have immutable types.
+</p>
+
+<p>
+	Let's try to stick with this until everything falls apart and we'll need to re-evaluate.
+</p>
 
 <h3>Reading and writting pixels, the safe way</h3>
 <p>
-	Manually calculating the address of a pixel is annoying, so let's add functions that can read and write pixels from and to a <code>r96_raster</code>:
+	Manually calculating the address of a pixel is annoying, so let's add functions that can read and write pixels from and to a <code>r96_image</code>:
 </p>
 
 {{post.code("src/r96/r96.c", "c",
 "
-void r96_set_pixel(r96_raster *raster, int32_t x, int32_t y, uint32_t color) {
-	if (x < 0 || x >= raster->width || y < 0 || y > raster->height) return;
-	raster->pixels[x + y * raster->width] = color;
+void r96_set_pixel(r96_image *image, int32_t x, int32_t y, uint32_t color) {
+	if (x < 0 || x >= image->width || y < 0 || y >= image->height) return;
+	image->pixels[x + y * image->width] = color;
 }
 
-uint32_t r96_get_pixel(r96_raster *raster, int32_t x, int32_t y) {
-	if (x < 0 || x >= raster->width || y < 0 || y > raster->height) return 0;
-	return raster->pixels[x + y * raster->width];
+uint32_t r96_get_pixel(r96_image *image, int32_t x, int32_t y) {
+	if (x < 0 || x >= image->width || y < 0 || y >= image->height) return 0;
+	return image->pixels[x + y * image->width];
 }
 "
 )}}
 
 <p>
-	In the last demo app we made sure to draw pixels within the bounds of the raster. For the two more general purpose functions <code>r96_set_pixel()</code> and <code>r96_get_pixel()</code> we can not assume that the input is valid. We therefore make sure that the provided <code>x</code> and <code>y</code> coordinates are within the bounds of the raster, before actually accessing the pixel. This is known as <a href="https://en.wikipedia.org/wiki/Clipping_(computer_graphics)">clipping</a>. Clipping will be a permanent, very annoying companion of ours throughout this journey.
+	In the last demo app we made sure to draw pixels within the bounds of the image. For the two more general purpose functions <code>r96_set_pixel()</code> and <code>r96_get_pixel()</code> we can not assume that the input is valid. We therefore make sure that the provided <code>x</code> and <code>y</code> coordinates are within the bounds of the image, before actually accessing the pixel. This is known as <a href="https://en.wikipedia.org/wiki/Clipping_(computer_graphics)">clipping</a>. Clipping will be a permanent, very annoying companion of ours throughout this journey.
+</p>
+
+<p class="note">
+	<strong>Note:</strong> the largest x-coordinate that's still within the bounds of the image is <code>width - 1</code>, the largest y-coordinate is <code>height - 1</code>. That <code>-1</code> is a constant source of errors. I still mess this up from time to time, even after 25 years of graphics programming. <a href="https://github.com/badlogic/r96/commit/6f00a0ce610c09d1e39b058764d9b10cee27c0f3">No, really</a>. It's not even funny.
 </p>
 
 <p>
-	Obviously, since we do more work (clipping), using these functions is slower than manually (and unsafely) poking at pixels in the raster ourselves. But they come in handy when we implement naive versions of more complex rendering algorithms.
+	Obviously, since we do more work (clipping), using these functions is slower than manually (and unsafely) poking at pixels in the image ourselves. But they come in handy when we implement naive versions of more complex rendering algorithms. Once the naive implementation is working, we usually replace calls to these functions with inlined versions, such that we avoid per pixel clipping and possibly the multiplication in the address calculation.
 </p>
 
 <h3>Demo app: drawing pixels, again</h3>
@@ -299,7 +322,262 @@ int main(void) {
 </script>
 
 <p>
-	Have a look at <a href="https://github.com/badlogic/r96/blob/dont-be-square-00/web/02_raster.html"><code>02_raster.html</code></a> to see the magic that gets the <code>printf()</code> output into the div below the canvas. Yes, nasty. But working.
+	Have a look at <a href="https://github.com/badlogic/r96/blob/dont-be-square-00/web/02_raster.html"><code>02_raster.html</code></a> to see the magic that gets the <code>printf()</code> output into the div below the canvas.
+</p>
+
+<h3>Clearing an image</h3>
+<p>
+	In real-time graphics, we usually clear the "screen" every time we start rendering a new frame. So far, we didn't have a need for this age old tradition, but we'll likely need it in the future. In our case, the "screen" is really the <code>r96_image</code> we draw our pixels to which we later pass to <code>mfb_update_ex()</code> to have it displayed in a window. Let's add functions to clear an image with a specific color.
+</p>
+
+{{post.code("r96.c", "c",
+"
+void r96_clear(r96_image *image) {
+	memset(image->pixels, 0x0, image->width * image->height * sizeof(uint32_t));
+}
+
+void r96_clear_with_color(r96_image *image, uint32_t color) {
+	uint32_t *pixels = image->pixels;
+	for (int i = 0; i < image->width * image->height; i++)
+		pixels[i] = color;
+}
+"
+)}}
+
+<p>
+	Often, we want to set all pixels in an image to black before we start drawing. <code>r96_clear()</code> covers exactly that common case. It uses <code>memset()</code>, which is heavily optimized and usually beats a hand-rolled loop. Sadly, we can't use <code>memset()</code> to set 32-bit values like we'd need if we wanted to specify a <code>uint32_t</code> encoded color to clear the image with.
+</p>
+
+<p>
+	<code>r96_clear_with_color()</code> lets us clear with an arbitrary color. As we loop through pixels individually, it will likely be quite a bit slower than the <code>memset()</code> based alternative above. But is it really?
+</p>
+
+<h3>Demo app: profiling and optimizing <code>r96_clear_with_color()</code></h3>
+<p>
+	While you can make some assumption about the performance of your code just based on the code (or its assembly version) itself, you must always measure to ensure your assumptions hold. Profiling code is an art in itself, especially as your code becomes more complex, with cascades of function calls.
+</p>
+
+<p>
+	Luckily, profiling <code>r96_clear()</code> and <code>r96_clear_with_color()</code> is comparatively trivial. All we need is a <a href="http://www.songho.ca/misc/timer/timer.html">high-resolution timer</a> that can give us nano-second precision. MiniFB comes with such a <a href="https://github.com/emoon/minifb#timers-and-target-fps">high precision timer</a>. Let's write a command line app called that tests how fast <code>r96_clear()</code> and <code>r96_clear_with_color()</code> are:
+</p>
+
+{{post.code("src/03_clear_profiling.c", "c",
+"
+#include <MiniFB.h>
+#include <stdio.h>
+#include \"r96/r96.h\"
+
+int main(void) {
+	const int num_iterations = 200000;
+	r96_image image;
+	r96_image_init(&image, 320, 240);
+	struct mfb_timer *timer = mfb_timer_create();
+
+	mfb_timer_reset(timer);
+	for(int i = 0; i < num_iterations; i++)
+		r96_clear(&image);
+	printf(\"r96_clear() took %f secs\\n\", mfb_timer_delta(timer));
+
+	mfb_timer_reset(timer);
+	for(int i = 0; i < num_iterations; i++)
+		r96_clear_with_color(&image, 0x0);
+	printf(\"r96_clear_with_color() took %f secs\\n\", mfb_timer_delta(timer));
+
+	r96_image_dispose(&image);
+	return 0;
+}
+"
+)}}
+
+<p>
+	We create a 320x200 pixels image and the timer. As a base-line, we measure how long it takes to clear the image <code>200000</code> times using <code>r96_clear()</code>. Then we measure how long it takes to do the same with <code>r96_clear_with_color()</code>. We always profile our code using the release build. Here's what I get on my machine:
+</p>
+
+{{post.code("", "",
+"
+r96_clear()                 0.573491 secs
+r96_clear_with_color()      4.833749 secs
+"
+)}}
+
+<p>
+	Alright, that's absolutely not great. We assumed that manually looping through and setting the pixels is a bit slower than <code>memset()</code>. But 8.5x times slower?! There must be something wrong.
+</p>
+
+<p>
+	Just looking at the code of <code>r96_clear_with_color()</code> doesn't really give us any hints how to improve it, so let's look at the (manually annotated) assembly code the compiler (in this case Clang taregting x86_64 on Linux) spits out for the function next to the original C code.
+</p>
+
+<p class="note">
+	<strong>Note:</strong> while you can get the assembly output straight from your compiler, I tend to use the <a href="https://godbolt.org">Godbolt Compiler Explorer</a>, an online C/C++ compiler and disassembler. Enter C/C++ code in the left side editor and have Godbolt show you the assembly output by the choosen compiler + flags on the right side. You can even <a href="https://www.godbolt.org/z/Przd11aPe">share your sketches</a>, so others can help improve things easily, without needing to set up a build environment.
+</p>
+
+{{post.code("", "c",
+"
+void r96_clear_with_color(r96_image *image, uint32_t color) {
+	uint32_t *pixels = image->pixels;
+	for (int i = 0; i < image->width * image->height; i++)
+		pixels[i] = color;
+}
+"
+)}}
+
+{{post.code("", "",
+"
+r96_clear_with_color:
+        mov     eax, dword ptr [rdi + 4]     # eax = image->width
+        imul    eax, dword ptr [rdi]         # eax = image->height * image->width
+        test    eax, eax                     # eax == 0?
+        jle     .LBB1_3                      # yes, exit
+        mov     r8, qword ptr [rdi + 8]      # r8 = pixels = image->pixels
+        xor     ecx, ecx                     # ecx = i = 0
+.LBB1_2:
+        mov     dword ptr [r8 + 4*rcx], esi  # pixels[i] = color
+        inc     rcx                          # i++
+        movsxd  rdx, dword ptr [rdi]         # rdx = image->width
+        movsxd  rax, dword ptr [rdi + 4]     # rax = image->height
+        imul    rax, rdx                     # rax = image->width * image->height
+        cmp     rcx, rax                     # i == image->width * image->height?
+        jl      .LBB1_2                      # no, next pixel
+.LBB1_3:
+        ret
+")
+}}
+
+<p>
+	<code>image</code> is passed to the function in <code>rdi</code>, the color is passed to the function in <code>rsi</code>.
+</p>
+
+<p>
+	Lines 2-5 multiply <code>image->height</code> (<code>[rdi + 4]</code>) by <code>image->width</code> (<code>[rdi]</code>), then check if the result is zero. If that's the case, we jump to <code>.LBB1_3</code> and exit the function. This part checks if there's any need to iterate at all and bails out early.
+</p>
+
+<p>
+	If the initial check passes, then <code>image->pixels</code>)is loaded into the local variable <code>pixels</code> (<code>r8</code>) in line 6. In line 7 <code>i</code> (<code>ecx</code>) is set to zero. We are ready to iterate.
+</p>
+
+<p>
+	In line 9, we set <code>pixels[i]</code> (<code>[r8 + 4*rcx]</code>) to the <code>color</code> (<code>esi</code>). Then we increment <code>i</code> (<code>rcx</code>) in line 10.
+</p>
+
+<p>
+	In line 11 we load <code>image->width</code> into <code>rdx</code>, followed by loading <code>image->height</code> into <code>rax</code> in line 12, which are then multiplied in line <code>13</code>, with the result ending up in <code>rax</code>. <code>rax</code> is then compared to <code>i</code> (<code>rcx</code>). If it is less than <code>image->width * image->height</code> (<code>rax</code>), we jump back to <code>.LBB1_2</code> and write the next pixel, otherwise we fall through and exit the function.
+</p>
+
+<p>
+	Did you notice the problem? Our loop condition <code>i < image->width * image->height</code> has been compiled to some rather sub-optimal machine code. Instead of calculating <code>image->width * image->height</code> once, it is calculated for every loop iteration! Not only does this mean the <code>width</code> and <code>height</code> fields of the image are fetched from memory every iteration, we also have an integer multiplication per iteration. That's not great!
+</p>
+
+<p>
+	Let's fix this by manually precalculating <code>image->width * image->height</code>, thereby helping the compiler out a little:
+</p>
+
+{{post.code("", "c",
+"
+void r96_clear_with_color(r96_image *image, uint32_t color) {
+	uint32_t *pixels = image->pixels;
+	for (int i = 0, n = image->width * image->height; i < n; i++)
+		pixels[i] = color;
+}
+"
+)}}
+
+<p>
+	Let's run this and see if it improved things, before looking at the assembly code.
+</p>
+
+{{post.code("", "",
+"
+r96_clear()                 0.633761 secs
+r96_clear_with_color()      0.761754 secs
+"
+)}}
+
+<p>
+	Much better. We are now in the same ballpark as the <code>memset()</code> based <code>r96_clear()</code>. What did the compiler do? Hold on to your butts:
+</p>
+
+{{post.code("", "",
+"
+r96_clear_with_color:                   # @r96_clear_with_color
+        mov     ecx, dword ptr [rdi + 4]
+        imul    ecx, dword ptr [rdi]
+        test    ecx, ecx
+        jle     .LBB1_12
+        mov     rax, qword ptr [rdi + 8]
+        mov     r9d, ecx
+        cmp     ecx, 8
+        jae     .LBB1_3
+        xor     edx, edx
+        jmp     .LBB1_11
+.LBB1_3:
+        mov     edx, r9d
+        and     edx, -8
+        movd    xmm0, esi
+        pshufd  xmm0, xmm0, 0                   # xmm0 = xmm0[0,0,0,0]
+        lea     rcx, [rdx - 8]
+        mov     rdi, rcx
+        shr     rdi, 3
+        inc     rdi
+        mov     r8d, edi
+        and     r8d, 3
+        cmp     rcx, 24
+        jae     .LBB1_5
+        xor     ecx, ecx
+        jmp     .LBB1_7
+.LBB1_5:
+        and     rdi, -4
+        xor     ecx, ecx
+.LBB1_6:                                # =>This Inner Loop Header: Depth=1
+        movdqu  xmmword ptr [rax + 4*rcx], xmm0
+        movdqu  xmmword ptr [rax + 4*rcx + 16], xmm0
+        movdqu  xmmword ptr [rax + 4*rcx + 32], xmm0
+        movdqu  xmmword ptr [rax + 4*rcx + 48], xmm0
+        movdqu  xmmword ptr [rax + 4*rcx + 64], xmm0
+        movdqu  xmmword ptr [rax + 4*rcx + 80], xmm0
+        movdqu  xmmword ptr [rax + 4*rcx + 96], xmm0
+        movdqu  xmmword ptr [rax + 4*rcx + 112], xmm0
+        add     rcx, 32
+        add     rdi, -4
+        jne     .LBB1_6
+.LBB1_7:
+        test    r8, r8
+        je      .LBB1_10
+        lea     rcx, [rax + 4*rcx]
+        add     rcx, 16
+        shl     r8, 5
+        xor     edi, edi
+.LBB1_9:                                # =>This Inner Loop Header: Depth=1
+        movdqu  xmmword ptr [rcx + rdi - 16], xmm0
+        movdqu  xmmword ptr [rcx + rdi], xmm0
+        add     rdi, 32
+        cmp     r8, rdi
+        jne     .LBB1_9
+.LBB1_10:
+        cmp     rdx, r9
+        je      .LBB1_12
+.LBB1_11:                               # =>This Inner Loop Header: Depth=1
+        mov     dword ptr [rax + 4*rdx], esi
+        inc     rdx
+        cmp     r9, rdx
+        jne     .LBB1_11
+.LBB1_12:
+        ret
+"
+)}}
+
+<p>
+	The compiler basically generated a 32-bit version of a highly optimized <code>memset()</code> implementation, we could spend an hour dissecting it to precisely understand what's going on. But why question the compiler's wisdom? The take away:
+</p>
+
+<p class="quote">
+	Always precalculate as much as you can for your inner loops, including values used in your loop condition. The compiler can not always figure out <a href="https://en.wikipedia.org/wiki/Loop_invariant">loop invariants</a>.
+</p>
+
+<h2>Drawing horizontal lines</h2>
+
+<p>
+	With our housekeeping out of the way, it's time to get back to the actual goal of this post: drawing rectangles. Before we can walk, we need to learn to crawl. So let's start with drawing horizontal lines.
 </p>
 
 <p>

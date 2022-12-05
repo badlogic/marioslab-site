@@ -6,6 +6,7 @@
 	color_background = "#232729"
 	color_text = "#bbbbbb"
 	color_note = "#ddd"
+	color_quote = "rgb(254, 121, 5)"
 	color_link = "rgb(254, 121, 5)"
 	font_size = "16px"
 	content_width = "80ch"
@@ -139,8 +140,7 @@ ul {
 .quote {
 	text-align: center;
 	font-style: italic;
-	font-family: sarif;
-	border-left: solid 4px {{color_note}};
+	border-left: solid 4px {{color_quote}};
 	padding: 0 2em 0 2em;
 	margin: 1em 0 1em 0 !important;
 }

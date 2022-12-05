@@ -1,5 +1,6 @@
-{{include raw "_highlight.pack.js"}}
+{{include raw "_highlight.min.js"}}
 {{include raw "_highlightjs-line-numbers.min.js"}}
+{{include raw "_q5.min.js"}}
 
 hljs.highlightAll();
 hljs.initLineNumbersOnLoad();

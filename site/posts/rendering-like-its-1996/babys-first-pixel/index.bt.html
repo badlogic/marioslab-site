@@ -735,7 +735,65 @@ pixels[0] = R96_ARGB(255, 255, 0, 0);
 	OK, that was obvious. But how about a pixel at an arbitrary coordinate? Let's look at a smaller 4x3 pixel raster:
 </p>
 
-{{post.figure("coordstoindex.png", "Going from 2D coordinates to 1D array indices.")}}
+<div id="coords_to_index"></div>
+
+<script>
+let q5 = new Q5("offscreen");
+let resX = 920;
+let resY = 200;
+let canvas = q5.createCanvas(resX, resY);
+document.getElementById("coords_to_index").appendChild(canvas);
+q5.pixelDensity(2);
+q5.textSize(16);
+canvas.style["max-width"] = "100%";
+canvas.style.width = "";
+canvas.style.height = "";
+
+ w = 40; h = 40;
+q5.translate(w * 2, resY / 2 - (h * 3) / 2)
+colors = [ "#b00", "#020", "#00b"]
+q5.textAlign(q5.CENTER, q5.CENTER)
+for (y = 0; y < 3; y++) {
+    for(x = 0; x < 4; x++) {
+        q5.stroke("black")
+        q5.fill(colors[y])
+        q5.rect(x * w, y * h, w, h);
+        q5.fill("#bbb")
+        q5.noStroke()
+        q5.text("(" + x + "," + y + ")", x * w + w / 2, y * h + h / 2)
+    }
+}
+q5.resetMatrix()
+
+q5.fill("#bbb")
+q5.text("width = 4", 160, 20)
+q5.text("height = 3", 40, 100)
+
+q5.text("index = x + y * width", 8 * w, 80)
+q5.text("uint32_t *pixels", 16 * w, 60)
+
+q5.strokeWeight(2)
+q5.stroke("white")
+q5.line(6 * w + w / 2, 100, 10 * w - w / 2, 100)
+q5.triangle(10 * w - w / 2, 100, 10 * w - w / 2 - 10, 95, 10 * w - w / 2 - 10, 105)
+q5.strokeWeight(1)
+
+q5.translate(w * 4 + w * 4 + w * 2, resY / 2 - h / 2)
+let rx = 0
+for (y = 0; y < 3; y++) {
+    for(x = 0; x < 4; x++) {
+        q5.stroke("black")
+        q5.fill(colors[y])
+        q5.rect(rx, 0, w, h);
+        q5.fill("white")
+        q5.noStroke()
+        q5.text("" + rx / w, rx + w / 2, h / 2)
+        rx += w
+    }
+}
+q5.resetMatrix()
+q5.noLoop()
+</script>
 
 <p>
 Our raster is a one dimensional block of memory. The pixel rows are stored one behind the other. The 4 pixels of the first pixel row with <code>y=0</code> are stored in <code>pixels[0]</code> to <code>pixels[3]</code>. The index of a pixel in the first row is simply its x-coordinate. E.g. the pixel at coordinate <code>(2, 0)</code> is stored in <code>pixels[2]</code>.
