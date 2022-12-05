@@ -12,8 +12,9 @@ Open an editor on the right side of your screen, and a browser on the left while
 There's a duct-tape script called `publish.sh` which:
 
 1. Pushes local changes to the GitHub repository.
-2. Calls the endpoint https://marioslab.io/api/reloadstatic, which makes the server pull the changes from GitHub and re-generate the static content.
+2. Builds and runs the generator.
+3. rsync's the static files in `ouput/` to the server.
 
 # Statistics
-Install [goaccess](https://goaccess.io/) via the package manager. Then run the `stats.sh` file.
+Install [goaccess](https://goaccess.io/) via the package manager. Then run the `stats.sh` file. If you have my ssh keys.
 
