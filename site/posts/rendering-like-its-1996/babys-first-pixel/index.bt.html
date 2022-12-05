@@ -130,11 +130,11 @@ metadata = {
 	<li>Open the command palette (<code>CTRL+SHIFT+P</code> or <code>CMD+SHIFT+P</code> on macOS), type <code>user setting</code> and select <code>Preferences: Open User-Settings (JSON)</code></li>
 	<li>At the bottom of the freshly opened <code>settings.json</code> file, add the following lines before the closing <code>}</code>:
 		{{post.code("settings.json", "json",
-"
-\"C_Cpp.intelliSenseEngine\": \"Disabled\"
-\"cmake.configureOnOpen\": true,
-\"cmake.configureArgs\": [\"-DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE\"],
-"
+`
+"C_Cpp.intelliSenseEngine": "Disabled"
+"cmake.configureOnOpen": true,
+"cmake.configureArgs": ["-DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE"],
+`
 		)}}
 	This will disable the bad intellisense of the C/C++ extension, ensures that CMake projects are automatically configured when opened in VS Code, and that CMake always builds a <code>compile_commands.json</code> file, which the clangd extension needs to provide intellisense/auto-completion.
 	</li>
@@ -154,21 +154,20 @@ metadata = {
 	<li>Open the folder in VS Code</li>
 	<li>Create a folder called <code>src</code>, and within it a file called <code>quickstart.c</code> with the following content:
 	{{post.code("quickstart.c", "c",
-"
+`
 #include <stdio.h>
 
 int main(void) {
-	char *text = \"Hello World\\n\";
-	printf(\"%s\", text);
+	char *text = "Hello World\n";
+	printf("%s", text);
 	return 0;
 }
-
-"
+`
 	)}}
 	</li>
 	<li>Create a file called <code>CMakeLists.txt</code> in the root of the folder with the following content:
 		{{post.code("CMakeLists.txt", "cmake",
-"
+`
 cmake_minimum_required(VERSION 3.21.1)
 project(quickstart)
 
@@ -181,8 +180,8 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
 
-add_executable(quickstart \"src/quickstart.c\")
-"
+add_executable(quickstart "src/quickstart.c")
+`
 		)}}
 	</li>
 </ul>
@@ -250,12 +249,12 @@ In line 13 we define an executable target called <code>quickstart</code>, which 
 	<li>Run the <code>CMake: Edit User-Local Kits</code> commands</li>
 	<li>At the end of the <code>cmake-tools-kits.json</code> file, add the following lines before the closing <code>]</code>:
 		{{post.code("cmake-tools-kits.json", "json",
-"
+`
 ,{
-	\"name\": \"Emscripten\",
-	\"toolchainFile\": \"/Users/badlogic/workspaces/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake\"
+	"name": "Emscripten",
+	"toolchainFile": "/Users/badlogic/workspaces/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
 }
-"
+`
 		)}}
 	</li>
 	<li>Replace the <code>"toolchainFile"</code> path with the path to your emscripten installation's toolchain file.</li>
@@ -377,7 +376,7 @@ FetchContent_MakeAvailable(minifb)
 </p>
 
 {{post.code("", "cmake",
-"
+`
 if(MSVC)
     add_compile_options(/W4 /WX)
 else()
@@ -393,13 +392,13 @@ else()
 			-sALLOW_TABLE_GROWTH
 			-sMALLOC=emmalloc
 			-sEXPORT_ALL=1
-			-sEXPORTED_FUNCTIONS=[\"_malloc\",\"_free\",\"_main\"]
+			-sEXPORTED_FUNCTIONS=["_malloc","_free","_main"]
 			-sASYNCIFY
 			--no-entry
         )
     endif()
 endif()
-"
+`
 )}}
 
 <p>
@@ -407,9 +406,9 @@ endif()
 </p>
 
 {{post.code("", "cmake",
-"
-add_library(r96 \"src/r96/r96.c\")
-"
+`
+add_library(r96 "src/r96/r96.c")
+`
 )}}
 
 <p>
@@ -417,10 +416,10 @@ add_library(r96 \"src/r96/r96.c\")
 </p>
 
 {{post.code("", "cmake",
-"
-add_executable(r96_00_basic_window \"src/00_basic_window.c\")
+`
+add_executable(r96_00_basic_window "src/00_basic_window.c")
 target_link_libraries(r96_00_basic_window LINK_PUBLIC minifb r96)
-"
+`
 )}}
 
 <p>
@@ -428,7 +427,7 @@ target_link_libraries(r96_00_basic_window LINK_PUBLIC minifb r96)
 </p>
 
 {{post.code("", "cmake",
-"
+`
 if(EMSCRIPTEN)
     add_custom_target(r96_web_assets
             COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -439,7 +438,7 @@ if(EMSCRIPTEN)
     add_dependencies(r96_00_basic_window r96_web_assets)
     target_link_options(r96_00_basic_window PRIVATE -sEXPORT_NAME=r96_00_basic_window)
 endif()
-"
+`
 )}}
 
 <p>
@@ -465,13 +464,13 @@ endif()
 </p>
 
 {{post.code("00_basic_window.c", "c",
-"
+`
 #include <MiniFB.h>
 #include <stdlib.h>
 
 int main(void) {
 	const int res_x = 320, res_y = 240;
-	struct mfb_window *window = mfb_open(\"00_basic_window\", res_x, res_y);
+	struct mfb_window *window = mfb_open("00_basic_window", res_x, res_y);
 	uint32_t *pixels = (uint32_t *) malloc(sizeof(uint32_t) * res_x * res_y);
 	do {
 		mfb_update_ex(window, pixels, res_x, res_y);
@@ -479,7 +478,7 @@ int main(void) {
 	return 0;
 }
 
-"
+`
 )}}
 
 <p>
@@ -569,9 +568,9 @@ python3 -m http.server --directory build
 </p>
 
 {{post.code("", "c",
-"
-struct mfb_window *window = mfb_open(\"00_basic_window\", res_x, res_y);
-"
+`
+struct mfb_window *window = mfb_open("00_basic_window", res_x, res_y);
+`
 )}}
 
 <p>
@@ -844,10 +843,10 @@ pixels[160 + 120 * res_x] = R96_ARGB(255, 255, 0, 0);
 		<ul>
 			<li>Add a new executable target in the <code>CMakeLists.txt</code> file after the definition of the <code>r96_00_basic_window</code> executable target:
 			{{post.code("CMakeLists.txt", "cmake",
-"
-add_executable(r96_01_drawing_a_pixel \"src/01_drawing_a_pixel.c\")
+`
+add_executable(r96_01_drawing_a_pixel "src/01_drawing_a_pixel.c")
 target_link_libraries(r96_01_drawing_a_pixel LINK_PUBLIC minifb r96)
-"
+`
 			)}}</li>
 			<li>
 				Add the custom <code>r96_web_assets</code> target as a dependency to the <code>r96_01_drawing_a_pixel</code> target, and set the <code>EXPORT_NAME</code> linker flag to <code>r96_01_drawing_a_pixel</code>:
@@ -871,15 +870,15 @@ target_link_options(r96_00_basic_window PRIVATE -sEXPORT_NAME=r96_01_drawing_a_p
 </p>
 
 {{post.code("01_drawing_a_pixel.c", "c",
-"
+`
 #include <MiniFB.h>
 #include <stdlib.h>
 #include <string.h>
-#include \"r96/r96.h\"
+#include "r96/r96.h"
 
 int main(void) {
 	const int res_x = 320, res_y = 240;
-	struct mfb_window *window = mfb_open(\"01_drawing_a_pixel\", res_x, res_y);
+	struct mfb_window *window = mfb_open("01_drawing_a_pixel", res_x, res_y);
 	uint32_t *pixels = (uint32_t *) malloc(sizeof(uint32_t) * res_x * res_y);
 	do {
 		for (int i = 0; i < 200; i++) {
@@ -897,7 +896,7 @@ int main(void) {
 	} while (mfb_wait_sync(window));
 	return 0;
 }
-"
+`
 )}}
 
 <p>

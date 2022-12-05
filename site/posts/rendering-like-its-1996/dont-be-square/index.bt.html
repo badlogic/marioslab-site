@@ -260,15 +260,15 @@ uint32_t r96_get_pixel(r96_image *image, int32_t x, int32_t y) {
 </p>
 
 {{post.code("src/02_raster.c", "c",
-"
-#include \"r96/r96.h\"
+`
+#include "r96/r96.h"
 #include <MiniFB.h>
 #include <stdio.h>
 
 int main(void) {
 	r96_raster raster;
 	r96_raster_init(&raster, 320, 240);
-	struct mfb_window *window = mfb_open(\"02_raster\", raster.width, raster.height);
+	struct mfb_window *window = mfb_open("02_raster", raster.width, raster.height);
 	do {
 		for (int i = 0; i < 200; i++) {
 			int32_t x = rand() % raster.width;
@@ -289,7 +289,7 @@ int main(void) {
 	r96_raster_dispose(&raster);
 	return 0;
 }
-"
+`
 )}}
 
 <p>
@@ -362,10 +362,10 @@ void r96_clear_with_color(r96_image *image, uint32_t color) {
 </p>
 
 {{post.code("src/03_clear_profiling.c", "c",
-"
+`
 #include <MiniFB.h>
 #include <stdio.h>
-#include \"r96/r96.h\"
+#include "r96/r96.h"
 
 int main(void) {
 	const int num_iterations = 200000;
@@ -386,7 +386,7 @@ int main(void) {
 	r96_image_dispose(&image);
 	return 0;
 }
-"
+`
 )}}
 
 <p>
@@ -498,7 +498,7 @@ r96_clear_with_color()      0.761754 secs
 </p>
 
 {{post.code("", "",
-"
+`
 r96_clear_with_color:                   # @r96_clear_with_color
         mov     ecx, dword ptr [rdi + 4]
         imul    ecx, dword ptr [rdi]
@@ -563,7 +563,7 @@ r96_clear_with_color:                   # @r96_clear_with_color
         jne     .LBB1_11
 .LBB1_12:
         ret
-"
+`
 )}}
 
 <p>
