@@ -52,7 +52,7 @@ function q5Diagram(width, height, divId) {
 	let blockSize = 40;
 	q5.blockSize = (bs) => {
 		if (bs !== undefined) blockSize = bs;
-		return bs;
+		return blockSize;
 	}
 
 	q5.grid = (x, y, w, h, stroke) => {
@@ -78,5 +78,13 @@ function q5Diagram(width, height, divId) {
 		q5.noStroke();
 		q5.text(text, x * blockSize, y * blockSize);
 	}
+
+	q5.blockRect = (x, y, width, height, fill, stroke) => {
+		stroke = stroke !== undefined ? stroke : "black";
+		q5.fill(fill)
+		q5.stroke(stroke);
+		q5.rect(x * blockSize, y * blockSize, blockSize * width, blockSize * height);
+	}
+
 	return q5;
 }

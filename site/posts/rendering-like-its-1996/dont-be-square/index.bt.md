@@ -839,7 +839,40 @@ Alternatively, we can define a rectangle by its top left corner point `(x1, y1)`
 
 As with horizontal lines, it pays off to first check out the clipping cases:
 
+--markdown-end
+<div id="rect-example"></div>
+<script>
+{
+let resX = 760; resY = 560;
+let q5 = q5Diagram(resX, resY, "rect-example");
+let bs = q5.blockSize();
+q5.translate(bs * 3, bs * 2);
+q5.grid(0, 0, 10, 10, "#bbb");
 
+q5.textSize(12)
+for (let x = 0; x < 10; x++) q5.blockText("" + x, x, -1, "#ddd");
+for (let y = 0; y < 10; y++) q5.blockText("" + y, -1, y, "#ddd");
+
+q5.textSize(14)
+
+for (let x = 3; x <= 10; x++) q5.block(x, 4, "#070");
+q5.blockText("(x1, y)", 3, 4, "#ddd")
+q5.blockText("(x2, y)", 10, 4, "#ddd")
+
+for (let x = 8; x <= 10; x++) q5.block(x, 8, "#070");
+q5.blockText("(x1, y)", 8, 8, "#ddd")
+q5.blockText("(x2, y)", 10, 8, "#ddd")
+
+for (let x = 2; x <= 17; x++) q5.block(x, 2, "#e0e");
+q5.blockText("(x1', y)", 2, 2, "#ddd")
+q5.blockText("(x2', y)", 17, 2, "#ddd")
+
+for (let x = 14; x <= 17; x++) q5.block(x, 11, "#e0e");
+q5.blockText("(x1, y)", 14, 11, "#ddd")
+q5.blockText("(x2', y)", 17, 11, "#ddd")
+}
+</script>
+--markdown-begin
 
 Discuss this post on [Twitter]() or [Mastodon]().
 
