@@ -40,6 +40,7 @@ public class MariosLab {
             site.replaceProcessor(new TemplateFileProcessor(Arrays.asList((file, context) -> {
                 context.set("reloadWS", parsed.has(reloadArg));
             }, new BuiltinFunctionProvider(site.getGenerator()))));
+            site.addProcessor(new MarkdownProcessor());
         } catch (Throwable e) {
             Log.error(e.getMessage());
             Log.debug("Exception", e);

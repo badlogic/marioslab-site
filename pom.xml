@@ -61,6 +61,7 @@
 		<basissite.version>1.6-SNAPSHOT</basissite.version>
 		<javalin.version>1.7.0</javalin.version>
 		<slf4jsimple.version>1.7.25</slf4jsimple.version>
+		<commonmark.version>0.20.0</commonmark.version>
 	</properties>
 
 	<dependencies>
@@ -81,6 +82,12 @@
 			<artifactId>slf4j-simple</artifactId>
 			<version>${slf4jsimple.version}</version>
  		</dependency>
+
+		<dependency>
+			<groupId>org.commonmark</groupId>
+			<artifactId>commonmark</artifactId>
+			<version>${commonmark.version}</version>
+		</dependency>
 	</dependencies>
 
 	<build>

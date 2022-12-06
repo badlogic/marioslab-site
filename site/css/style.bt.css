@@ -137,20 +137,12 @@ ul {
 	background: #222;
 }
 
-.quote {
-	text-align: center;
+.quote, .blockquote, blockquote {
 	font-style: italic;
 	border-left: solid 4px {{color_quote}};
-	padding: 0 2em 0 2em;
+	padding: 1em 2em 0.5em 2em;
 	margin: 1em 0 1em 0 !important;
-}
-
-.blockquote {
-	font-style: italic;
-	font-family: sarif;
-	border-left: solid 4px {{color_note}};
-	padding: 0 2em 0 2em;
-	margin: 1em 0 1em 0 !important;
+	background: #222;
 }
 
 .content {
