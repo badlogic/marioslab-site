@@ -835,6 +835,8 @@ We define a rectangle by its top left corner point `(x1, y1)` and its bottom rig
 
 Alternatively, we can define a rectangle by its top left corner point `(x1, y1)` and a positive `width` and `height` given in pixels. We can derrive `(x2, y2)` from this information, as `x2 = x1 + width - 1` and `y2 = y1 + height - 1`.
 
+> **Note:** And there it is, again. Our good friend `-1`. Can you figure out why it's needed to calculate `x2` and `y2` from `x1`, `y1`, `width`, and `height`?
+
 As with horizontal lines, it pays off to first check out the clipping cases:
 
 
