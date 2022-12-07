@@ -25,7 +25,36 @@ But first, we'll do some housekeeping.
 
 ## Putting more stuff r96.h/r96.c
 
-Let's stuff a few things into in [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h) and in [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.cpp)`, where re-usable code used by the demo apps lives.
+Let's stuff a few things into [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h) and [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.cpp), where re-usable code used by the demo apps lives.
+
+### Destructuring colors
+
+Creating colors from alpha, red, green, and blue components is done via `R96_ARGB()`. Sometimes we want to do the reverse and extract individual color components:
+
+--markdown-end
+{{post.code("src/r96/r96.h", "c",
+"
+#define R96_A(color) ((uint8_t) (color >> 24))
+#define R96_R(color) ((uint8_t) (color >> 16))
+#define R96_G(color) ((uint8_t) (color >> 8))
+#define R96_B(color) ((uint8_t) (color))
+"
+)}}
+--markdown-begin
+
+Which can be used like this:
+
+--markdown-end
+{{post.code("", "c",
+"
+uint32_t color = R96_ARGB(255, 128, 38, 4);
+uint8_t alpha = R96_A(color); // 255
+uint8_t red = R96_R(color);   // 128
+uint8_t green = R96_G(color); // 38
+uint8_t blue = R96_B(color);  // 4
+"
+)}}
+--markdown-begin
 
 ### Stellar memory management
 
@@ -69,35 +98,6 @@ R96_FREE(pixels);
 --markdown-begin
 
 Apart from a little less typing, these macros let us replace our allocator, should we want that down the road.
-
-### Destructuring colors
-
-Creating colors from alpha, red, green, and blue components is done via `R96_ARGB()`. Sometimes we want to do the reverse and extract individual color components:
-
---markdown-end
-{{post.code("src/r96/r96.h", "c",
-"
-#define R96_A(color) ((uint8_t) (color >> 24))
-#define R96_R(color) ((uint8_t) (color >> 16))
-#define R96_G(color) ((uint8_t) (color >> 8))
-#define R96_B(color) ((uint8_t) (color))
-"
-)}}
---markdown-begin
-
-Which can be used like this:
-
---markdown-end
-{{post.code("", "c",
-"
-uint32_t color = R96_ARGB(255, 128, 38, 4);
-uint8_t alpha = R96_A(color); // 255
-uint8_t red = R96_R(color);   // 128
-uint8_t green = R96_G(color); // 38
-uint8_t blue = R96_B(color);  // 4
-"
-)}}
---markdown-begin
 
 ### A struct for (raster) images
 
@@ -194,11 +194,11 @@ The first two rules make it less likely that two instances of a resource-owning 
 
 The latter two rules make it more likely that we store much of our data on the stack instead of the heap (or as value types instead of reference types). Insert sad trombone that C doesn't have immutable types.
 
-We'll try to stick with this until everything falls apart and we'll need to re-evaluate.
+We'll try to stick with this until everything falls apart.
 
 ### Reading and writting pixels, the safe way
 
-Previously, we've calculated pixel address manually. Let's wrap that functionality up in functions for writting and reading pixels to and from a `r96_image`:
+Previously, we've calculated pixel address manually. Let's wrap that functionality up in functions for setting and getting pixel colors on and from an `r96_image`:
 
 --markdown-end
 {{post.code("src/r96/r96.c", "c",
@@ -216,7 +216,7 @@ uint32_t r96_get_pixel(r96_image *image, int32_t x, int32_t y) {
 )}}
 --markdown-begin
 
-Neither `r96_set_pixel()` nor `r96_get_pixel()` can assume that coordinates given to them are within the image bounds. We thus ensure that's the case. This is form of [clipping](https://en.wikipedia.org/wiki/Clipping_(computer_graphics)). Clipping will be a permanent, very annoying companion of ours throughout this journey.
+Neither `r96_set_pixel()` nor `r96_get_pixel()` can assume that coordinates given to them are within the image bounds. We thus ensure that's the case. This is a form of [clipping](https://en.wikipedia.org/wiki/Clipping_(computer_graphics)). Clipping will be a permanent, very annoying companion of ours throughout this journey.
 
 > **Note:** the largest x-coordinate that's still within the bounds of the image is `width - 1`, the largest y-coordinate is `height - 1`. Missing that `-1` is a regular source of errors.
 
@@ -224,7 +224,7 @@ These functions are slower than manually calculating a pixel address, as they do
 
 ### Demo app: drawing pixels, again
 
-Let's put our new fancy API to use and create a new demo app called [`02_raster.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/02_raster.c). It does pretty much the same thing as the last demo app, except it uses the new API.
+Let's put our new fancy API to use and create a demo app called [`02_raster.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/02_raster.c).
 
 --markdown-end
 {{post.code("src/02_raster.c", "c",
@@ -274,21 +274,25 @@ Click the demo below to start it.
 
 --markdown-end
 <div style="display: flex; flex-direction: column; align-items: center; margin: 1em; max-width: 100%;">
-	<canvas id="02_raster" style="width: 640px; height: 480px; background: black;"></canvas>
-	<pre id="console" style="margin-top: 1em; width: 640px; height: 10ch; background: black; color: #bbbbbb; font-size: 14px; overflow: scroll;"></pre>
+	<canvas id="02_image" width="640" height="480" style="width: 100%; background: black;"></canvas>
+	<pre id="console" style="margin-top: 1em; width: 100%; height: 10ch; background: black; color: #bbbbbb; font-size: 14px; overflow: scroll;"></pre>
 </div>
-<script src="demo/r96_02_raster.js"></script>
+<script src="demo/r96_02_image.js"></script>
 <script>
+	let canvas = document.getElementById("02_image")
+	let ctx = canvas.getContext("2d");
+	ctx.font = "18px monospace";
+	ctx.textAlign = "center";
+	ctx.fillStyle = "white";
+	ctx.fillText("Click/tap to start", canvas.width / 2, canvas.height / 2);
+
 	let started = false;
 	let init = async () => {
 		if (started) return;
 		started = true;
-		await r96_02_raster();
-		let canvas = document.getElementById("02_raster")
-		canvas.style.width = "640px";
-		canvas.style.height = "480px";
+		await r96_02_image();
 	}
-	document.getElementById("02_raster").addEventListener("click", () => init());
+	document.getElementById("02_image").addEventListener("click", () => init());
 	let consoleDiv = document.getElementById("console");
 	let oldLog = console.log;
 	console.log = function(data) {
@@ -805,12 +809,18 @@ A nice improvement! Let's have some live lines to celebrate (click to start)
 
 --markdown-end
 <div style="display: flex; flex-direction: column; align-items: center; margin: 1em; max-width: 100%;">
-	<canvas id="05_hline_opt" style="width: 640px; height: 480px; background: black;"></canvas>
-	<pre id="console2" style="margin-top: 1em; width: 640px; height: 10ch; background: black; color: #bbbbbb; font-size: 14px; overflow: scroll;"></pre>
+	<canvas id="05_hline_opt" width="640" height="480" style="width: 100%; background: black;"></canvas>
+	<pre id="console2" style="margin-top: 1em; width: 100%; height: 10ch; background: black; color: #bbbbbb; font-size: 14px; overflow: scroll;"></pre>
 </div>
 <script src="demo/r96_05_hline_opt.js"></script>
 <script>
 {
+	let canvas = document.getElementById("05_hline_opt")
+	let ctx = canvas.getContext("2d");
+	ctx.font = "18px monospace";
+	ctx.textAlign = "center";
+	ctx.fillStyle = "white";
+	ctx.fillText("Click/tap to start", canvas.width / 2, canvas.height / 2);
 	let started = false;
 	let init = async () => {
 		if (started) return;

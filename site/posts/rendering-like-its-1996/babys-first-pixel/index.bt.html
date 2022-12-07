@@ -901,17 +901,22 @@ int main(void) {
 </p>
 
 <div style="display: flex; flex-direction: column; align-items: center; margin: 1em; max-width: 100%;">
-	<canvas id="01_drawing_a_pixel" style="width: 640px; height: 480px; background: black;"></canvas>
+	<canvas id="01_drawing_a_pixel" width="640" heigh="480" style="width: 100%; aspect-ratio: 640 / 480; background: black;"></canvas>
 </div>
 <script src="demo/r96_01_drawing_a_pixel.js"></script>
 <script>
+	let canvas = document.getElementById("01_drawing_a_pixel")
+	let ctx = canvas.getContext("2d");
+	ctx.font = "18px monospace";
+	ctx.textAlign = "center";
+	ctx.fillStyle = "white";
+	ctx.fillText("Click/tap to start", canvas.width / 2, canvas.height / 2);
+
 	let started = false;
 	let init = async () => {
 		if (started) return;
 		started = true;
 		await r96_01_drawing_a_pixel();
-		document.getElementById("01_drawing_a_pixel").style.width = "640px";
-		document.getElementById("01_drawing_a_pixel").style.height = "480px";
 	}
 	document.getElementById("01_drawing_a_pixel").addEventListener("click", () => init());
 </script>
