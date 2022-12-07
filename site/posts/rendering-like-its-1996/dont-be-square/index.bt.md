@@ -25,7 +25,7 @@ But first, we'll do some housekeeping.
 
 ## Putting more stuff r96.h/r96.c
 
-Let's stuff a few things into [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h) and [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.cpp), where re-usable code used by the demo apps lives.
+Let's stuff a few things into [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h) and [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.c), where re-usable code used by the demo apps lives.
 
 ### Destructuring colors
 
@@ -842,9 +842,11 @@ A nice improvement! Let's have some live lines to celebrate (click to start)
 </script>
 --markdown-begin
 
+> **Note**: `hline()` is as good as it gets, so it's been added as `r96_hline()`to [`r96.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.c). Going forward, we'll develop other rendering functions in the same way: build a demo app with a naive implementation, improve performance, add it to the `r96` library once it's good enough.
+
 ## Drawing rectangles
 
-We define a rectangle by its top left corner point `(x1, y1)` and its bottom right corner point `(x2, y2)`, where `x1 <= x2` and `y1 <= x2`. The rectangle covers all pixels `(x, y)`, where `x1 <= x <= x2` and `y1 <= y <= y2`.
+We define a rectangle by its top left corner point `(x1, y1)` and its bottom right corner point `(x2, y2)`, where `x1 <= x2` and `y1 <= y2`. The rectangle covers all pixels `(x, y)`, where `x1 <= x <= x2` and `y1 <= y <= y2`.
 
 Alternatively, we can define a rectangle by its top left corner point `(x1, y1)` and a positive `width` and `height` given in pixels. We can derive `(x2, y2)` from this information, as `x2 = x1 + width - 1` and `y2 = y1 + height - 1`.
 
@@ -859,7 +861,7 @@ As with horizontal lines, it pays off to first check out the clipping cases:
 let resX = 760; resY = 560;
 let q5 = q5Diagram(resX, resY, "rect-example");
 let bs = q5.blockSize();
-q5.translate(bs * 3, bs * 2);
+q5.translate(bs * 4, bs * 2);
 q5.grid(0, 0, 10, 10, "#bbb");
 
 q5.textSize(12)
@@ -868,21 +870,19 @@ for (let y = 0; y < 10; y++) q5.blockText("" + y, -1, y, "#ddd");
 
 q5.textSize(14)
 
-for (let x = 3; x <= 10; x++) q5.block(x, 4, "#070");
-q5.blockText("(x1, y)", 3, 4, "#ddd")
-q5.blockText("(x2, y)", 10, 4, "#ddd")
+let blockRect = (x, y, w, h, stroke) => {
+	q5.blockRect(x, y, w, h, stroke)
+	q5.blockText("(x1, y1)", x, y, "#ddd")
+	q5.blockText("(x2, y2)", x + w - 1, y + h - 1, "#ddd")
+};
 
-for (let x = 8; x <= 10; x++) q5.block(x, 8, "#070");
-q5.blockText("(x1, y)", 8, 8, "#ddd")
-q5.blockText("(x2, y)", 10, 8, "#ddd")
-
-for (let x = 2; x <= 17; x++) q5.block(x, 2, "#e0e");
-q5.blockText("(x1', y)", 2, 2, "#ddd")
-q5.blockText("(x2', y)", 17, 2, "#ddd")
-
-for (let x = 14; x <= 17; x++) q5.block(x, 11, "#e0e");
-q5.blockText("(x1, y)", 14, 11, "#ddd")
-q5.blockText("(x2', y)", 17, 11, "#ddd")
+blockRect(4, -2, 3, 2, "#e00")
+blockRect(2, 10, 4, 2, "#e00")
+blockRect(-3, 4, 2, 3, "#00e")
+blockRect(11, 1, 3, 5, "#00e")
+blockRect(3, 3, 5, 4, "#070")
+blockRect(-1, -1, 3, 3, "#e0e")
+blockRect(8, 8, 3, 3, "#e0e")
 }
 </script>
 --markdown-begin

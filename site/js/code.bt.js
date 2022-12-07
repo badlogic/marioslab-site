@@ -83,7 +83,11 @@ function q5Diagram(width, height, divId) {
 		stroke = stroke !== undefined ? stroke : "black";
 		q5.fill(fill)
 		q5.stroke(stroke);
-		q5.rect(x * blockSize, y * blockSize, blockSize * width, blockSize * height);
+		let x2 = x + width - 1;
+		let y2 = y + height - 1;
+		for(; y <= y2; y++)
+			for(let sx = x; sx <= x2; sx++)
+				q5.block(sx, y, fill, stroke);
 	}
 
 	return q5;
