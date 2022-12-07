@@ -279,6 +279,7 @@ Click the demo below to start it.
 </div>
 <script src="demo/r96_02_image.js"></script>
 <script>
+{
 	let canvas = document.getElementById("02_image")
 	let ctx = canvas.getContext("2d");
 	ctx.font = "18px monospace";
@@ -290,16 +291,18 @@ Click the demo below to start it.
 	let init = async () => {
 		if (started) return;
 		started = true;
-		await r96_02_image();
+		let consoleDiv = document.getElementById("console");
+        let module = {};
+        module.print = module.printErr = (data) => {
+            console.log(data);
+            consoleDiv.innerHTML += data + "</br>";
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+		await r96_02_image(module);
 	}
 	document.getElementById("02_image").addEventListener("click", () => init());
-	let consoleDiv = document.getElementById("console");
-	let oldLog = console.log;
-	console.log = function(data) {
-		oldLog(data);
-		consoleDiv.innerHTML += data + "</br>";
-		consoleDiv.scrollTop = consoleDiv.scrollHeight;
-	}
+}
 </script>
 --markdown-begin
 

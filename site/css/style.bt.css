@@ -52,6 +52,11 @@ p, li, a {
 	line-height: 1.5em;
 }
 
+.codeblock {
+	display: flex;
+	flex-direction: column;
+}
+
 .codeblock pre {
 	line-height: 1.15em;
 	margin-top: 0em;
@@ -59,12 +64,6 @@ p, li, a {
 
 li .codeblock pre {
 	margin-top: 1em;
-}
-
-.codeblock {
-	margin: 0;
-	display: flex;
-	flex-direction: column;
 }
 
 pre > code {
