@@ -615,9 +615,9 @@ q5.blockText("(x2, y)", 18, 12, "#ddd")
 </p>
 
 <p>
-	The two <span style="color: rgb(41, 41, 255)">blue</span> lines have y-coordinates `y &lt; 0` and `y &gt; height - 1`. Any horizontal line with a y-coordinate outside the raster can be entirely ignored.
+	The two <span style="color: rgb(100, 100, 255)">blue</span> lines have y-coordinates <code>y &lt; 0</code> and <code>`y &gt; height - 1</code>. Any horizontal line with a y-coordinate outside the raster can be entirely ignored.
 <p>
-	The two <span style="color: red">red</span> lines share a similar fate. They are outside the raster on the x-axis. Any horizontal line with either `x2 < 0` or `x1 > width - 1` can be entirely ignored.
+	The two <span style="color: red">red</span> lines share a similar fate. They are outside the raster on the x-axis. Any horizontal line with either <code>x2 < 0</code> or <code>x1 > width - 1</code> can be entirely ignored.
 </p>
 
 <p>
@@ -625,7 +625,7 @@ q5.blockText("(x2, y)", 18, 12, "#ddd")
 </p>
 
 <p>
-	The <span style="color: #e0e">pink</span> lines are ... weird. They are partially inside the raster. How do we deal with them? We clip them! For the left point, we snap `x1` to `0`. For the right point, we snap `x2` to `width - 1`. Here are all the pixels we actually have to draw.
+	The <span style="color: #e0e">pink</span> lines are ... weird. They are partially inside the raster. How do we deal with them? We clip them! For the left point, we snap <code>x1</code> to <code>0</code>. For the right point, we snap <code>x2</code> to <code>width - 1</code>. Here are all the pixels we actually have to draw.
 </p>
 
 <div id="hline-example-clipped"></div>
@@ -876,16 +876,330 @@ let blockRect = (x, y, w, h, stroke) => {
 	q5.blockText("(x2, y2)", x + w - 1, y + h - 1, "#ddd")
 };
 
-blockRect(4, -2, 3, 2, "#e00")
-blockRect(2, 10, 4, 2, "#e00")
-blockRect(-3, 4, 2, 3, "#00e")
-blockRect(11, 1, 3, 5, "#00e")
+blockRect(4, -2, 3, 2, "#00e")
+blockRect(2, 10, 4, 2, "#00e")
+blockRect(-3, 4, 2, 3, "#e00")
+blockRect(11, 1, 3, 5, "#e00")
 blockRect(3, 3, 5, 4, "#070")
 blockRect(-1, -1, 3, 3, "#e0e")
 blockRect(8, 8, 3, 3, "#e0e")
 }
 </script>
+
+<p>
+	This looks familiar! Much of the clipping we did for horizontal lines applies to rectangles as well. All we need to do is take <code>y2</code> into account as well. Let's go through the cases.
+</p>
+
+<p>
+	The two <span style="color: rgb(100, 100, 255)">blue</span> rectangles are above the top edge of the raster (<code>y2 &lt; 0</code>) and below the bottom edge of the raster (<code>`y1 &gt; height - 1</code>). Any rectangles that fulfill either criteria are outside the raster and don't have to be drawn.
+<p>
+	The two <span style="color: red">red</span> rectangles have the same problem, but relative to the left and right raster edges. Any rectangle with either <code>x2 < 0</code> or <code>x1 > width - 1</code> can ignored. This is the exact same case as we had for horizontal lines.
+</p>
+
+<p>
+	The <span style="color: #e0e">pink</span> rectangles are the baddies again. Just like with their pink horizontal line counter parts, we'll need to clip them. If <code>x1 &lt; 0</code> we snap it to <code>0</code>. If <code>y1 &lt; 0</code> we also snap it to null. If <code>x2 &gt; width - 1</code>, we snap it to <code>width - 1</code>. Similarly, if <code>y2 &gt; height - 1</code>, we snap it to <code>height - 1</code>.
+</p>
+
+<p>
+	If a rectangle passes all the above tests, or has been clipped, then it is firmly inside the raster and can be drawn as is, like the <span style="color: green">green</span> rectangle. Here's what we'll render for the above scene after clipping:
+</p>
+
+<div id="rect-example-clipped"></div>
+<script>
+{
+let resX = 760; resY = 560;
+let q5 = q5Diagram(resX, resY, "rect-example-clipped");
+let bs = q5.blockSize();
+q5.translate(bs * 4, bs * 2);
+q5.grid(0, 0, 10, 10, "#bbb");
+
+q5.textSize(12)
+for (let x = 0; x < 10; x++) q5.blockText("" + x, x, -1, "#ddd");
+for (let y = 0; y < 10; y++) q5.blockText("" + y, -1, y, "#ddd");
+
+q5.textSize(14)
+
+let blockRect = (x, y, w, h, stroke) => {
+	q5.blockRect(x, y, w, h, stroke)
+	q5.blockText("(x1, y1)", x, y, "#ddd")
+	q5.blockText("(x2, y2)", x + w - 1, y + h - 1, "#ddd")
+};
+blockRect(3, 3, 5, 4, "#070")
+blockRect(0, 0, 3, 3, "#e0e")
+blockRect(8, 8, 2, 2, "#e0e")
+}
+</script>
 --markdown-begin
+
+Knowing that a rectangle's corner points `(x1, y1)` and `(x2, y2)` are fully inside the raster after clipping, makes rendering the rectangle trivial.
+
+For each y-coordinate `y` between and including `y1` and `y2`, we render a horizontal line from `(x1,y)` to `(x2,y)`. And we already got a function for rendering horizontal lines!
+
+### Demo app: drawing rectangles, naive version
+Time for another demo app called [`06_rect.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/06_rect.c):
+
+--markdown-end
+{{post.code("src/06_rect.c", "c",
+`
+#include <MiniFB.h>
+#include <stdio.h>
+#include "r96/r96.h"
+
+void rect(r96_image *image, int32_t x1, int32_t y1, int32_t width, int32_t height, uint32_t color) {
+	if (width <= 0) return;
+	if (height <= 0) return;
+
+	int32_t x2 = x1 + width - 1;
+	int32_t y2 = y1 + height - 1;
+
+	if (x1 >= image->width) return;
+	if (x2 < 0) return;
+	if (y1 >= image->height) return;
+	if (y2 < 0) return;
+
+	if (x1 < 0) x1 = 0;
+	if (y1 < 0) y1 = 0;
+	if (x2 >= image->width) x2 = image->width - 1;
+	if (y2 >= image->height) y2 = image->height - 1;
+
+	for (int y = y1; y <= y2; y++)
+		r96_hline(image, x1, x2, y, color);
+}
+
+int main(void) {
+	r96_image image;
+	r96_image_init(&image, 320, 240);
+	struct mfb_window *window = mfb_open("06_rect", image.width * 2, image.height * 2);
+	struct mfb_timer *timer = mfb_timer_create();
+	do {
+		srand(0);
+		mfb_timer_reset(timer);
+		for (int i = 0; i < 200000; i++) {
+			uint32_t color = R96_ARGB(255, rand() % 255, rand() % 255, rand() % 255);
+			rect(&image, rand() % image.width, rand() % image.width, rand() % (image.width / 5), rand() % (image.height / 5), color);
+		}
+		printf("Took: %f\n", mfb_timer_delta(timer));
+
+		if (mfb_update_ex(window, image.pixels, image.width, image.height) < 0) break;
+	} while (mfb_wait_sync(window));
+	r96_image_dispose(&image);
+	return 0;
+}
+`
+)}}
+--markdown-begin
+
+It's usually more comfortable to render a rectangle given its top-left corner point `(x1, y1)` and a width and height. That's what the `rect()` function expects.
+
+It does a sanity check on the provided `width` and `height`: if they are `<= 0` we exit early. Drawing a zero width or zero height rectangle makes no sense.
+
+Next, we calculate `x2` and `y2`, as it's easier to do clipping on the corner point representation of a rectangle.
+
+We then run through all the clipping cases we discussed above and end up with our final `(x1, y1)` and `(x2, y2` corner points which we know are within the raster if we made it that far.
+
+The `for` loop then iterates through all the y-coordinates the rectangle covers, and draws a horizontal line for each `(x1, y)` and `(x2, y)` using `r96_hline()`.
+
+The `main()` function is unsurprising. We draw <code>200000</code> semi-random rectangles and time how long that takes. Have a demo!
+
+--markdown-end
+<div style="display: flex; flex-direction: column; align-items: center; margin: 1em; max-width: 100%;">
+	<canvas id="06_rect" width="640" height="480" style="width: 100%; background: black;"></canvas>
+	<pre id="console3" style="margin-top: 1em; width: 100%; height: 10ch; background: black; color: #bbbbbb; font-size: 14px; overflow: scroll;"></pre>
+</div>
+<script src="demo/r96_06_rect.js"></script>
+<script>
+{
+	let canvas = document.getElementById("06_rect")
+	let ctx = canvas.getContext("2d");
+	ctx.font = "18px monospace";
+	ctx.textAlign = "center";
+	ctx.fillStyle = "white";
+	ctx.fillText("Click/tap to start", canvas.width / 2, canvas.height / 2);
+	let started = false;
+	let init = async () => {
+		if (started) return;
+		started = true;
+		let consoleDiv = document.getElementById("console3");
+        let module = {};
+        module.print = module.printErr = (data) => {
+            console.log(data);
+            consoleDiv.innerHTML += data + "</br>";
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+		await r96_06_rect(module);
+	}
+	document.getElementById("06_rect").addEventListener("click", () => init());
+}
+</script>
+--markdown-begin
+
+
+
+Here are the timings on my machine for a release build:
+
+```
+Took: 0.029729
+Took: 0.029665
+Took: 0.029447
+Took: 0.029449
+```
+
+Can we make this faster?
+
+### Inlining and link time optimizations
+
+Just by looking at the code, we see that invoking `r96_hline()` isn't ideal. It performs clipping on the inputs, which we know are within the raster. Superfluous work. But let's ignore that for now, as the bulk of the work is done when setting the pixels in a row.
+
+Another issue: unless the compiler has inlined the call to `r96_hline()` into `rect()`, we also incur a function call for each row of the rectangle we draw. Since `r96_hline()` lives in `r96.c` and we are calling it from `main.c` the compiler will be unable to inline the function, as those are 2 separate compilation units.
+
+We can remedy this by moving the definition of `r96_hline()` from `r96.c` into `r96.h` and prefix the function with the keyword `inline`. Then I get:
+
+```
+Took: 0.027828
+Took: 0.027713
+Took: 0.027813
+Took: 0.027851
+```
+
+Indeed, looking at the assembly, the call was eliminated and `r96_hline()` was entirely inlined into `rect()`. But that's not a great solution, as most compilers will manage inline `r96_hline()` everywhere, which bloats executable size.
+
+As an alternative, we can use [link time optimizations](https://johnysswlab.com/link-time-optimizations-new-way-to-do-compiler-optimizations/) as supported by Clang, GCC, and MSVC. Let's update the `CMakeLists.txt` file to turn that on.
+
+--markdown-end
+
+{{post.code("CMakeLists.txt", "cmake",
+`
+...
+FetchContent_MakeAvailable(minifb)
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT result)
+if(result)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+...
+`
+)}}
+--markdown-begin
+
+The last 5 lines check if LTO is supported by the current compiler and if that check passes, enables LTO for all targets that are defined afterwards. Here are the new timings with LTO on:
+
+```
+Took: 0.025003
+Took: 0.025114
+Took: 0.025030
+Took: 0.024995
+```
+
+Not bad! The reason this performs better than the inlining done above is that basically all the code is inlined into `main()` directly. It was even able to remove the superfluous clipping checks of the inline `r96_hline()`! Let's keep LTO on by default for all targets!
+
+We can't always rely on LTO to do such a good job though. Let's fix this by getting rid of the call to `r96_hline()` ourselves.
+
+## Demo app: Rectangles, optimized
+Here's what I came up with in the new demo app [`07_rect_opt.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/07_rect_opt.c):
+
+--markdown-end
+{{post.code("src/07_rect_opt.c", "c",
+`
+void rect(r96_image *image, int32_t x1, int32_t y1, int32_t width, int32_t height, uint32_t color) {
+	if (width <= 0) return;
+	if (height <= 0) return;
+
+	int32_t x2 = x1 + width - 1;
+	int32_t y2 = y1 + height - 1;
+
+	if (x1 >= image->width) return;
+	if (x2 < 0) return;
+	if (y1 >= image->height) return;
+	if (y2 < 0) return;
+
+	if (x1 < 0) x1 = 0;
+	if (y1 < 0) y1 = 0;
+	if (x2 >= image->width) x2 = image->width - 1;
+	if (y2 >= image->height) y2 = image->height - 1;
+
+	int32_t clipped_width = x2 - x1 + 1;
+	int32_t next_row = image->width - clipped_width;
+	uint32_t *pixel = image->pixels + y1 * image->width + x1;
+	for (int y = y1; y <= y2; y++) {
+		int32_t num_pixels = clipped_width;
+		while(num_pixels--) {
+			*pixel++ = color;
+		}
+		pixel += next_row;
+	}
+}
+`
+)}}
+--markdown-begin
+
+All the clipping code stays the same, we only replace our call to `r96_hline()` with something that's a bit less work.
+
+In line 18, we calculate the clipped width. We need that in the next line to calculate `next_row`, which we'll use to calculate the address of the first pixel in the next row, once we are done setting all the pixels in the current row (line 26).
+
+We also precalculate the address of the first `pixel` we are going to set the color of. It's the pixel of the top-left corner of the rectangle.
+
+Then we start the loop through all rows of the rectangle, from `y1` to `y2`. For each row, we set each of its pixels to the `color`. That's one subtraction (`num_pixels--`), one memory store (`*pixel = color`) and one increment (`pixel++`) per pixel in a row. Pretty OK.
+
+Once we've completed rendering the current row, we calculate the address of the first pixel of the next row by adding `next_row` to `pixel`.
+
+--markdown-end
+<div style="display: flex; flex-direction: column; align-items: center; margin: 1em; max-width: 100%;">
+	<canvas id="07_rect_opt" width="640" height="480" style="width: 100%; background: black;"></canvas>
+	<pre id="console4" style="margin-top: 1em; width: 100%; height: 10ch; background: black; color: #bbbbbb; font-size: 14px; overflow: scroll;"></pre>
+</div>
+<script src="demo/r96_07_rect_opt.js"></script>
+<script>
+{
+	let canvas = document.getElementById("07_rect_opt")
+	let ctx = canvas.getContext("2d");
+	ctx.font = "18px monospace";
+	ctx.textAlign = "center";
+	ctx.fillStyle = "white";
+	ctx.fillText("Click/tap to start", canvas.width / 2, canvas.height / 2);
+	let started = false;
+	let init = async () => {
+		if (started) return;
+		started = true;
+		let consoleDiv = document.getElementById("console4");
+        let module = {};
+        module.print = module.printErr = (data) => {
+            console.log(data);
+            consoleDiv.innerHTML += data + "</br>";
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+		await r96_07_rect_opt(module);
+	}
+	document.getElementById("07_rect_opt").addEventListener("click", () => init());
+}
+</script>
+--markdown-begin
+
+On my machine, I get the following timings without LTO:
+
+```
+Took: 0.023962
+Took: 0.023914
+Took: 0.023863
+Took: 0.023713
+```
+
+With LTO:
+
+```
+Took: 0.024675
+Took: 0.024555
+Took: 0.024480
+Took: 0.024596
+```
+
+Pretty much a toss up, though it seems the no-LTO version has a slight edge. Compared to the first naive implementation, we shaved off a bit of overhead by removing the function call and clipping. But since those are per row and per rectangle costs, we don't gain as much, as the bulk of the work is done per pixel.
+
+It is nice however, that we can match LTO performance with just a simple modification of the code that will work on compilers without LTO support as well!
+
+## Next time
+
+Welp, I guess I can't write short blog posts. But we learned a lot again! I'm undecided what we'll look into next time. Either drawing lines, or loading and drawing images. It's going to be fun none the less.
 
 Discuss this post on [Twitter]() or [Mastodon]().
 
