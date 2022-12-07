@@ -23,7 +23,7 @@ But first, we'll do some housekeeping.
 
 > You can follow along by checking out the `dont-be-square-00` tag in your clone of the [r96](https://github.com/badlogic/r96) repository. `git checkout dont-be-square-00`
 
-## Putting more stuff r96.h/r96.c
+## Putting more stuff into r96.h/r96.c
 
 Let's stuff a few things into [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h) and [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.c), where re-usable code used by the demo apps lives.
 
