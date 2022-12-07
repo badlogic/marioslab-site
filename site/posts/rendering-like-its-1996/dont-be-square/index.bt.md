@@ -3,8 +3,8 @@ metadata = {
 	title: "Rendering like it's 1996 - Rectangles",
 	summary: "Drawing horizontal lines and rectangles.",
 	image: "dont-be-a-square.png",
-	date: parseDate("2022/11/29 21:00"),
-	published: false,
+	date: parseDate("2022/12/7 21:00"),
+	published: true,
 }
 }}
 
