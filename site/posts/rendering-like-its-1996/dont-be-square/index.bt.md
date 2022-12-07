@@ -224,10 +224,10 @@ These functions are slower than manually calculating a pixel address, as they do
 
 ### Demo app: drawing pixels, again
 
-Let's put our new fancy API to use and create a demo app called [`02_raster.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/02_raster.c).
+Let's put our new fancy API to use and create a demo app called [`02_image.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/02_image.c).
 
 --markdown-end
-{{post.code("src/02_raster.c", "c",
+{{post.code("src/02_image.c", "c",
 `
 #include <MiniFB.h>
 #include <stdio.h>
@@ -306,7 +306,7 @@ Click the demo below to start it.
 </script>
 --markdown-begin
 
-Have a look at [`02_raster.html`](https://github.com/badlogic/r96/blob/dont-be-square-00/web/02_raster.html) to see the magic that gets the `printf()` output into the div below the canvas.
+Have a look at [`02_image.html`](https://github.com/badlogic/r96/blob/dont-be-square-00/web/02_image.html) to see the magic that gets the `printf()` output into the div below the canvas.
 
 ### Clearing an image
 
