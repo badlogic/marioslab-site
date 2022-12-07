@@ -449,7 +449,7 @@ Did you notice the problem?
 Our loop condition `i < image->width * image->height` has been compiled to some rather sub-optimal machine code. Instead of calculating `image->width * image->height` once, it is calculated for every loop iteration! Not only does this mean the `width` and `height` fields of the image are fetched from memory every iteration, we also have an integer multiplication per iteration. That's not great! Here's what [Stefan of Live++ fame](https://twitter.com/molecularmusing) has to say on [the bird site](https://twitter.com/molecularmusing/status/1600610819720769537) on why the compiler is incapable of [hoisting the loop invariant](https://compileroptimizations.com/category/hoisting.htm) out of the loop.
 
 --markdown-end
-{{post.figure("stefan.png", "")}}
+{{post.figureMaxWidth("stefan.png", "", "80%")}}
 --markdown-begin
 
 Let's fix this by manually precalculating `image->width * image->height`, thereby helping the compiler out a little:
