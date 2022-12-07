@@ -71,7 +71,7 @@ uint32_t *pixels = (uint32_t *) malloc(sizeof(uint32_t) * res_x * res_y);
 Direct call to `malloc()`, `sizeof()`, casting, yuck! Let's wrap allocation in a few simple macros:
 
 --markdown-end
-{{post.code("r96.h", "c",
+{{post.code("src/r96/r96.h", "c",
 "
 #define R96_ALLOC(type) (type *) malloc(sizeof(type))
 #define R96_ALLOC_ARRAY(type, numElements) (type *) malloc(sizeof(type) * numElements)
@@ -103,7 +103,7 @@ Apart from a little less typing, these macros let us replace our allocator, shou
 
 Keeping track of the width, height, and pixels of rasters is annoying, as we saw in the previous demo apps. The term "raster" is also a bit too "scientific". Colloquially, what we are dealing with are images.
 
-> **Note:** if we wanted to be super precise, we'd have to say "raster images". Images can also be represented in other ways, e.g. as a list of shapes with color information, aka vector images. In this series however, we'll only deal with raster images. Raster, raster image, and image are all synonymous for us.
+> **Note:** if we wanted to be super precise, we'd have to say "raster images". Images can also be represented in other ways, e.g. as a list of shapes with color information, aka vector images. In this series however, we'll only deal with raster images. Raster, raster image, and image are all synonymous throughout the series.
 
 Here's a struct to ease the pain:
 
@@ -174,31 +174,31 @@ In C, we don't have the luxury of a borrow checker like in Rust, or a garbage co
 
 C doesn't really give us the tools to build water-tight resources management. Instead, we must come up with rules, that make it less likely that we'll shoot ourselves in the foot. From these rules we derive an API design which should help enforce the rules.
 
-Keeping too many rules in our head is hard, so let's only have a few:
+Our 4 rules are:
 
 - There are no naked resources (e.g. a pointer to heap allocated memory)
 - A resource is owned by a single instance of a resource-owning type (e.g. heap memory storing pixels is owned by a single `r96_image` instance)
 - Prefer stack allocation over heap allocation
 - Prefer value types over reference types
 
-While we won't go for a full ["handles instead of pointers"](https://floooh.github.io/2018/06/17/handles-vs-pointers.html) for the `r96` library, we'll try to make our code as pointer- and allocation-free as possible.
+While we won't go for a full ["handles instead of pointers"](https://floooh.github.io/2018/06/17/handles-vs-pointers.html) system, we'll try to make our code as pointer- and allocation-free as possible.
 
 How does this translate to the `r96` API?
 
-1. Resource-owning types are initialized and disposed with corresponding initializer and disposal functions. E.g. `r96_image`, `r96_image_init()`, and `r96_image_dispose()`
+1. Resource-owning types are initialized and disposed with corresponding initializer and disposal functions, e.g. `r96_image`, `r96_image_init()`, and `r96_image_dispose()`
 2. Resource-owning types are always passed and returned by reference
 3. Non-resource-owning types are initialized with [C99 designated initializers](https://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Designated-Inits.html)
 4. Non-resource-owning types are passed to and returned from functions by value, unless performance considerations make it prohibitive
 
 The first two rules make it less likely that two instances of a resource-owning type point to the same resource. The initialization and disposal functions give us a single location where a resource of a specific type is acquired and released, which helps with debugging.
 
-The latter two rules make it more likely that we store much of our data on the stack instead of the heap (or as value types instead of reference types). Insert sad trombone that C doesn't have immutable types.
+The latter two rules make it more likely that we store much of our data on the stack instead of the heap (or as value types instead of reference types). Stack allocation is faster, and we don't need to remember to free anything if a stack allocated thing goes out of scope.
 
 We'll try to stick with this until everything falls apart.
 
 ### Reading and writing pixels, the safe way
 
-Previously, we've calculated pixel address manually. Let's wrap that functionality up in functions for setting and getting pixel colors on and from an `r96_image`:
+Previously, we've calculated pixel addresses manually. Let's wrap that functionality up in functions for setting and getting pixel colors on and from an `r96_image`:
 
 --markdown-end
 {{post.code("src/r96/r96.c", "c",
@@ -224,7 +224,7 @@ These functions are slower than manually calculating a pixel address, as they do
 
 ### Demo app: drawing pixels, again
 
-Let's put our new fancy API to use and create a demo app called [`02_image.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/02_image.c).
+Our new fancy API is put to use in the demo app [`02_image.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/02_image.c).
 
 --markdown-end
 {{post.code("src/02_image.c", "c",
@@ -269,8 +269,6 @@ The pixel rendering in line 14 now uses `r96_set_pixel()` instead of manually ca
 To exercise the new `r96_get_pixel()` function and the color component macros, we print the current color at the mouse position if the left mouse button is pressed (lines 17-22).
 
 Finally, we dispose of the image in line 26.
-
-Click the demo below to start it.
 
 --markdown-end
 <div style="display: flex; flex-direction: column; align-items: center; margin: 1em; max-width: 100%;">
@@ -317,7 +315,7 @@ In our case, the "screen" is the `r96_image` we draw our pixels to, which we lat
 Here are two functions to clear a `r96_image` with a specific color.
 
 --markdown-end
-{{post.code("r96.c", "c",
+{{post.code("src/r96/r96.c", "c",
 "
 void r96_clear(r96_image *image) {
 	memset(image->pixels, 0x0, image->width * image->height * sizeof(uint32_t));
@@ -344,6 +342,8 @@ While you can make some assumption about the performance of your code just by lo
 
 
 Luckily, profiling `r96_clear()` and `r96_clear_with_color()` is comparatively trivial. All we need is a way to measure how much time has passed. MiniFB provides a [high precision timer](https://github.com/emoon/minifb#timers-and-target-fps) we can use for that purpose.
+
+> **Note:** At least we keep it trivial. Usually, you'd have to factor in things like what apps are running on your benchmarking machine, cold start vs. warm start, averaging timings over `n` runs, and so on. However, we aren't really going for absolute timing values here, but merely compare relative improvements after code changes. This simplistic approach is good enough for that. Also, use a proper profiler, like [Superluminal](https://superluminal.eu/).
 
 The command line demo app called [`03_clear_profiling.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/03_clear_profiling.c) tests how fast `r96_clear()` and `r96_clear_with_color()` are respectively:
 
@@ -377,7 +377,7 @@ int main(void) {
 )}}
 --markdown-begin
 
-We create a 320x200 pixels image and a timer. As a base-line, we measure how long it takes to clear the image `200000` times using `r96_clear()`.
+We create an image with 320x200 pixels and a timer. As a base-line, we measure how long it takes to clear the image `200000` times using `r96_clear()`.
 
 Then we measure how long it takes to do the same with `r96_clear_with_color()`.
 
@@ -411,9 +411,7 @@ void r96_clear_with_color(r96_image *image, uint32_t color) {
 
 {{post.code("", "",
 "
-# rdi = *image
-# rsi = color
-r96_clear_with_color:
+r96_clear_with_color:                        # rdi = image, esi = color
         mov     eax, dword ptr [rdi + 4]     # eax = image->width
         imul    eax, dword ptr [rdi]         # eax = image->height * image->width
         test    eax, eax                     # eax == 0?
@@ -438,11 +436,11 @@ r96_clear_with_color:
 
 Lines 2-5 multiply `image->height` (`[rdi + 4]`) by `image->width` (`[rdi]`), then check if the result is zero. If that's the case, we jump to `.LBB1_3` and exit the function. This is an early rejection test.
 
-If the initial check passes, then `image->pixels` is loaded into the local variable `pixels` (`r8`) in line 6. In line 7 `i` (`ecx`) is set to zero. We are ready to iterate.
+If the initial check passes, then `image->pixels` is loaded into the local variable `pixels` (`r8`) in line 6. In line 7, `i` (`ecx`) is set to zero. We are ready to iterate.
 
 In line 9, we set `pixels[i]` (`[r8 + 4*rcx]`) to the `color` (`esi`). Then we increment `i` (`rcx`) in line 10.
 
-In line 11 we load `image->width` into `rdx`, followed by loading `image->height` into `rax` in line 12, and multiply them in line `13`. The result ends up in `rax`.
+In line 11 we load `image->width` (`[rdi]`) into `rdx`, followed by loading `image->height` (`[rdi + 4]`) into `rax` in line 12, and multiply them in line `13`. The result ends up in `rax`.
 
 `rax` is then compared to `i` (`rcx`). If it is less than `image->width * image->height` (`rax`), we jump back to `.LBB1_2` and write the next pixel, otherwise we fall through and exit the function.
 
@@ -453,7 +451,7 @@ Our loop condition `i < image->width * image->height` has been compiled to some 
 Let's fix this by manually precalculating `image->width * image->height`, thereby helping the compiler out a little:
 
 --markdown-end
-{{post.code("", "c",
+{{post.code("src/r96/r96.c", "c",
 "
 void r96_clear_with_color(r96_image *image, uint32_t color) {
 	uint32_t *pixels = image->pixels;
@@ -554,11 +552,11 @@ The compiler basically generated a 32-bit version of a highly optimized `memset(
 
 ## Drawing horizontal lines
 
-With our housekeeping out of the way, it's time to get back to the actual goal of this post: drawing rectangles. But first, we need to learn how to draw horizontal lines. Teheh.
+With our housekeeping out of the way, it's time to get back to the actual goal of this post: drawing rectangles. But first, we need to learn how to draw horizontal lines. Wax on, wax off.
 
 We define a horizontal line by a start point `(x1, y)` and an end point `(x2, y)`, where `x1 <= x2`. Since it's a horizontal line, the y-coordinate is the same for both points. The line covers all the pixels including and in-between the start and end point.
 
-> **Note:** Translating a "mathematical" representation of something to pixels on a raster is what's actually called "rasterization". An infinitely precise thing is boiled down to and approximated by a bunch of colored squares in a grid.
+> **Note:** Translating a "mathematical" representation of something to pixels on a raster is what's actually called "rasterization". An infinitely precise thing is boiled down to and approximated by a bunch of colored squares in a raster.
 
 A few example horizontal lines on a small 16x12 raster.
 
@@ -615,9 +613,9 @@ q5.blockText("(x2, y)", 18, 12, "#ddd")
 </p>
 
 <p>
-	The two <span style="color: rgb(100, 100, 255)">blue</span> lines have y-coordinates <code>y &lt; 0</code> and <code>`y &gt; height - 1</code>. Any horizontal line with a y-coordinate outside the raster can be entirely ignored.
+	The two <span style="color: rgb(100, 100, 255)">blue</span> lines have y-coordinates <code>y &lt; 0</code> and <code>y &gt; height - 1</code>. Any horizontal line with a y-coordinate outside the raster can be entirely ignored.
 <p>
-	The two <span style="color: red">red</span> lines share a similar fate. They are outside the raster on the x-axis. Any horizontal line with either <code>x2 < 0</code> or <code>x1 > width - 1</code> can be entirely ignored.
+	The two <span style="color: red">red</span> lines share a similar fate. They are outside the raster on the x-axis. Any horizontal line with either <code>x2 < 0</code> or <code>x1 > width - 1</code> can be discarded.
 </p>
 
 <p>
@@ -625,7 +623,11 @@ q5.blockText("(x2, y)", 18, 12, "#ddd")
 </p>
 
 <p>
-	The <span style="color: #e0e">pink</span> lines are ... weird. They are partially inside the raster. How do we deal with them? We clip them! For the left point, we snap <code>x1</code> to <code>0</code>. For the right point, we snap <code>x2</code> to <code>width - 1</code>. Here are all the pixels we actually have to draw.
+	The <span style="color: #e0e">pink</span> lines are ... weird. They are partially inside the raster. How do we deal with them? We clip them! Meaning, we calculate new start and end points for the part of the line that is inside the raster.
+</p>
+
+<p>
+	For the left point, we snap <code>x1</code> to <code>0</code>. For the right point, we snap <code>x2</code> to <code>width - 1</code>. Here are all the pixels we actually have to draw.
 </p>
 
 <div id="hline-example-clipped"></div>
@@ -717,9 +719,9 @@ int main(void) {
 )}}
 --markdown-begin
 
-The `hline()` function first ensures that `x1 < x2` in lines 6-10. This is absolutely necessary, as our clipping rules above only work under that condition.
+The `hline()` function first ensures that `x1 < x2` in lines 6-10. This is a precondition we need to enforce, otherwise our clipping rules won't work.
 
-In lines 12-15, we reject all lines that are entirely outside the image, applying the rules we established above for the blue and red lines
+In lines 12-15, we reject all lines that are entirely outside the image, applying the rules we established above for the blue and red lines.
 
 Lines that are partially inside the image get clipped in lines 17-18.
 
@@ -727,7 +729,11 @@ With all the clipping out of the way, we know that the start and end point (and 
 
 We finish the function by drawing all the pixels at and in between the start and end point in lines 20-21 using `r96_set_pixel()`.
 
-In the `main()` function, we draw `200000` lines at random positions and measure how long it takes to do so. The call to `srand()` sets the seed for the function `rand()`. We'll always get the same sequence of "random" numbers that way. If we measure something to later improve it, we have to ensure that what you measured is the same each time, even if it involves "fake" randomness. Here's the output from a release build on my machine:
+In the `main()` function, we draw `200000` lines at random positions and measure how long it takes to do so. The call to `srand()` sets the seed for the function `rand()`. We'll always get the same sequence of "random" numbers that way.
+
+> **Note:** If we measure something to later improve it, we have to ensure that what we measured is the same each time, even if it involves "fake" randomness.
+
+Here's the output from a release build on my machine:
 
 --markdown-end
 {{post.code("", "bash",
@@ -794,9 +800,9 @@ void hline(r96_image *image, int32_t x1, int32_t x2, int32_t y, uint32_t color) 
 
 We keep all the clipping from before, but are a bit smarter regarding our inner loop.
 
-We precalculate the address of the pixel at coordinates `(x1, y)` in line 16. We also precalculate the number of pixels we are going draw in line 17.
+We precalculate the address of the pixel covering out start point at `(x1, y)` in line 16. We also precalculate the number of pixels we are going draw in line 17.
 
-The inner loop then counts down the number of pixels, while assigning the color to the current pixel and incrementing the address by one. Pretty tight. On my machine, I get these timings:
+The inner loop then counts down the number of pixels we've drawn so far, while assigning the color to the current pixel and incrementing the address by one. Pretty tight. On my machine, I get these timings:
 
 --markdown-end
 {{post.code("", "bash",
@@ -842,7 +848,7 @@ A nice improvement! Let's have some live lines to celebrate (click to start)
 </script>
 --markdown-begin
 
-> **Note**: `hline()` is as good as it gets, so it's been added as `r96_hline()`to [`r96.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.c). Going forward, we'll develop other rendering functions in the same way: build a demo app with a naive implementation, improve performance, add it to the `r96` library once it's good enough.
+> **Note**: `hline()` is as good as it gets, so it's been added as `r96_hline()` to [`r96.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.c). Going forward, we'll develop other rendering functions in the same way: build a demo app with a naive implementation, improve performance, and finally add it to the `r96` library once it's good enough.
 
 ## Drawing rectangles
 
@@ -887,17 +893,17 @@ blockRect(8, 8, 3, 3, "#e0e")
 </script>
 
 <p>
-	This looks familiar! Much of the clipping we did for horizontal lines applies to rectangles as well. All we need to do is take <code>y2</code> into account as well. Let's go through the cases.
+	This looks familiar! Much of the clipping we did for horizontal lines applies to rectangles as well. All we need to do is take <code>y2</code> into account. Let's go through the cases.
 </p>
 
 <p>
-	The two <span style="color: rgb(100, 100, 255)">blue</span> rectangles are above the top edge of the raster (<code>y2 &lt; 0</code>) and below the bottom edge of the raster (<code>`y1 &gt; height - 1</code>). Any rectangles that fulfill either criteria are outside the raster and don't have to be drawn.
+	The two <span style="color: rgb(100, 100, 255)">blue</span> rectangles are above the top edge of the raster (<code>y2 &lt; 0</code>) and below the bottom edge of the raster (<code>y1 &gt; height - 1</code>). Any rectangles that fulfill either criteria are outside the raster and don't have to be drawn.
 <p>
 	The two <span style="color: red">red</span> rectangles have the same problem, but relative to the left and right raster edges. Any rectangle with either <code>x2 < 0</code> or <code>x1 > width - 1</code> can ignored. This is the exact same case as we had for horizontal lines.
 </p>
 
 <p>
-	The <span style="color: #e0e">pink</span> rectangles are the baddies again. Just like with their pink horizontal line counter parts, we'll need to clip them. If <code>x1 &lt; 0</code> we snap it to <code>0</code>. If <code>y1 &lt; 0</code> we also snap it to null. If <code>x2 &gt; width - 1</code>, we snap it to <code>width - 1</code>. Similarly, if <code>y2 &gt; height - 1</code>, we snap it to <code>height - 1</code>.
+	The <span style="color: #e0e">pink</span> rectangles are the baddies again. Just like with their pink horizontal line counter parts, we'll need to clip them. If <code>x1 &lt; 0</code> we snap it to <code>0</code>. If <code>y1 &lt; 0</code> we also snap it to <code>0</code>. If <code>x2 &gt; width - 1</code>, we snap it to <code>width - 1</code>. Similarly, if <code>y2 &gt; height - 1</code>, we snap it to <code>height - 1</code>.
 </p>
 
 <p>
@@ -931,7 +937,7 @@ blockRect(8, 8, 2, 2, "#e0e")
 </script>
 --markdown-begin
 
-Knowing that a rectangle's corner points `(x1, y1)` and `(x2, y2)` are fully inside the raster after clipping, makes rendering the rectangle trivial.
+Knowing that a rectangle's corner points `(x1, y1)` and `(x2, y2)` are fully inside the raster after clipping makes rendering the rectangle trivial.
 
 For each y-coordinate `y` between and including `y1` and `y2`, we render a horizontal line from `(x1,y)` to `(x2,y)`. And we already got a function for rendering horizontal lines!
 
@@ -1061,28 +1067,28 @@ Took: 0.027813
 Took: 0.027851
 ```
 
-Indeed, looking at the assembly, the call was eliminated and `r96_hline()` was entirely inlined into `rect()`. But that's not a great solution, as most compilers will manage inline `r96_hline()` everywhere, which bloats executable size.
+Indeed, looking at the assembly, the call was eliminated and `r96_hline()` was entirely inlined into `rect()`. But that's not a great solution, as most compilers will manage to inline `r96_hline()` everywhere, which bloats executable size, or may put pressure on the register allocator, thus actually slowing down our code.
 
-As an alternative, we can use [link time optimizations](https://johnysswlab.com/link-time-optimizations-new-way-to-do-compiler-optimizations/) as supported by Clang, GCC, and MSVC. Let's update the `CMakeLists.txt` file to turn that on.
+As an alternative to gunking up our header files, we can use [link time optimizations](https://johnysswlab.com/link-time-optimizations-new-way-to-do-compiler-optimizations/) as supported by Clang, GCC, and MSVC. Let's update the `CMakeLists.txt` file to turn that on.
 
 --markdown-end
 
 {{post.code("CMakeLists.txt", "cmake",
 `
 ...
-FetchContent_MakeAvailable(minifb)
 
 include(CheckIPOSupported)
 check_ipo_supported(RESULT result)
 if(result)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
+
 ...
 `
 )}}
 --markdown-begin
 
-The last 5 lines check if LTO is supported by the current compiler and if that check passes, enables LTO for all targets that are defined afterwards. Here are the new timings with LTO on:
+This snippet checks if LTO is supported by the current compiler, and if so, enables LTO for all targets that are defined afterwards. Here are the new timings with LTO on:
 
 ```
 Took: 0.025003
@@ -1091,17 +1097,17 @@ Took: 0.025030
 Took: 0.024995
 ```
 
-Not bad! The reason this performs better than the inlining done above is that basically all the code is inlined into `main()` directly. It was even able to remove the superfluous clipping checks of the inline `r96_hline()`! Let's keep LTO on by default for all targets!
+Not bad! The reason this performs better than the inlining done above is that basically all the code is inlined into `main()` directly. It was even able to remove some of the superfluous clipping checks of the inlined `r96_hline()`! Let's keep LTO on by default for all targets.
 
 We can't always rely on LTO to do such a good job though. Let's fix this by getting rid of the call to `r96_hline()` ourselves.
 
-## Demo app: Rectangles, optimized
+### Demo app: rectangles, optimized
 Here's what I came up with in the new demo app [`07_rect_opt.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/07_rect_opt.c):
 
 --markdown-end
 {{post.code("src/07_rect_opt.c", "c",
 `
-void rect(r96_image *image, int32_t x1, int32_t y1, int32_t width, int32_t height, uint32_t color) {
+void rect_opt(r96_image *image, int32_t x1, int32_t y1, int32_t width, int32_t height, uint32_t color) {
 	if (width <= 0) return;
 	if (height <= 0) return;
 
@@ -1133,15 +1139,17 @@ void rect(r96_image *image, int32_t x1, int32_t y1, int32_t width, int32_t heigh
 )}}
 --markdown-begin
 
-All the clipping code stays the same, we only replace our call to `r96_hline()` with something that's a bit less work.
+All the clipping code stays the same, we only replace our call to `r96_hline()` with something that's a bit less work per row.
 
 In line 18, we calculate the clipped width. We need that in the next line to calculate `next_row`, which we'll use to calculate the address of the first pixel in the next row, once we are done setting all the pixels in the current row (line 26).
 
 We also precalculate the address of the first `pixel` we are going to set the color of. It's the pixel of the top-left corner of the rectangle.
 
-Then we start the loop through all rows of the rectangle, from `y1` to `y2`. For each row, we set each of its pixels to the `color`. That's one subtraction (`num_pixels--`), one memory store (`*pixel = color`) and one increment (`pixel++`) per pixel in a row. Pretty OK.
+Then we start to loop through all rows of the rectangle, from `y1` to `y2`. For each row, we set each of its pixels to the `color`. That's one subtraction (`num_pixels--`), one memory store (`*pixel = color`) and one increment (`pixel++`) per pixel in a row. Pretty OK.
 
 Once we've completed rendering the current row, we calculate the address of the first pixel of the next row by adding `next_row` to `pixel`.
+
+I've omitted the `main()` function above, as it is essentially the same as the last demo app's `main()`.
 
 --markdown-end
 <div style="display: flex; flex-direction: column; align-items: center; margin: 1em; max-width: 100%;">
@@ -1193,11 +1201,13 @@ Took: 0.024480
 Took: 0.024596
 ```
 
-Pretty much a toss up, though it seems the no-LTO version has a slight edge. Compared to the first naive implementation, we shaved off a bit of overhead by removing the function call and clipping. But since those are per row and per rectangle costs, we don't gain as much, as the bulk of the work is done per pixel.
+Pretty much a toss up, though it seems the non-LTO version has a slight edge. Compared to the first naive implementation, we shaved off a bit of overhead by removing the function call and clipping. But since those are per row costs, we don't gain as much, as the bulk of the work is done per pixel.
 
-It is nice however, that we can match LTO performance with just a simple modification of the code that will work on compilers without LTO support as well!
+It is nice, however, that we can match LTO performance with just a simple modification of the code that will alsow work with compilers without LTO support!
 
-## Next time
+Since this is as good as it gets, `rect_opt()` has been promoted `r96.c` and shall henceforth be known as `r96_rect()`.
+
+## Again, Mario, REALLY?
 
 Welp, I guess I can't write short blog posts. But we learned a lot again! I'm undecided what we'll look into next time. Either drawing lines, or loading and drawing images. It's going to be fun none the less.
 
