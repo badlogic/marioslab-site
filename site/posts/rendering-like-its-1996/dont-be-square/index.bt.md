@@ -446,7 +446,11 @@ In line 11 we load `image->width` (`[rdi]`) into `rdx`, followed by loading `ima
 
 Did you notice the problem?
 
-Our loop condition `i < image->width * image->height` has been compiled to some rather sub-optimal machine code. Instead of calculating `image->width * image->height` once, it is calculated for every loop iteration! Not only does this mean the `width` and `height` fields of the image are fetched from memory every iteration, we also have an integer multiplication per iteration. That's not great!
+Our loop condition `i < image->width * image->height` has been compiled to some rather sub-optimal machine code. Instead of calculating `image->width * image->height` once, it is calculated for every loop iteration! Not only does this mean the `width` and `height` fields of the image are fetched from memory every iteration, we also have an integer multiplication per iteration. That's not great! Here's what [Stefan of Live++ fame](https://twitter.com/molecularmusing) has to say about why the compiler is incapable of [hoisting the loop invariant](https://compileroptimizations.com/category/hoisting.htm) out of the loop.
+
+--markdown-end
+{{post.figure("stefan.png", "")}}
+--markdown-begin
 
 Let's fix this by manually precalculating `image->width * image->height`, thereby helping the compiler out a little:
 
