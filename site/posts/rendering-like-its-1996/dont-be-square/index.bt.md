@@ -550,7 +550,7 @@ r96_clear_with_color:                   # @r96_clear_with_color
 )}}
 --markdown-begin
 
-The compiler basically generated version of a highly optimized `memset()` implementation. We could spend an hour dissecting it to precisely understand what's going on. But why question the compiler's wisdom? The take away:
+The compiler basically generated a version of a highly optimized `memset()` implementation specifically for our setup at hand. We could spend an hour dissecting it to precisely understand what's going on. But why question the compiler's wisdom? The take away:
 
 > Always precalculate as much as you can for your inner loops, including values used in your loop condition. The compiler can not always figure out [loop invariants](https://en.wikipedia.org/wiki/Loop_invariant).
 
