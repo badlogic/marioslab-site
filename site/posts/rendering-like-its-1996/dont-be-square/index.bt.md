@@ -452,6 +452,8 @@ Our loop condition `i < image->width * image->height` has been compiled to some 
 {{post.figureMaxWidth("stefan.png", "", "80%")}}
 --markdown-begin
 
+[Would you like to know more?](https://johnnysswlab.com/loop-optimizations-taking-matters-into-your-hands/)
+
 Let's fix this by manually precalculating `image->width * image->height`, thereby helping the compiler out a little:
 
 --markdown-end
