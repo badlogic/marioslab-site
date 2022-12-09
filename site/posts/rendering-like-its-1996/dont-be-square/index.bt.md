@@ -1083,10 +1083,12 @@ As an alternative to gunking up our header files, we can use [link time optimiza
 `
 ...
 
-include(CheckIPOSupported)
-check_ipo_supported(RESULT result)
-if(result)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+if(CMAKE_BUILD_TYPE MATCHES Release)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT result)
+    if(result)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
 endif()
 
 ...
@@ -1094,7 +1096,7 @@ endif()
 )}}
 --markdown-begin
 
-This snippet checks if LTO is supported by the current compiler, and if so, enables LTO for all targets that are defined afterwards. Here are the new timings with LTO on:
+This snippet checks if LTO is supported by the current compiler, and if so, enables LTO for all targets that are defined afterwards, if we are building a release build. Here are the new timings with LTO on:
 
 ```
 Took: 0.025003
