@@ -1170,7 +1170,7 @@ We can alleviate the issue somewhat by
 
 A perfect solution is however elusive. Unless you make your objects simply move faster :)
 
-Discuss this post on [Twitter]() or [Mastodon]().
+Discuss this post on [Twitter](https://twitter.com/badlogicgames/status/1602019223055785984) or [Mastodon](https://mastodon.social/@badlogicgames/109496641214552695).
 
 --markdown-end
 <script>tableOfContents()</script>
