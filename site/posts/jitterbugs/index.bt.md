@@ -11,7 +11,7 @@ metadata = {
 {{include "../../_templates/post_header.bt.html"}}
 {{include "../../_templates/post_header.bt.html" as post}}
 
-{{post.figure("jitterbug.jpeg", "Your pixels going crazy when moved at sub-pixel precision and rendered with pixel accuracy.")}}
+{{post.figure("jitterbug.jpeg", "Your pixels hate you.")}}
 
 <div class="table_of_contents"></div>
 
