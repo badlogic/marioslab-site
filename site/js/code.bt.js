@@ -55,13 +55,17 @@ function q5Diagram(width, height, divId) {
 		return blockSize;
 	}
 
-	q5.grid = (x, y, w, h, stroke) => {
+	q5.grid = (x, y, w, h, stroke, pixelCenters) => {
 		stroke = stroke !== undefined ? stroke : "black";
+		pixelCenters = pixelCenters !== undefined ? pixelCenters : false;
 		q5.noFill()
 		q5.stroke(stroke)
-		for (let yy = 0; yy < h; yy++)
-			for(let xx = 0; xx < w; xx++)
+		for (let yy = 0; yy < h; yy++) {
+			for(let xx = 0; xx < w; xx++) {
 				q5.rect((xx + x) * blockSize, (yy + y) * blockSize, blockSize, blockSize);
+				if (pixelCenters) q5.circle((xx + x) * blockSize + blockSize / 2, (yy + y) * blockSize + blockSize / 2, blockSize / 10);
+			}
+		}
 	}
 
 	q5.block = (x, y, fill, stroke) => {

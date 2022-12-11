@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/code.js"></script>
+</head>
+
+<body style="font-family: monospace; margin: 0; padding: 0; background: #000; color: #bbb; line-height: 1.5em">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/firacode/6.2.0/fira_code.css"
+        integrity="sha512-LaxQmGd9k/pW51CsEy2nLIlbUXCgsyvUEVT5fSguN2b2OBwHjMi2aiUdEEXSMg8Jvy+bCB01as61aNrHnL2DYQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        code {
+            border: 1px solid #bbb;
+            padding: 0.2em;
+            white-space: nowrap;
+        }
+    </style>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+        <h2>Temporal and spatial aliasing of sub-pixel movement</h2>
+        <div style="width: 80%; max-width: 640px;">
+            <p>
+                Problem: jitter/stuttering when (slowly) moving objects on a sub-pixel grid, then
+                rendering them to an integer pixel grid.
+            </p>
+        </div>
+        <div>
+            <label>speed (px/s) <input id="speed" type="number" min="1" max="160" value="10"></label>
+            <label><input id="float-floor" type="checkbox">float floor</label>
+            <label><input id="float-ceil" checked type="checkbox">float ceil</label>
+            <label><input id="float-round" type="checkbox">float round</label>
+            <label><input id="fixed-point" checked type="checkbox">fixed point</label>
+        </div>
+        <div style="margin-bottom: 3em;">
+            <select id="timestep">
+                <option value="raw">raw timestep</option>
+                <option value="averaged" selected>averaged timestep</option>
+                <option value="gaffer">Gaffer fixed timestep</option>
+                <option value="fixed">fixed timestep</option>
+            </select>
+            <label style="display: none;">Fixed framerate (Hz) <input id="framerate" type="number" min="60" max="240" value="60"></label>
+            <label><input id="frametrace" checked type="checkbox">frames per x</label>
+            <button id="reset">reset</button>
+        </div>
+        <canvas id="framebuffer" width="320" height="300"
+            style="width: 640px; height: 600px; background: #222; image-rendering: pixelated; font-smooth: never; -webkit-font-smoothing: none;"></canvas>
+    </div>
+    </div>
+    <script>
+        const fpBits = 13;
+        const fpMul = (a, b) => (a * b) >> fpBits;
+        const flToFp = (a) => a * (1 << fpBits) | 0;
+        const fpToFl = (a) => a / (1 << fpBits);
+        const fpTrunc = (a) => a >> fpBits;
+        const fpRound = (a) => {
+            const fpOne = 1 << fpBits;
+            const fpMask = fpOne - 1;
+            return (a + fpMask) & ~fpMask;
+        }
+
+        const canvas = document.querySelector("#framebuffer");
+        const ctx = canvas.getContext("2d");
+        ctx.font = "10px Fira code";
+        const grunts = [
+            { type: "float-floor", x: 0, rx: 0, framesPerX: Array(320).fill(0) },
+            { type: "float-ceil", x: 0, rx: 0, framesPerX: Array(320).fill(0) },
+            { type: "float-round", x: 0, rx: 0, framesPerX: Array(320).fill(0) },
+            { type: "fixed-point", x: 0, rx: 0, framesPerX: Array(320).fill(0) }
+        ];
+        let gruntImage = null;
+        let lastTime = Date.now();
+        let accumulator = 0;
+        let useFixedTimestep = true;
+        let averageTimestep = Array(20).fill(0);
+        let numFrames = 0;
+
+        document.querySelector("#timestep").onchange = () => {
+            accumulator = 0;
+            numFrames = 0;
+            if (document.querySelector("#timestep").value == "fixed") {
+                document.querySelector("#framerate").parentElement.style.display = "";
+            } else {
+                document.querySelector("#framerate").parentElement.style.display = "none";
+            }
+        }
+
+        document.querySelector("#speed").onchanged = () => {
+            for (let i = 0; i < grunts.length; i++)
+                grunts[i].framesPerX = Array(320).fill(0);
+        }
+
+        document.querySelector("#reset").onclick = () => {
+            accumulator = 0;
+            numFrames = 0;
+            averageTimestep = Array(20).fill(0);
+            for (let i = 0; i < grunts.length; i++) {
+                grunts[i].x = grunts[i].rx = 0;
+                grunts[i].framesPerX = Array(320).fill(0);
+            }
+        }
+
+        // Updates each grunt's sub-pixel x coordinate
+        //
+        // grunt.x = grunt.x + speed * timeStep
+        //
+        // The sub-pixel x-coordinate is then converted to an integer pixel coordinate for
+        // rendering through a rounding operation.
+        function step(timeStep) {
+            const speed = Number.parseInt(document.querySelector("#speed").value);
+
+            for (let i = 0; i < grunts.length; i++) {
+                const grunt = grunts[i];
+                if (grunt.type == "fixed-point") {
+                    if (grunt.x >= flToFp(320)) {
+                        grunt.framesPerX = Array(320).fill(0);
+                        grunt.x = 0;
+                    }
+                    grunt.x = grunt.x + fpMul(flToFp(speed), flToFp(timeStep));
+                    grunt.rx = fpTrunc(grunt.x);
+                } else {
+                    if (grunt.x >= 320) {
+                        grunt.x = 0;
+                        grunt.framesPerX = Array(320).fill(0);
+                    }
+                    grunt.x = grunt.x + speed * timeStep;
+                    if (grunt.type == "float-floor") grunt.rx = Math.floor(grunt.x);
+                    if (grunt.type == "float-ceil") {
+                        grunt.rx = Math.ceil(grunt.x);
+                        console.log("frame:" + numFrames + ", rx: " + grunt.rx + ", x: " + grunt.x + ", timestep: " + timeStep);
+                    }
+                    if (grunt.type == "float-round") grunt.rx = Math.round(grunt.x);
+                }
+            }
+        }
+
+        // Calculates the current timestep based on a timestep mode, then calls
+        // step(timeStep) to update all grunts' sub-pixel and pixel x-coordinate.
+        function update() {
+            const timeStepType = document.querySelector("#timestep").value;
+            const time = Date.now();
+            let timeStep = (time - lastTime) / 1000;
+            lastTime = time;
+            let fixedTimestep = 1 / Number.parseInt(document.querySelector("#framerate").value);
+
+            switch(timeStepType) {
+                case "raw":
+                    // raw timestep: raw frame delta time
+                    step(timeStep)
+                    break;
+                case "averaged":
+                    // Averaged timestep: averaged N last frame delta times
+                    averageTimestep[numFrames % averageTimestep.length] = timeStep;
+                    let numTimeSteps = Math.min(numFrames, averageTimestep.length)
+                    let avgTimeStep = 0;
+                    for (let i = 0; i < numTimeSteps; i++) {
+                        avgTimeStep += averageTimestep[i];
+                    }
+                    avgTimeStep = numTimeSteps == 0 ? timeStep : avgTimeStep / numTimeSteps;
+                    step(avgTimeStep);
+                    break;
+                case "gaffer":
+                    // Gaffer timestep: accumulate frame delta, step by a fixed timestep
+                    // for as long as accumulator >= fixed timestep
+                    accumulator += timeStep;
+                    while (accumulator >= fixedTimestep) {
+                        step(fixedTimestep);
+                        accumulator -= fixedTimestep;
+                    }
+                    break;
+                case "fixed":
+                    // Fixed timestep: hard coded timestep value
+                    step(fixedTimestep);
+                    break;
+            }
+
+        }
+
+        // Updates all grunts then draws them.
+        function draw() {
+            requestAnimationFrame(draw);
+
+            update();
+            numFrames++;
+
+            ctx.fillStyle = "#111";
+            ctx.fillRect(0, 0, 320, 300);
+
+            ctx.strokeStyle ="#f00"
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#ccc";
+            ctx.lineWidth = 1;
+            let y = 0;
+            const frameTrace = document.querySelector("#frametrace").checked;
+            for (let i = 0; i < grunts.length; i++) {
+                const grunt = grunts[i];
+                if (document.querySelector("#" + grunt.type).checked) {
+                    ctx.putImageData(gruntImage, grunt.rx, y);
+                    ctx.fillText(grunt.type, 320, y + 32);
+
+                    // Draws a vertical line showing how many frames the
+                    // grunt was drawn at the corresponding pixel x-coordinate
+                    if(frameTrace) {
+                        for (let x = 0; x < grunt.rx; x++) {
+                            ctx.beginPath();
+                            ctx.moveTo(x + 0.5, y);
+                            ctx.lineTo(x + 0.5, y + grunt.framesPerX[x]);
+                            ctx.stroke();
+                        }
+                    }
+                    y += 70
+                }
+                grunt.framesPerX[grunt.rx]++;
+            }
+            if (numFrames == 60) {
+                console.log("1 second");
+            }
+        }
+
+        async function init() {
+            gruntImage = await loadImageData(gruntData);
+            requestAnimationFrame(draw);
+        }
+
+        let gruntData = "data:image/png;base64,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"
+        async function loadImageData(path) {
+            let load = () => new Promise((resolve) => {
+                let img = new Image();
+                img.onerror = () => console.log("Couldn't load image " + path);
+                img.onload = () => resolve(img);
+                img.src = path;
+            });
+            const image = await load();
+            const canvas = document.createElement("canvas");
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(image, 0, 0);
+            return ctx.getImageData(0, 0, image.width, image.height);
+        }
+
+        init();
+    </script>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+        <div style="width: 80%; max-width: 640px;">
+            <p>
+                Each grunt has a sub-pixel accurate x-coordinate which is updated via
+                <code>new_x = last_x + time_step * speed</code> each
+                frame. The time step is either the delta time between this and the last frame, or fixed via an
+                accumulator as per <a href="https://gafferongames.com/post/fix_your_timestep/">Fix Your Timestep</a>.
+            </p>
+            <p>
+                The first 3 grunts store their x-coordinate as a 64-bit floating point value. The sub-pixel precision
+                x-coordinate is converted to an integer pixel x-coordinate for rendering via <code>Math.floor()</code>,
+                <code>Math.ceil()</code>, and <code>Math.round()</code> respectively.
+            </p>
+            <p>
+                The 4th grunt stores its x-coordinate as a fixed point value with 12 fractional bits. The sub-pixel
+                precision x-coordinate is converted to an integer pixel x-coordinate for rendering by truncating the
+                fraction bits. This grunt will eventually fall behind the other grunts, as the 12-bits of sub-pixel
+                precision accumulate less of the fractional per frame stepping amount than the 54-bits manitassa of
+                doubles used for the other grunts' sub-pixel coordinate.
+            </p>
+            <p>
+                The "framebuffer" below is 320x300 pixels, a grunt is 64x64 pixels. The "framebuffer" is upscaled via
+                CSS by 3x exactly. No artifacts are introduced by the upscaling.
+            </p>
+
+            <p>
+                Observation: no matter fixed or variable time step, float or fixed point, this problem can not go away.
+                It is intensified by imprecise delta times
+                The only difference between the 4 ways of going from sub-pixel to pixel coordinates is at what
+                fractional part of the x-coordinate the grunt will advance by 1 pixel on screen. E.g.
+                <code>sub-pixel x=3.3</code>
+            <ul>
+                <li><code>Math.floor()</code>: the pixel x-coordinate is 3 until the sub-pixel x-coordinate >= 4.</li>
+                <li><code>Math.ceil()</code>: the pixel x-coordinate is 4 until the sub-pixel x-coordinate >= 4.</li>
+                <li><code>Math.round()</code>: the pixel x-coordinate is 4 until the sub-pixel x-coordinate >= 3.5</li>
+                <li><code>Fixed-point</code>: the pixel x-coordinate is 3 until the sub-pixel x-coordinate >= 4. This is
+                    equivalent to the <code>Math.floor()</code> case, just with way less fractional precision.</li>
+            </ul>
+            </p>
+
+            <p>
+                There are actually two problems:
+            <ul>
+                <li>Sub-pixel movement can only be approximately shown when rendering to a pixel grid. This could be
+                    solved by rendering at sub-pixel accuracy as well, but that doesn't lend itself well for a
+                    pixel-perfect art-style, as it would involve filtering of the source images.</li>
+                <li>The delta time isn't accurate, especially in the browser due to <a
+                        href="https://hackaday.com/2018/01/06/lowering-javascript-timer-resolution-thwarts-meltdown-and-spectre/">Spectre
+                        mitigations</a>. Browsers even add jitter to degrade the accuracy.</li>
+            </ul>
+            </p>
+
+            <p>
+                TL;DR: not enough pixels to smoothly show sub-pixel movement.
+            </p>
+
+            <p>
+                Use the controls below to change the speed, visibility of grunts, and whether to use a fixed time step
+                or not. Note that if all grunts are visible, you will see a sort of "fake" jitter in addition to the
+                actual jitter. This is due to the grunts not being in phase as they use different conversion methods to
+                go from sub-pixel coordinates to pixel coordinates. The float-floor and fixed-point grunt both truncate
+                and will stay in phase until the fixed-point precision lets the fixed-point grunt fall behind.
+            </p>
+
+            <h2><a href="https://gist.github.com/badlogic/37d7f8f0ee8f672c3148e4511b5f73f6">Self-contained HTML
+                    source</a></h2>
+        </div>
+    </div>
+</body>
+
+</html>
