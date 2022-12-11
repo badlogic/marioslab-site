@@ -179,7 +179,7 @@ requestAnimationFrame(frame);
 OK, cool. Pixi is moving at a constant velocity now, irrespective of the screen refresh rate. But she's even more jittery and stuttery than before! Pixi, what is you doin'?
 
 ## Numerically and visually analyzing Pixi's stutter
-Pixi is suffering from multiple fatal issues. Logging Pixi's truncated pixel precisise position at which she's rendered, her "true" sub-pixel precision position, and the time step gives some insights:
+Pixi is suffering from multiple fatal issues. Logging Pixi's truncated pixel precise position at which she's rendered, her "true" sub-pixel precision position, and the time step gives some insights:
 
 ```
 pixel x: 0, sub-pixel x: 0.050399999141693116, time step: 0.005599999904632568
