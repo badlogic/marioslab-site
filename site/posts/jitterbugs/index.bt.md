@@ -56,8 +56,8 @@ requestAnimationFrame(frame);
 `
 )}}
 
-<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
-<canvas id="framebuffer" width="320" height="240" style="width: 640px; height: 480px; image-rendering: pixelated; background: black;"></canvas>
+<div style="max-width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
+<canvas id="framebuffer" width="320" height="240" style="width: 100%; max-width:640px; image-rendering: pixelated; background: black;"></canvas>
 </div>
 <script>{
 // Get a CanvasRenderingContext2D from a 320x240 pixel canvas to draw with
@@ -136,8 +136,8 @@ requestAnimationFrame(frame);
 `
 )}}
 
-<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
-<canvas id="framebuffer2" width="320" height="240" style="width: 640px; height: 480px; image-rendering: pixelated; background: black;"></canvas>
+<div style="max-width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
+<canvas id="framebuffer2" width="320" height="240" style="width: 100%; max-width:640px; image-rendering: pixelated; background: black;"></canvas>
 </div>
 <script>{
 const ctx = document.querySelector("#framebuffer2").getContext("2d");
@@ -319,8 +319,8 @@ requestAnimationFrame(frame);
 `
 )}}
 
-<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
-<canvas id="framebuffer3" width="320" height="240" style="width: 640px; height: 480px; image-rendering: pixelated; background: black;"></canvas>
+<div style="max-width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
+<canvas id="framebuffer3" width="320" height="240" style="width: 100%; max-width:640px; image-rendering: pixelated; background: black;"></canvas>
 </div>
 <script>{
 const ctx = document.querySelector("#framebuffer3").getContext("2d");
@@ -432,8 +432,8 @@ requestAnimationFrame(frame);
 `
 )}}
 
-<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
-<canvas id="framebuffer4" width="320" height="240" style="width: 640px; height: 480px; image-rendering: pixelated; background: black;"></canvas>
+<div style="max-width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
+<canvas id="framebuffer4" width="320" height="240" style="width: 100%; max-width:640px; image-rendering: pixelated; background: black;"></canvas>
 </div>
 <script>{
 const ctx = document.querySelector("#framebuffer4").getContext("2d");
@@ -610,8 +610,8 @@ requestAnimationFrame(frame);
 `
 )}}
 
-<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
-<canvas id="framebuffer5" width="320" height="240" style="width: 640px; height: 480px; image-rendering: pixelated; background: black;"></canvas>
+<div style="max-width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
+<canvas id="framebuffer5" width="320" height="240" style="width: 100%; max-width:640px; image-rendering: pixelated; background: black;"></canvas>
 </div>
 <script>{
 const ctx = document.querySelector("#framebuffer5").getContext("2d");
@@ -755,8 +755,8 @@ requestAnimationFrame(frame);
 `
 )}}
 
-<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
-<canvas id="framebuffer6" width="320" height="240" style="width: 640px; height: 480px; image-rendering: pixelated; background: black;"></canvas>
+<div style="max-width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
+<canvas id="framebuffer6" width="320" height="240" style="width: 100%; max-width:640px; image-rendering: pixelated; background: black;"></canvas>
 </div>
 <script>{
 const ctx = document.querySelector("#framebuffer6").getContext("2d");
@@ -869,8 +869,8 @@ requestAnimationFrame(frame);
 `
 )}}
 
-<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
-<canvas id="framebuffer7" width="320" height="240" style="width: 640px; height: 480px; image-rendering: pixelated; background: black;"></canvas>
+<div style="max-width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
+<canvas id="framebuffer7" width="320" height="240" style="width: 100%; max-width:640px; image-rendering: pixelated; background: black;"></canvas>
 </div>
 <script>{
 const ctx = document.querySelector("#framebuffer7").getContext("2d");
@@ -969,8 +969,8 @@ image.src = "nyan.png";
 `
 )}}
 
-<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
-<canvas id="framebuffer8" width="320" height="240" style="width: 640px; height: 480px; image-rendering: pixelated; background: black;"></canvas>
+<div style="max-width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
+<canvas id="framebuffer8" width="320" height="240" style="width: 100%; max-width:640px; image-rendering: pixelated; background: black;"></canvas>
 </div>
 <script>{
 let image = new Image();
@@ -1096,8 +1096,8 @@ requestAnimationFrame(frame);
 `
 )}}
 
-<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
-<canvas id="framebuffer9" width="320" height="240" style="width: 640px; height: 480px; image-rendering: pixelated; background: black;"></canvas>
+<div style="max-width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
+<canvas id="framebuffer9" width="320" height="240" style="width: 100%; max-width:640px; image-rendering: pixelated; background: black;"></canvas>
 </div>
 <script>{
 const ctx = document.querySelector("#framebuffer9").getContext("2d");
@@ -1183,7 +1183,7 @@ All of the above assumes that you are rendering to a low-res pixel grid that has
 I've made a little [fork](https://www.shadertoy.com/view/mdSXWy) that shows how great it works for our problem. On the left you see (a simulation of) what happens on a low-res pixel grid: jittery stuttering. On the right, you see what d7samurai's anti-aliasing filter can afford to go higher-res and have a bi-linear filter at hand:
 
 --markdown-end
-<center><iframe width="640" height="360" frameborder="0" src="https://www.shadertoy.com/embed/mdSXWy?gui=true&t=10&paused=false&muted=false" style="margin-top: 1em; margin-bottom: 1em;" allowfullscreen></iframe></center>
+<center><iframe width="640" height="360" frameborder="0" src="https://www.shadertoy.com/embed/mdSXWy?gui=true&t=10&paused=false&muted=false" style="max-width: 80%; margin-top: 1em; margin-bottom: 1em;" allowfullscreen></iframe></center>
 --markdown-begin
 
 If we zoom in a little, we get a glimpse at the inner workings of the anti-aliasing filter.
@@ -1268,8 +1268,8 @@ function deltaTimeFiltered(dt_nanos){
 `
 )}}
 
-<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
-<canvas id="framebuffer10" width="320" height="240" style="width: 640px; height: 480px; image-rendering: pixelated; background: black;"></canvas>
+<div style="max-width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
+<canvas id="framebuffer10" width="320" height="240" style="width: 100%; max-width:640px; image-rendering: pixelated; background: black;"></canvas>
 </div>
 <script>{
 const ctx = document.querySelector("#framebuffer10").getContext("2d");
