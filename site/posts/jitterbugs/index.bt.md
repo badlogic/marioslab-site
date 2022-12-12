@@ -1170,26 +1170,173 @@ We can alleviate the issue somewhat by
 
 A perfect solution is however elusive. Unless you make your objects simply move faster :)
 
-## Silver lining
+## Silver linings
+After throwing out the link to this post on Twitter and Mastodon, a couple of people more knowledgeable had a few great suggestions.
+
+### Sub-pixel anti-aliasing filter
 All of the above assumes that you are rendering to a low-res pixel grid that has the same resolution as your assets. If you can afford to render at an at least 4x higher resolution and have bi-linear filtering available, the solution outlined by [d7samurai](https://twitter.com/d7samurai) based on his [single texture read sub-pixel anti-aliasing filter](https://www.shadertoy.com/view/ltBGWc) may be a good fit:
 
 --markdown-end
-<center><img src="d7samurai.png" style="max-width: 80%"></center>
+<center><img src="d7samurai.png" style="max-width: 80%; margin-bottom: 1em;"></center>
 --markdown-begin
 
 I've made a little [fork](https://www.shadertoy.com/view/mdSXWy) that shows how great it works for our problem. On the left you see (a simulation of) what happens on a low-res pixel grid: jittery stuttering. On the right, you see what d7samurai's anti-aliasing filter can afford to go higher-res and have a bi-linear filter at hand:
 
 --markdown-end
-<iframe width="640" height="360" frameborder="0" src="https://www.shadertoy.com/embed/mdSXWy?gui=true&t=10&paused=false&muted=false" allowfullscreen></iframe>
+<center><iframe width="640" height="360" frameborder="0" src="https://www.shadertoy.com/embed/mdSXWy?gui=true&t=10&paused=false&muted=false" style="margin-top: 1em; margin-bottom: 1em;" allowfullscreen></iframe></center>
 --markdown-begin
 
 If we zoom in a little, we get a glimpse at the inner workings of the anti-aliasing filter.
 
 --markdown-end
-<center><img src="zoom.png" style="max-width: 80%"></center>
+<center><img src="zoom.png" style="max-width: 80%; margin-bottom: 1em;"></center>
 --markdown-begin
 
 This slight distortion is not noticeable on a high-res output display. Applying this to our 320x240 pixel world would require a 1280x960 framebuffer. Pretty OK.
+
+### FIR filtering the frame time
+Scott Lembcke of [https://chipmunk-physics.net/](Chipmunk Physics) fame chimed in over on Mastodon. FIR filters may be a better way than averaging to tame fluctuating frame times:
+
+--markdown-end
+<center><img src="fir.png"  style="max-width: 80%; margin-bottom: 1em;"></center>
+--markdown-begin
+
+The basics can be found [here](https://gist.github.com/slembcke/b2ff9427472eee36caa01fafcbf5773a), updated co-efficients and a more elaborate scheme can be found in the [sources](https://github.com/slembcke/veridian-expanse/blob/e39291c96034ef8e971cd100038dfdb799309a21/src/drift_game_context.c#L676) of Scott's upcoming [Veridian Expanse](https://store.steampowered.com/app/2137670/Veridian_Expanse/) project.
+
+Here's a translation to our JavaScript world:
+
+--markdown-end
+{{post.code("", "javascript",
+`
+const ctx = document.querySelector("#framebuffer10").getContext("2d");
+const pixi = { x: 0.0, y: 104.0, velocity: 9.0 };
+let lastTime = performance.now();
+const framesPerX = Array(320).fill(0);
+
+const frame = () => {
+	const now = performance.now();
+	const timeStep = deltaTimeFiltered((now - lastTime) / 1000 * 1e9) / 1e9;
+	lastTime = now;
+
+	pixi.x = pixi.x + pixi.velocity * timeStep;
+	if (pixi.x >= 320) {
+		pixi.x = 0;
+		framesPerX.fill(0);
+	}
+
+	ctx.fillStyle = "black";
+	ctx.fillRect(0, 0, 320, 240);
+
+	ctx.fillStyle = "red";
+	let pixelX = Math.floor(pixi.x);
+
+	// Draw at the sub-pixel position
+	ctx.fillRect(pixi.x, pixi.y, 32, 32);
+
+	framesPerX[pixelX]++;
+	ctx.strokeStyle ="#0c0"
+	for (let x = 0; x < pixelX; x++) {
+		ctx.beginPath();
+		ctx.moveTo(x + 0.5, 0);
+		ctx.lineTo(x + 0.5, framesPerX[x] * 2);
+		ctx.stroke();
+	}
+
+	requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+
+// Warm start the filter by assuming 60 Hz.
+const x = [1.6e7, 1.6e7, 1.6e7], y = [1.6e7, 1.6e7, 1.6e7];
+const b = [6.321391700454014e-5, 0.00012642783400908025, 6.321391700454014e-5];
+const a = [1.0, -1.9681971279272976, 0.9684499835953156];
+
+function deltaTimeFiltered(dt_nanos){
+
+	// Apply IIR filter coefficients.
+	let value = b[0]*dt_nanos;
+	for(let i = 2; i > 0; i--){
+		x[i] = x[i - 1]; y[i] = y[i - 1];
+		value += b[i]*x[i] - a[i]*y[i];
+	}
+	x[0] = dt_nanos; y[0] = value;
+
+	// Quantize the delta time, truncating towards the filtered value.
+	return Math.trunc(dt_nanos/value - 1) * value + value;
+}
+`
+)}}
+
+<div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1em;">
+<canvas id="framebuffer10" width="320" height="240" style="width: 640px; height: 480px; image-rendering: pixelated; background: black;"></canvas>
+</div>
+<script>{
+const ctx = document.querySelector("#framebuffer10").getContext("2d");
+const pixi = { x: 0.0, y: 104.0, velocity: 9.0 };
+let lastTime = performance.now();
+const framesPerX = Array(320).fill(0);
+
+const frame = () => {
+	const now = performance.now();
+	const timeStep = deltaTimeFiltered((now - lastTime) / 1000 * 1e9) / 1e9;
+	lastTime = now;
+
+	pixi.x = pixi.x + pixi.velocity * timeStep;
+	if (pixi.x >= 320) {
+		pixi.x = 0;
+		framesPerX.fill(0);
+	}
+
+	ctx.fillStyle = "black";
+	ctx.fillRect(0, 0, 320, 240);
+
+	ctx.fillStyle = "red";
+	let pixelX = Math.floor(pixi.x);
+
+	// Draw at the sub-pixel position
+	ctx.fillRect(pixi.x, pixi.y, 32, 32);
+
+	framesPerX[pixelX]++;
+	ctx.strokeStyle ="#0c0"
+	for (let x = 0; x < pixelX; x++) {
+		ctx.beginPath();
+		ctx.moveTo(x + 0.5, 0);
+		ctx.lineTo(x + 0.5, framesPerX[x] * 2);
+		ctx.stroke();
+	}
+
+	requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+
+// Warm start the filter by assuming 60 Hz.
+const x = [1.6e7, 1.6e7, 1.6e7], y = [1.6e7, 1.6e7, 1.6e7];
+const b = [6.321391700454014e-5, 0.00012642783400908025, 6.321391700454014e-5];
+const a = [1.0, -1.9681971279272976, 0.9684499835953156];
+
+function deltaTimeFiltered(dt_nanos){
+
+	// Apply IIR filter coefficients.
+	let value = b[0]*dt_nanos;
+	for(let i = 2; i > 0; i--){
+		x[i] = x[i - 1]; y[i] = y[i - 1];
+		value += b[i]*x[i] - a[i]*y[i];
+	}
+	x[0] = dt_nanos; y[0] = value;
+
+	// Quantize the delta time, truncating towards the filtered value.
+	return Math.trunc(dt_nanos/value - 1) * value + value;
+}
+}</script>
+--markdown-begin
+
+--markdown-end
+<center><img src="fir-plot.png" style="max-width: 80%; margin-bottom: 1em;"></center>
+--markdown-begin
+
+That's pretty good looking! The coefficients are initialized based on the assumption that we are running on a 60Hz display. I'm running on 120Hz, so you can see the time it takes the FIR filter to catch-up with reality. After that, it's very stable and distributes the errors quite uniformly. Thanks, Scott!
 
 Discuss this post on [Twitter](https://twitter.com/badlogicgames/status/1602019223055785984) or [Mastodon](https://mastodon.social/@badlogicgames/109496641214552695).
 
