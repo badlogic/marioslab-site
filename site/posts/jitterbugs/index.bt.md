@@ -1171,7 +1171,7 @@ We can alleviate the issue somewhat by
 A perfect solution is however elusive. Unless you make your objects simply move faster :)
 
 ## Silver lining
-All of the above assumes that you are rendering to a low-res pixel grid that has the same resolution as your assets. If you can afford to render at an at least 4x higher resolution and have bi-linear filtering available, the solution outlined by [d7samurai](https://twitter.com/d7samurai) based on his [single texture read sub-pixel anti-aliasing filter](https://www.shadertoy.com/view/MlB3D3) may be a good fit:
+All of the above assumes that you are rendering to a low-res pixel grid that has the same resolution as your assets. If you can afford to render at an at least 4x higher resolution and have bi-linear filtering available, the solution outlined by [d7samurai](https://twitter.com/d7samurai) based on his [single texture read sub-pixel anti-aliasing filter](https://www.shadertoy.com/view/ltBGWc) may be a good fit:
 
 --markdown-end
 <center><img src="d7samurai.png" style="max-width: 80%"></center>
