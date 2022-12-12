@@ -1231,7 +1231,7 @@ const frame = () => {
 	let pixelX = Math.floor(pixi.x);
 
 	// Draw at the sub-pixel position
-	ctx.fillRect(pixi.x, pixi.y, 32, 32);
+	ctx.fillRect(pixelX, pixi.y, 32, 32);
 
 	framesPerX[pixelX]++;
 	ctx.strokeStyle ="#0c0"
@@ -1293,9 +1293,7 @@ const frame = () => {
 
 	ctx.fillStyle = "red";
 	let pixelX = Math.floor(pixi.x);
-
-	// Draw at the sub-pixel position
-	ctx.fillRect(pixi.x, pixi.y, 32, 32);
+	ctx.fillRect(pixelX, pixi.y, 32, 32);
 
 	framesPerX[pixelX]++;
 	ctx.strokeStyle ="#0c0"
