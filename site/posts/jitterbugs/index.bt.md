@@ -1195,7 +1195,7 @@ If we zoom in a little, we get a glimpse at the inner workings of the anti-alias
 This slight distortion is not noticeable on a high-res output display. Applying this to our 320x240 pixel world would require a 1280x960 framebuffer. Pretty OK.
 
 ### IIR filtering the frame time
-Scott Lembcke of [https://chipmunk-physics.net/](Chipmunk Physics) fame chimed in over on Mastodon. IIR filters may be a better way than averaging to tame fluctuating frame times:
+Scott Lembcke of [Chipmunk Physics](https://chipmunk-physics.net/) fame chimed in over on Mastodon. IIR filters may be a better way than averaging to tame fluctuating frame times:
 
 --markdown-end
 <center><img src="fir.png"  style="max-width: 80%; margin-bottom: 1em;"></center>
