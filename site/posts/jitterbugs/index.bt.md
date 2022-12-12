@@ -1194,8 +1194,8 @@ If we zoom in a little, we get a glimpse at the inner workings of the anti-alias
 
 This slight distortion is not noticeable on a high-res output display. Applying this to our 320x240 pixel world would require a 1280x960 framebuffer. Pretty OK.
 
-### FIR filtering the frame time
-Scott Lembcke of [https://chipmunk-physics.net/](Chipmunk Physics) fame chimed in over on Mastodon. FIR filters may be a better way than averaging to tame fluctuating frame times:
+### IIR filtering the frame time
+Scott Lembcke of [https://chipmunk-physics.net/](Chipmunk Physics) fame chimed in over on Mastodon. IIR filters may be a better way than averaging to tame fluctuating frame times:
 
 --markdown-end
 <center><img src="fir.png"  style="max-width: 80%; margin-bottom: 1em;"></center>
@@ -1334,7 +1334,7 @@ function deltaTimeFiltered(dt_nanos){
 <center><img src="fir-plot.png" style="max-width: 80%; margin-bottom: 1em;"></center>
 --markdown-begin
 
-That's pretty good looking! The coefficients are initialized based on the assumption that we are running on a 60Hz display. I'm running on 120Hz, so you can see the time it takes the FIR filter to catch-up with reality. After that, it's very stable and distributes the errors quite uniformly. Thanks, Scott!
+That's pretty good looking! The coefficients are initialized based on the assumption that we are running on a 60Hz display. I'm running on 120Hz, so you can see the time it takes the IIR filter to catch-up with reality. After that, it's very stable and distributes the errors quite uniformly. Thanks, Scott!
 
 Discuss this post on [Twitter](https://twitter.com/badlogicgames/status/1602019223055785984) or [Mastodon](https://mastodon.social/@badlogicgames/109496641214552695).
 
