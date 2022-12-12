@@ -1170,6 +1170,27 @@ We can alleviate the issue somewhat by
 
 A perfect solution is however elusive. Unless you make your objects simply move faster :)
 
+## Silver lining
+All of the above assumes that you are rendering to a low-res pixel grid that has the same resolution as your assets. If you can afford to render at an at least 4x higher resolution and have bi-linear filtering available, the solution outlined by [d7samurai](https://twitter.com/d7samurai) based on his [single texture read sub-pixel anti-aliasing filter](https://www.shadertoy.com/view/MlB3D3) may be a good fit:
+
+--markdown-end
+<center><img src="d7samurai.png" style="max-width: 80%"></center>
+--markdown-begin
+
+I've made a little [fork](https://www.shadertoy.com/view/mdSXWy) that shows how great it works for our problem. On the left you see (a simulation of) what happens on a low-res pixel grid: jittery stuttering. On the right, you see what d7samurai's anti-aliasing filter can afford to go higher-res and have a bi-linear filter at hand:
+
+--markdown-end
+<iframe width="640" height="360" frameborder="0" src="https://www.shadertoy.com/embed/mdSXWy?gui=true&t=10&paused=false&muted=false" allowfullscreen></iframe>
+--markdown-begin
+
+If we zoom in a little, we get a glimpse at the inner workings of the anti-aliasing filter.
+
+--markdown-end
+<center><img src="zoom.png" style="max-width: 80%"></center>
+--markdown-begin
+
+This slight distortion is not noticeable on a high-res output display. Applying this to our 320x240 pixel world would require a 1280x960 framebuffer. Pretty OK.
+
 Discuss this post on [Twitter](https://twitter.com/badlogicgames/status/1602019223055785984) or [Mastodon](https://mastodon.social/@badlogicgames/109496641214552695).
 
 --markdown-end
