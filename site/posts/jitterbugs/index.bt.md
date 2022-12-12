@@ -1183,7 +1183,7 @@ All of the above assumes that you are rendering to a low-res pixel grid that has
 I've made a little [fork](https://www.shadertoy.com/view/mdSXWy) that shows how great it works for our problem. On the left you see (a simulation of) what happens on a low-res pixel grid: jittery stuttering. On the right, you see what d7samurai's anti-aliasing filter can afford to go higher-res and have a bi-linear filter at hand:
 
 --markdown-end
-<center><iframe width="640" height="360" frameborder="0" src="https://www.shadertoy.com/embed/mdSXWy?gui=true&t=10&paused=false&muted=false" style="max-width: 80%; margin-top: 1em; margin-bottom: 1em;" allowfullscreen></iframe></center>
+<center><iframe width="640" height="360" frameborder="0" src="https://www.shadertoy.com/embed/mdSXWy?gui=true&t=10&paused=false&muted=false" style="max-width: 100%; margin-top: 1em; margin-bottom: 1em;" allowfullscreen></iframe></center>
 --markdown-begin
 
 If we zoom in a little, we get a glimpse at the inner workings of the anti-aliasing filter.
