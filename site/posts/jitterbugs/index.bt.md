@@ -724,6 +724,7 @@ const frame = () => {
 		avgTimeStep += frameTimes[i];
 	}
 	avgTimeStep = numTimeSteps == 0 ? timeStep : avgTimeStep / numTimeSteps;
+	numFrames++;
 
 	// Use the average time step to update Pixi
 	pixi.x = pixi.x + pixi.velocity * avgTimeStep;
@@ -783,6 +784,7 @@ const frame = () => {
 		avgTimeStep += frameTimes[i];
 	}
 	avgTimeStep = numTimeSteps == 0 ? timeStep : avgTimeStep / numTimeSteps;
+	numFrames++;
 
 	// Use the average time step to update Pixi
 	pixi.x = pixi.x + pixi.velocity * avgTimeStep;
