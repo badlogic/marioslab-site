@@ -19,12 +19,13 @@
         <h2>Mario's BMFG</h2>
         <p>Load a fixed-width TTF or WOFF file, e.g. <a href="https://github.com/sunaku/tamzen-font/tree/master/ttf">Tamzen 8x16r</a> or <a href="https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_8x16">IMB VGA 8x16</a>. Select a font height. Right click the glyph image, "Save Image as ...", and enjoy your bitmap font.</a>
         </p>
+        <p style="font-size:0.6em">Sorry, Firefox users. Firefox doesn't have the needed CSS and API support to do this properly. It's all a blur.</p>
         <p>The image consists of 15x15 glyphs, from ASCII code 32 to extended ASCII code 255. Each glyph is <span id="info" style="color: #0e0;"></span> pixels in size.</p>
         <div style="margin-bottom: 1em;">
             <button id="load">Load font file</button>
             <label style="margin-bottom: 1em;">Font height (px): <input id="height" type="number" min="8" max="72" value="16"></label>
         </div>
-        <canvas id="output" style="image-rendering: pixelated; -webkit-font-smoothing: none;"></canvas>
+        <canvas id="output" style="image-rendering: pixelated; -webkit-font-smoothing: none; -moz-osx-font-smoothing: none;"></canvas>
 
         <input id="file" type="file" style="display: none;" accept=".ttf,.woff">
     </div>
@@ -58,9 +59,10 @@
         let ctx = canvas.getContext("2d");
 
         ctx.font = fontHeight.value + "px LoadedFont";
-        let metrics = ctx.measureText("x");
+        let metrics = ctx.measureText("X");
         let charWidth = metrics.width;
-        let charHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
+        let charHeight = metrics.fontBoundingBoxAscent === undefined ? Number.parseInt(fontHeight.value) : metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
+        let ascent = metrics.fontBoundingBoxAscent === undefined ? metrics.actualBoundingBoxAscent : metrics.fontBoundingBoxAscent;
         let info = document.querySelector("#info");
         info.textContent = charWidth + "x" + charHeight;
         console.log(metrics);
@@ -73,6 +75,7 @@
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "white";
         ctx.strokeStyle = "red";
+        ctx.textRendering = "geometricPrecision";
 
         let c = 32
         for (let y = 0; y < 15; y++) {
@@ -80,7 +83,7 @@
             for (let i = 0; i < 15 && c <= 255; i++, c++) {
                 cStr += String.fromCharCode(c);
             }
-            ctx.fillText(cStr, 0, y * charHeight + metrics.fontBoundingBoxAscent);
+            ctx.fillText(cStr, 0, y * charHeight + ascent);
 
             /*for (let x = 0; x < 15; x++) {
                 ctx.rect(x * charWidth, y * charHeight, charWidth, charHeight);
