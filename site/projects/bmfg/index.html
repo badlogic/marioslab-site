@@ -19,13 +19,12 @@
         <h2>Mario's BMFG</h2>
         <p>Load a fixed-width TTF or WOFF file, e.g. <a href="https://github.com/sunaku/tamzen-font/tree/master/ttf">Tamzen 8x16r</a> or <a href="https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_8x16">IMB VGA 8x16</a>. Select a font height. Right click the glyph image and "Save Image as ..."</a>
         </p>
-        <p>The image consists of 15x15 glyphs, from ASCII code 32 to extended ASCII code 255.</p>
+        <p>The image consists of 15x15 glyphs, from ASCII code 32 to extended ASCII code 255. Each glyph is <span id="info" style="color: #0e0;"></span> pixels in size.</p>
         <div style="margin-bottom: 1em;">
             <button id="load">Load font file</button>
             <label style="margin-bottom: 1em;">Font height (px): <input id="height" type="number" min="8" max="72" value="16"></label>
         </div>
         <canvas id="output" style="image-rendering: pixelated; -webkit-font-smoothing: none;"></canvas>
-        <div id="info" style="display: none; margin-top: 1em;"></div>
 
         <input id="file" type="file" style="display: none;" accept=".ttf,.woff">
     </div>
@@ -63,8 +62,7 @@
         let charWidth = metrics.width;
         let charHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
         let info = document.querySelector("#info");
-        info.style.display = "block";
-        info.textContent = "Actual character size: " + charWidth + "x" +  charHeight;
+        info.textContent = charWidth + "x" + charHeight;
         console.log(metrics);
 
         canvas.width = charWidth * 15;
