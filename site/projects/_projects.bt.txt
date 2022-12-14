@@ -13,7 +13,7 @@ projects = [
 	},
 	{
 		title: "lilray",
-		description: "A dirty ol' C++ raycasting "engine" for desktop and web.",
+		description: "A dirty ol' C++ raycasting 'engine' for desktop and web.",
 		url: "https://github.com/badlogic/lilray",
 	},
 	{
