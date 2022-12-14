@@ -60,8 +60,8 @@
 
         ctx.font = fontHeight.value + "px LoadedFont";
         let metrics = ctx.measureText("X");
-        let charWidth = metrics.width;
-        let charHeight = metrics.fontBoundingBoxAscent === undefined ? Number.parseInt(fontHeight.value) : metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
+        let charWidth = Math.ceil(metrics.width);
+        let charHeight = Math.ceil(metrics.fontBoundingBoxAscent === undefined ? Number.parseInt(fontHeight.value) : metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent);
         let ascent = metrics.fontBoundingBoxAscent === undefined ? metrics.actualBoundingBoxAscent : metrics.fontBoundingBoxAscent;
         let info = document.querySelector("#info");
         info.textContent = charWidth + "x" + charHeight;
