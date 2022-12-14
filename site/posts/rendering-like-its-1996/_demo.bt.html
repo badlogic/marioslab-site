@@ -1,0 +1,39 @@
+
+
+{{macro r96Demo(name, hasConsole)}}
+<div style="display: flex; flex-direction: column; align-items: center; margin: 1em; max-width: 100%;">
+	<canvas id="{{name}}" width="640" height="480" style="width: 100%; background: black;"></canvas>
+	{{if hasConsole}}
+	<pre id="console" style="margin-top: 1em; width: 100%; height: 10ch; background: black; color: #bbbbbb; font-size: 14px; overflow: scroll;"></pre>
+	{{end}}
+</div>
+<script src="demo/r96_{{name}}.js"></script>
+<script>
+{
+	let canvas = document.getElementById("{{name}}")
+	let ctx = canvas.getContext("2d");
+	ctx.font = "18px monospace";
+	ctx.textAlign = "center";
+	ctx.fillStyle = "white";
+	ctx.fillText("Click/tap to start", canvas.width / 2, canvas.height / 2);
+
+	let started = false;
+	let init = async () => {
+		if (started) return;
+		started = true;
+        let module = {};
+		{{if hasConsole}}
+		let consoleDiv = document.getElementById("console");
+        module.print = module.printErr = (data) => {
+            console.log(data);
+            consoleDiv.innerHTML += data + "</br>";
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+		{{end}}
+
+		await r96_{{name}}(module);
+	}
+	document.getElementById("{{name}}").addEventListener("click", () => init());
+}
+</script>
+{{end}}
