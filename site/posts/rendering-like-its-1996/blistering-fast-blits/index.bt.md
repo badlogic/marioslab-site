@@ -10,6 +10,7 @@ metadata = {
 
 {{include "../../../_templates/post_header.bt.html"}}
 {{include "../../../_templates/post_header.bt.html" as post}}
+{{include "../_demo.bt.html" as demo}}
 
 {{post.figure("amiga500.jpeg", "Niklas Therning's beige plastic god. Has a fast blitter too!")}}
 
@@ -53,7 +54,7 @@ target_link_libraries(r96_07_rect_opt LINK_PUBLIC minifb r96)
 
 ...
 
-	add_dependencies(r96_00_basic_window r96_web_assets)
+    add_dependencies(r96_00_basic_window r96_web_assets)
     target_link_options(r96_00_basic_window PRIVATE "-sEXPORT_NAME=r96_00_basic_window")
 
     add_dependencies(r96_01_drawing_a_pixel r96_web_assets)
@@ -291,9 +292,9 @@ The new-fangled `r96_image_init_from_file()` takes an `r96_image` and a file pat
 ## Demo: Loading images from files
 Time for a new demo. I've added our first asset file `doom-grunt.png` to the `assets/` folder. Remember this little guy?
 
-<img src="doom-grunt.png" style="margin: auto;"></img>
+<center><img src="doom-grunt.png" style="margin: auto;"></img></center>
 
-We can't really draw images yet, so we'll write a little terminal app called [`08_image_file.c`](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/08_image_file.c) that loads the image and spits out its dimensions:
+We can't really draw images yet, so we'll write a terminal app called [`08_image_file.c`](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/08_image_file.c) that loads the image and spits out its dimensions:
 
 --markdown-end
 {{post.code("src/08_image_file.c", "c", `
@@ -313,9 +314,371 @@ int main(void) {
 `)}}
 --markdown-begin
 
-Which, as expected, spits out `Loaded file 'assets/doom-grunt.png', 64x64 pixels`, both on the desktop and the web. Let's check if the pixels we loaded actually look like our little buddy above.
+Which, as expected, prints `Loaded file 'assets/doom-grunt.png', 64x64 pixels`, both on the desktop and the web. Let's check if the pixels we loaded actually look like our little buddy above.
 
 ## Blitting images
+[Blitting](https://en.wikipedia.org/wiki/Bit_blit), which stands for bit block transfer, is an age old computer graphics tradition. It's a stand in verb for when we want to get pixels from one or more images onto another, possibly involving some boolean operations per pixel. Systems like the Commodore or Amiga 500 were advertised to feature a dedicated blitting chip, indicating to the gaming afficiandos that that machine will give the games extra punch (if the game programmers choose to use the blitter).
+
+### Copy blit
+In the simplest case, we copy the pixels of a source image to some location on a destination image, overwriting whatever has been in those destination pixels before the blit.
+
+--markdown-end
+<div id="blit"></div>
+<script>
+{
+let resX = 800; resY = 320;
+let q5 = q5Diagram(resX, resY, "blit");
+q5.blockSize(20);
+let w = "#000", b = "#fff";
+let pixels = [
+    w, w, w, b, b, w, w, w,
+    w, w, b, b, b, b, w, w,
+    w, b, b, b, b, b, b, w,
+    b, b, w, b, b, w, b, b,
+    b, b, b, b, b, b, b, b,
+    w, w, b, w, w, b, w, w,
+    w, b, w, b, b, w, b, w,
+    b, w, b, w, w, b, w, b
+];
+
+let rows = [];
+for (let i = 0; i < 8; i++) {
+    let row = {x: 3, y: 4 + i, p: pixels.slice(i * 8, i * 8 + 8)};
+    let toTween = new TWEEN.Tween(row)
+        .delay(i * 1000)
+        .to({x: 23, y: 4 + i}, 1000)
+        .easing(TWEEN.Easing.Quadratic.Out);
+    let backTween = new TWEEN.Tween(row)
+        .delay((8 - i) * 1000)
+        .to({x: row.x, y: row.y}, 0);
+    toTween.chain(backTween);
+    backTween.chain(toTween);
+    toTween.start();
+    rows.push(row);
+}
+
+q5.draw = () => {
+    q5.clear();
+    q5.blockText("Source", 6.5, 2, "#bbb");
+    q5.pixels(3, 4, 8, 8, pixels);
+
+    q5.blockText("Destination", 27.5, 0, "#bbb");
+    q5.grid(20, 2, 16, 12, "#bbb");
+
+    q5.blockText("blit(4, 3)", 15, 7.5, "#bbb", "none");
+
+    for (let i = 0; i < rows.length; i++) {
+        let row = rows[i];
+        q5.pixels(row.x, row.y, 8, 1, row.p);
+    }
+
+    TWEEN.update()
+}
+q5.loop();
+}
+</script>
+--markdown-begin
+
+The source image is copied row by row to the destination image. This is very similar to drawing a rectangle, except that we look up the color for each pixel in each row of the destination rectangle in the source image!
+
+As usual, we also need to think about clipping. The arguments to our blitting function will be the destination image, the source image, and the `(x, y)` coordinates in the destination image to which the source image should be blitted to.
+
+The `(x, y)` coordinates and the source image `width` and `height` define a rectangle in the destination image. We can clip this rectangle just like we clipped single-color rectangles before.
+
+The pixel in the destination rectangle at `(x, y)` maps to the pixel in the source image at `(0, 0)`, the pixel at `(x + 1, y)` maps to `(1, 0)`, and so on.
+
+If we clip the destination rectangle, then we'll need to make sure to only copy the corresponding subset of pixels from the source image:
+
+--markdown-end
+<div id="blit-clip"></div>
+<script>
+{
+let resX = 800; resY = 320;
+let q5 = q5Diagram(resX, resY, "blit-clip");
+q5.blockSize(20);
+let w = "#000", b = "#fff";
+let pixels = [
+    w, w, w, b, b, w, w, w,
+    w, w, b, b, b, b, w, w,
+    w, b, b, b, b, b, b, w,
+    b, b, w, b, b, w, b, b,
+    b, b, b, b, b, b, b, b,
+    w, w, b, w, w, b, w, w,
+    w, b, w, b, b, w, b, w,
+    b, w, b, w, w, b, w, b
+];
+
+let rows = [];
+for (let i = 1; i < 8; i++) {
+    let row = {x: 6, y: 4 + i, p: pixels.slice(i * 8 + 3, i * 8 + 8)};
+    let toTween = new TWEEN.Tween(row)
+        .delay(i * 1000)
+        .to({x: 20, y: 1 + i}, 1000)
+        .easing(TWEEN.Easing.Quadratic.Out);
+    let backTween = new TWEEN.Tween(row)
+        .delay((8 - i) * 1000)
+        .to({x: row.x, y: row.y}, 0);
+    toTween.chain(backTween);
+    backTween.chain(toTween);
+    toTween.start();
+    rows.push(row);
+}
+
+q5.draw = () => {
+    q5.clear();
+    q5.blockText("Source", 6.5, 2, "#bbb");
+    q5.pixels(3, 4, 8, 8, pixels);
+
+    q5.blockText("Destination", 27.5, 0, "#bbb");
+    q5.grid(20, 2, 16, 12, "#bbb");
+
+    q5.blockText("blit(-3, -1)", 15, 10.5, "#bbb", "none");
+
+    q5.blockRect(17, 1, 8, 8, "#e0e");
+    q5.blockRect(20, 2, 5, 7, "#0e0");
+
+    for (let i = 0; i < rows.length; i++) {
+        let row = rows[i];
+        q5.pixels(row.x, row.y, 5, 1, row.p);
+        q5.noFill();
+        q5.stroke("#e00");
+    }
+
+    let bs = q5.blockSize();
+    q5.strokeWeight(2);
+    q5.stroke("#e0e");
+    q5.rect(3 * bs, 4 * bs, 8 * bs, 8 * bs);
+    q5.stroke("#0e0");
+    q5.rect(6 * bs, 5 * bs, 5 * bs, 7 * bs);
+    q5.strokeWeight(1);
+
+    TWEEN.update()
+}
+q5.loop();
+}
+</script>
+--markdown-begin
+
+Sounds simple enough, especially since we've already done pretty much everything except copying pixels in `r96_rect()`. Let's put it into code.
+
+### Demo: blitting DOOM guy
+I've created a new demo called [`09_blit.c`](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/09_blit.c). Here it is in all its glory:
+
+--markdown-end
+{{post.code("src/09_blit.c", "c", `
+#include <MiniFB.h>
+#include <stdio.h>
+#include "r96/r96.h"
+#include <math.h>
+
+void blit(r96_image *dst, r96_image *src, int x, int y) {
+	int32_t dst_x1 = x;
+	int32_t dst_y1 = y;
+	int32_t dst_x2 = x + src->width - 1;
+	int32_t dst_y2 = y + src->height - 1;
+	int32_t src_x1 = 0;
+	int32_t src_y1 = 0;
+
+	if (dst_x1 >= dst->width) return;
+	if (dst_x2 < 0) return;
+	if (dst_y1 >= dst->height) return;
+	if (dst_y2 < 0) return;
+
+	if (dst_x1 < 0) {
+		src_x1 -= dst_x1;
+		dst_x1 = 0;
+	}
+	if (dst_y1 < 0) {
+		src_y1 -= dst_y1;
+		dst_y1 = 0;
+	}
+	if (dst_x2 >= dst->width) dst_x2 = dst->width - 1;
+	if (dst_y2 >= dst->height) dst_y2 = dst->height - 1;
+
+	int32_t clipped_width = dst_x2 - dst_x1 + 1;
+	int32_t dst_next_row = dst->width - clipped_width;
+	int32_t src_next_row = src->width - clipped_width;
+	uint32_t *dst_pixel = dst->pixels + dst_y1 * dst->width + dst_x1;
+	uint32_t *src_pixel = src->pixels + src_y1 * src->width + src_x1;
+	for (int y = dst_y1; y <= dst_y2; y++) {
+		int32_t num_pixels = clipped_width;
+		while (num_pixels--) {
+			*dst_pixel++ = *src_pixel++;
+		}
+		dst_pixel += dst_next_row;
+		src_pixel += src_next_row;
+	}
+}
+
+int main(void) {
+	r96_image image;
+	if (!r96_image_init_from_file(&image, "assets/doom-grunt.png")) {
+		printf("Couldn't load file 'assets/doom-grunt.png'\n");
+		return -1;
+	}
+
+	r96_image output;
+	r96_image_init(&output, 320, 240);
+	struct mfb_window *window = mfb_open("09_blit", output.width * 3, output.height * 3);
+
+	do {
+		r96_clear_with_color(&output, 0xff222222);
+		blit(&output, &image, output.width / 2 - image.width / 2, output.height / 2 - image.height / 2);
+		if (mfb_update_ex(window, output.pixels, output.width, output.height) < 0) break;
+	} while (mfb_wait_sync(window));
+
+	r96_image_dispose(&image);
+	r96_image_dispose(&output);
+	return 0;
+}
+`)}}
+--markdown-begin
+
+Let's get `main()` out of the way first. We load the `doom-grunt.png` image, set up an output `r96_image` to which we render, and which is later drawn to the window via `mfb_update_ex()`. We create the window and enter the main loop, where we clear the output image, draw the grunt at the center of the output image, and tell `minifb` to show our output pixels into the window. Not very surprising.
+
+The interesting bits are located in the `blit()` function. It takes the destination image, the source image, and the location at which we should render the source image in the destination image.
+
+Lines 7-10 then setup the destination rectangle, based on the provided `(x, y)` coordinates and the source image `width` and `height`.
+
+Lines 11-12 define the coordinates from which we'll start fetch pixels from the source image.
+
+Lines 14-17 do the trivial rejection test, like we did in `r96_rect()`, for when the destination rectangle is entirely outside the destination image.
+
+Lines 19-28 are also copied almost verbatim from `r96_rect()` and clip the destination rectangle in case it is partially outside the destination image. Note that if the top left corner of the destination rectangle is outside the top and left bounds of the destination image, we also adjust `src_x1` and `src_y1`, the location from where we start fetching pixels from the source image.
+
+We're done with clipping and proceed to calculate our loop invariants. Those should look familiar too. The only additions compared to `r96_rect()` are `src_next_row` and `src_pixel`, which are analogous to `dst_next_row` and `dst_pixel`, except they are used to access and iterate pixels in the source image. We start those off at the potentially clipped `src_x1` and `src_y1`!
+
+The inner loop then iterates over all visible pixels of the destination rectangle, row by row. Instead of setting the destination pixels to a fixed color like in `r96_color()`, we look up the pixel color in the source image pixel that corresponds to the current destination image pixel.
+
+And here it is in action:
+
+--markdown-end
+{{demo.r96Demo("09_blit", false)}}
+--markdown-begin
+
+Welcome to graphics programming!
+
+### Color format conversion
+Turns out that `stb_image` returns pixels in the ABGR format instead of ARGB. Let's fix that in `r96_image_init_from_file()`:
+
+--markdown-end
+{{post.code("src/r96/r96.c", "c", `
+bool r96_image_init_from_file(r96_image *image, const char *path) {
+	r96_byte_buffer buffer;
+	if (!r96_byte_buffer_init_from_file(&buffer, path)) return false;
+	image->pixels = (uint32_t *) stbi_load_from_memory(buffer.bytes, buffer.num_bytes, &image->width, &image->height, NULL, 4);
+	r96_byte_buffer_dispose(&buffer);
+	if (image->pixels == NULL) return false;
+
+	uint8_t *bytes = (uint8_t *)image->pixels;
+	int n = image->width * image->height * sizeof(uint32_t);
+	for (int i = 0; i < n; i += 4) {
+		uint8_t b = bytes[i];
+		bytes[i] = bytes[i + 2];
+		bytes[i + 2] = b;
+	}
+	return true;
+}
+`)}}
+--markdown-begin
+
+We swap the `r` and `b` component of each pixel and call it a day:
+
+<center><img src="doom-guy-fixed.png" style="image-rendering: pixelated; width: 90%; background: black; margin-bottom: 1em;"></center>
+
+Much better, but not quite perfect yet.
+
+### Keyed blit
+Little DOOM guy has a bad case of black rectangle background. In the source image, those pixels all have the value `0x00000000`. To get rid of those pixels when blitting, we'll need a new blitter: a [color keying](https://en.wikipedia.org/wiki/Chroma_key) blitter.
+
+Before we write the source pixel color to the destination pixel, we check if it is equal to a color key we specify. If it is, we leave the destination pixel alone, and move on to the next pixel. That's it!
+
+### Demo: color keying DOOM guy
+Pretty straight forward, as the next demo called `10_blit_keyed.c` shows:
+
+--markdown-end
+{{post.code("src/10_blit_keyed.c", "c", `
+#include <MiniFB.h>
+#include <stdio.h>
+#include "r96/r96.h"
+#include <math.h>
+
+void blit_keyed(r96_image *dst, r96_image *src, int x, int y, uint32_t color_key) {
+	int32_t dst_x1 = x;
+	int32_t dst_y1 = y;
+	int32_t dst_x2 = x + src->width - 1;
+	int32_t dst_y2 = y + src->height - 1;
+	int32_t src_x1 = 0;
+	int32_t src_y1 = 0;
+
+	if (dst_x1 >= dst->width) return;
+	if (dst_x2 < 0) return;
+	if (dst_y1 >= dst->height) return;
+	if (dst_y2 < 0) return;
+
+	if (dst_x1 < 0) {
+		src_x1 -= dst_x1;
+		dst_x1 = 0;
+	}
+	if (dst_y1 < 0) {
+		src_y1 -= dst_y1;
+		dst_y1 = 0;
+	}
+	if (dst_x2 >= dst->width) dst_x2 = dst->width - 1;
+	if (dst_y2 >= dst->height) dst_y2 = dst->height - 1;
+
+	int32_t clipped_width = dst_x2 - dst_x1 + 1;
+	int32_t dst_next_row = dst->width - clipped_width;
+	int32_t src_next_row = src->width - clipped_width;
+	uint32_t *dst_pixel = dst->pixels + dst_y1 * dst->width + dst_x1;
+	uint32_t *src_pixel = src->pixels + src_y1 * src->width + src_x1;
+	for (int y = dst_y1; y <= dst_y2; y++) {
+		int32_t num_pixels = clipped_width;
+		while (num_pixels--) {
+			uint32_t color = *src_pixel;
+			src_pixel++;
+			if (color == color_key) {
+				dst_pixel++;
+				continue;
+			}
+			*dst_pixel++ = color;
+		}
+		dst_pixel += dst_next_row;
+		src_pixel += src_next_row;
+	}
+}
+
+int main(void) {
+	r96_image image;
+	if (!r96_image_init_from_file(&image, "assets/doom-grunt.png")) {
+		printf("Couldn't load file 'assets/doom-grunt.png'\n");
+		return -1;
+	}
+
+	r96_image output;
+	r96_image_init(&output, 320, 240);
+	struct mfb_window *window = mfb_open("10_blit_keyed", output.width * 3, output.height * 3);
+
+	do {
+		r96_clear_with_color(&output, 0xff222222);
+		blit_keyed(&output, &image, output.width / 2 - image.width / 2, output.height / 2 - image.height / 2, 0x00000000);
+		if (mfb_update_ex(window, output.pixels, output.width, output.height) < 0) break;
+	} while (mfb_wait_sync(window));
+
+	r96_image_dispose(&image);
+	r96_image_dispose(&output);
+	return 0;
+}
+`)}}
+--markdown-begin
+
+The code is exactly the same, except for lines 40-43, where we snuck in a little `if` statement that ensures we skip pixels that match the `color_key`. The color key is specified as a parameter to `blit_keyed()` in line 64. That's it!
+
+Now DOOM guy is free from the shackles of his black rectangle background.
+
+--markdown-end
+{{demo.r96Demo("10_blit_keyed", false)}}
+--markdown-begin
 
 Discuss this post on [Twitter]() or [Mastodon]().
 

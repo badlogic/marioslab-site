@@ -1,6 +1,7 @@
 {{include raw "_highlight.min.js"}}
 {{include raw "_highlightjs-line-numbers.min.js"}}
 {{include raw "_q5.min.js"}}
+{{include raw "_tween.js"}}
 
 hljs.highlightAll();
 hljs.initLineNumbersOnLoad();
@@ -39,7 +40,7 @@ function tableOfContents() {
 function q5Diagram(width, height, divId) {
 	let q5 = new Q5("offscreen");
 	let canvas = q5.createCanvas(width, height);
-	q5.pixelDensity(2);
+	q5.pixelDensity(devicePixelRatio);
 	canvas.style["max-width"] = "100%";
 	canvas.style.width = "";
 	canvas.style.height = "";
@@ -68,10 +69,26 @@ function q5Diagram(width, height, divId) {
 		}
 	}
 
+	q5.pixels = (x, y, w, h, pixels, stroke, pixelCenters) => {
+		stroke = stroke !== undefined ? stroke : "black";
+		pixelCenters = pixelCenters !== undefined ? pixelCenters : false;
+		q5.stroke(stroke);
+		for (let yy = 0; yy < h; yy++) {
+			for(let xx = 0; xx < w; xx++) {
+				q5.fill(pixels[xx + yy * w]);
+				q5.rect((xx + x) * blockSize, (yy + y) * blockSize, blockSize, blockSize);
+				if (pixelCenters) q5.circle((xx + x) * blockSize + blockSize / 2, (yy + y) * blockSize + blockSize / 2, blockSize / 10);
+			}
+		}
+	}
+
 	q5.block = (x, y, fill, stroke) => {
 		stroke = stroke !== undefined ? stroke : "black";
 		q5.fill(fill)
-		q5.stroke(stroke);
+		if (stroke == "none")
+			q5.noStroke();
+		else
+			q5.stroke(stroke);
 		q5.rect(x * blockSize, y * blockSize, blockSize, blockSize);
 	}
 
@@ -85,8 +102,6 @@ function q5Diagram(width, height, divId) {
 
 	q5.blockRect = (x, y, width, height, fill, stroke) => {
 		stroke = stroke !== undefined ? stroke : "black";
-		q5.fill(fill)
-		q5.stroke(stroke);
 		let x2 = x + width - 1;
 		let y2 = y + height - 1;
 		for(; y <= y2; y++)
