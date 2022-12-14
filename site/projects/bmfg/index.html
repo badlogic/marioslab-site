@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitmap Font Generator</title>
+    <script src="/js/code.js"></script>
+    <link rel='stylesheet' href='r96.css'>
+</head>
+<body>
+    <style>
+        input {
+            font-size: 16px;
+        }
+    </style>
+    <center>
+    <div class="r96_content" style="max-width: 600px">
+        <h2>Mario's BMFG</h2>
+        <p>Load a fixed-width TTF or WOFF, e.g. <a href="https://github.com/sunaku/tamzen-font/tree/master/ttf">Tamzen 8x16r</a> or <a href="https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_8x16">IMB VGA 8x16</a>. Select a font height. Right click the glyph image and "Save Image as ..."</a>
+        </p>
+        <p>The image consists of 15x15 glyphs, from ASCII code 32 to extended ASCII code 255.</p>
+        <div style="margin-bottom: 1em;">
+            <button id="load">Load font file</button>
+            <label style="margin-bottom: 1em;">Font height (px): <input id="height" type="number" min="8" max="72" value="16"></label>
+        </div>
+        <canvas id="output" style="image-rendering: pixelated; -webkit-font-smoothing: none;"></canvas>
+        <div id="info" style="display: none; margin-top: 1em;"></div>
+
+        <input id="file" type="file" style="display: none;" accept=".ttf,.woff">
+    </div>
+    </center>
+<script>
+    let fontLoaded = false;
+    let fileInput = document.querySelector("#file");
+    fileInput.onchange = async function () {
+        let reader = new FileReader();
+        reader.onload = async function() {
+            loadFont(this.result);
+        }
+        reader.readAsArrayBuffer(fileInput.files[0]);
+    }
+    document.querySelector("#load").onclick = () => fileInput.click();
+    fontHeight = document.querySelector("#height");
+    fontHeight.onchange = () => {
+        if (fontLoaded) draw();
+    }
+
+    async function loadFont(urlOrBuffer) {
+        let font = new FontFace("LoadedFont", urlOrBuffer);
+        await font.load();
+        document.fonts.add(font);
+        fontLoaded = true;
+        draw();
+    }
+
+    function draw () {
+        let canvas = document.querySelector("#output");
+        let ctx = canvas.getContext("2d");
+
+        ctx.font = fontHeight.value + "px LoadedFont";
+        let metrics = ctx.measureText("x");
+        let charWidth = metrics.width;
+        let charHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent;
+        let info = document.querySelector("#info");
+        info.style.display = "block";
+        info.textContent = "Actual character size: " + charWidth + "x" +  charHeight;
+        console.log(metrics);
+
+        canvas.width = charWidth * 15;
+        canvas.height = Number.parseInt(fontHeight.value) * 15;
+        ctx.font = fontHeight.value + "px LoadedFont";
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.strokeStyle = "red";
+
+        let c = 32
+        for (let y = 0; y < 15; y++) {
+            let cStr = "";
+            for (let i = 0; i < 15 && c <= 255; i++, c++) {
+                cStr += String.fromCharCode(c);
+            }
+            ctx.fillText(cStr, 0, y * charHeight + metrics.fontBoundingBoxAscent);
+
+            /*for (let x = 0; x < 15; x++) {
+                ctx.rect(x * charWidth, y * charHeight, charWidth, charHeight);
+                ctx.stroke()
+            }*/
+        }
+    }
+
+    // loadFont("url(Tamzen8x16r.ttf)");
+    loadFont("url(web_ibm_vga_8x16.woff)");
+
+</script>
+</body>
+</html>
