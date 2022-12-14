@@ -17,6 +17,11 @@ projects = [
 		url: "https://github.com/badlogic/lilray",
 	},
 	{
+		title: "ulang",
+		description: `A simple virtual machine plus a full fledged IDE in your browser to write DOS-like assembly programs to put pixels on the screen. Safe your projects as Gists. Grab <a href="https://github.com/badlogic/ulang-vm/>the sources</a> on from GitHub.`,
+		url: "https://ulang.io/editor/9af0e00d809a3aec8f33181d1194596c"
+	},
+	{
 		title: "basis-site",
 		description: "A static website generator based on basis-template. This site was built with basis-site. You can find the source code of this site on <a href='https://github.com/badlogic/marioslab-site'>GitHub</a>.",
 		url: "https://github.com/badlogic/basis-site",
