@@ -8,7 +8,7 @@ projects = [
 	},
 	{
 		title: "r96",
-		description: "Recreating the tech that powered 90ies PC games with modern tools.",
+		description: "Recreating the tech that powered 90ies PC games with modern tools. Follow the series on this very <a href="/posts/rendering-like-its-1996/babys-first-pixel"/>blog</a>, get the sources on <a href="https://github.com/badlogic/r96">GitHub</a>, or try the <a href="/projects/r96/">demos in your browser</a>,
 		url: "https://marioslab.io/posts/rendering-like-its-1996/babys-first-pixel/",
 	},
 	{
