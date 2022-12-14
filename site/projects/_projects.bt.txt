@@ -2,6 +2,21 @@
 
 projects = [
 	{
+		title: "BMFG",
+		description: "The biggest, meanest bitmap font generator you've ever seen.",
+		url: "https://marioslab.io/projects/bmfg",
+	},
+	{
+		title: "r96",
+		description: "Recreating the tech that powered 90ies PC games with modern tools.",
+		url: "https://marioslab.io/posts/rendering-like-its-1996/babys-first-pixel/",
+	},
+	{
+		title: "lilray",
+		description: "A dirty ol' C++ raycasting "engine" for desktop and web.",
+		url: "https://github.com/badlogic/lilray",
+	},
+	{
 		title: "basis-site",
 		description: "A static website generator based on basis-template. This site was built with basis-site. You can find the source code of this site on <a href='https://github.com/badlogic/marioslab-site'>GitHub</a>.",
 		url: "https://github.com/badlogic/basis-site",
