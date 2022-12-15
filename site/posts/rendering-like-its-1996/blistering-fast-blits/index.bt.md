@@ -680,6 +680,200 @@ Now DOOM guy is free from the shackles of his black rectangle background.
 {{demo.r96Demo("10_blit_keyed", false)}}
 --markdown-begin
 
+### Demo: shoddy blitting micro benchmark
+How fast are our blitting functions? We can use `r96_rect()` as a base-line. It performs all the same operations, except the look-up of the pixel color in the source image. We can consider it our idealized best case scenario. Here's demo [`11_blit_perf.c`](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/11_blit_perf.c) which implements a shoddy micro benchmark.
+
+--markdown-end
+{{post.code("src/11_blit_perf.c", "c", `
+#include <MiniFB.h>
+#include <stdio.h>
+#include "MiniFB_enums.h"
+#include "r96/r96.h"
+#include <math.h>
+#include <string.h>
+
+void blit(r96_image *dst, r96_image *src, int x, int y) {
+	// ... as above
+}
+
+void blit_keyed(r96_image *dst, r96_image *src, int x, int y, uint32_t color_key) {
+	// ... as above
+}
+
+int main(void) {
+	r96_image image;
+	if (!r96_image_init_from_file(&image, "assets/doom-grunt.png")) {
+		printf("Couldn't load file 'assets/doom-grunt.png'\n");
+		return -1;
+	}
+
+	r96_image output;
+	r96_image_init(&output, 320, 240);
+	struct mfb_window *window = mfb_open("11_blit_perf", output.width * 3, output.height * 3);
+	struct mfb_timer *timer = mfb_timer_create();
+	do {
+		srand(0);
+		r96_clear_with_color(&output, 0xff222222);
+
+		mfb_timer_reset(timer);
+		for (int i = 0; i < 20000; i++) {
+			r96_rect(&output, rand() % output.width, rand() % output.height, 64, 64, 0xffffffff);
+		}
+		printf("rect() took: %f\n", mfb_timer_delta(timer));
+
+		mfb_timer_reset(timer);
+		for (int i = 0; i < 20000; i++) {
+			blit(&output, &image, rand() % output.width, rand() % output.height);
+		}
+		printf("blit() took: %f\n", mfb_timer_delta(timer));
+
+		mfb_timer_reset(timer);
+		for (int i = 0; i < 20000; i++) {
+			blit_keyed(&output, &image, rand() % output.width, rand() % output.height, 0x0);
+		}
+		printf("blit_keyed() took: %f\n", mfb_timer_delta(timer));
+
+		if (mfb_update_ex(window, output.pixels, output.width, output.height) < 0) break;
+	} while (mfb_wait_sync(window));
+
+	mfb_timer_destroy(timer);
+	r96_image_dispose(&image);
+	r96_image_dispose(&output);
+	return 0;
+}
+`)}}
+--markdown-begin
+
+I've omitted the implementations of `blit()` and `blit_keyed()` for brevity's sake. The benchmark itself times drawing `20000` rectangles, `20000` DOOM grunts without color keying, and `20000` DOOM grunts with color keying. Each rectangle has a fixed size of 64x64 pixels, the same size as the DOOM grunt image, to make the comparison somewhat fairer. Here's some output on my machine using Clang.
+
+```
+rect() took:       0.005832
+blit() took:       0.006717
+blit_keyed() took: 0.013974
+rect() took:       0.005910
+blit() took:       0.006602
+blit_keyed() took: 0.014015
+rect() took:       0.005946
+blit() took:       0.006691
+blit_keyed() took: 0.014020
+```
+
+`r96_rect()` and `blit()` are pretty close performance-wise. However, `blit_keyed()` is twice as slow as either of these. That's not great. Let's investigate.
+
+## Hey dude, where's my auto-vectorization?
+Let's compare the (inner) loops of `rect()`, `blit()`, and `blit_keyed()` first:
+
+```
+// rect()
+for (int y = y1; y <= y2; y++) {
+    int32_t num_pixels = clipped_width;
+    while (num_pixels--) {
+        *pixel++ = color;
+    }
+    pixel += next_row;
+}
+
+// blit()
+for (int y = dst_y1; y <= dst_y2; y++) {
+    int32_t num_pixels = clipped_width;
+    while (num_pixels--) {
+        *dst_pixel++ = *src_pixel++;
+    }
+    dst_pixel += dst_next_row;
+    src_pixel += src_next_row;
+}
+
+// blit_keyed()
+for (int y = dst_y1; y <= dst_y2; y++) {
+    int32_t num_pixels = clipped_width;
+    while (num_pixels--) {
+        uint32_t color = *src_pixel;
+        src_pixel++;
+        if (color == color_key) {
+            dst_pixel++;
+            continue;
+        }
+        *dst_pixel++ = color;
+    }
+    dst_pixel += dst_next_row;
+    src_pixel += src_next_row;
+}
+```
+
+`blit()` does a little more work in the inner loop by fetching the source image pixel color, but is otherwise equivalent to `rect()`. The minor slow-down can be explained by that additional work. Thankfully the impact isn't huge, most likely due to good caching of the source image pixels in the [L1 cache of the CPU](https://en.wikipedia.org/wiki/CPU_cache).
+
+`blit_keyed()` on the other hand does quite a bit more work. It'S also a bit convoluted. Let's clean it up. I created a copy of `blit_keyed()` called `blit_keyed_opt1()` in `11_blit_perf.c` and replaced the loop with this:
+
+```
+for (int y = dst_y1; y <= dst_y2; y++) {
+    int32_t num_pixels = clipped_width;
+    while (num_pixels--) {
+        uint32_t color = *src_pixel;
+        if (color != color_key) {
+            *dst_pixel = color;
+        }
+        src_pixel++;
+        dst_pixel++;
+    }
+    dst_pixel += dst_next_row;
+    src_pixel += src_next_row;
+}
+```
+
+I then added a new timing loop in `main()` in `11_blit_perf.c`. Here are the new results:
+
+```
+rect() took:            0.005780
+blit() took:            0.006572
+blit_keyed() took:      0.013927
+blit_keyed_opt1() took: 0.013758
+rect() took:            0.005887
+blit() took:            0.006622
+blit_keyed() took:      0.013951
+blit_keyed_opt1() took: 0.013832
+rect() took:            0.005892
+blit() took:            0.006708
+blit_keyed() took:      0.013938
+blit_keyed_opt1() took: 0.013739
+```
+
+That didn't change anything. Since our `blit_keyed_opt1()` loop is as simple as it can get, it's time to look at the generated assembly.
+
+### Looking at assembly control flow graphs
+This time however, we'll start by looking at the [control flow graph](https://en.wikipedia.org/wiki/Control-flow_graph) of the generated assembly, as that's a bit easier to follow than the linear listing we get from Godbolt Compiler Explorer. I'm using the [Hopper](https://www.hopperapp.com/) disassembler to generate those fancy CFG images below from the demo executable `11_blit_perf`.
+
+> **Note**: to generate the CFGs, I disabled LTO in the `CMakeLists.txt` file. Otherwise the linker would inline `blit()`, `blit_keyed()`, and `blit_keyed_opt1()`. The results are the same.
+
+Here's the loop in `r96_rect()` as a CFG:
+
+<center><img src="rect_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
+
+Without going into too much detail, the important part of that graphic is the big fat block of `movdqu` instructions. If you see that generated for one of your memory moving loops, then you can be pretty sure the compiler has managed to vectorize large parts of your loop with [SIMD](https://en.wikipedia.org/wiki/Single_instruction,_multiple_data) instructions. This is know as [auto-vectorization](https://en.wikipedia.org/wiki/Automatic_vectorization) and we always want that for our loops if possible.
+
+The [`movdqu`](https://c9x.me/x86/html/file_module_x86_id_184.html) instruction moves the 16-bytes stored in a 128-bit SSE register like `xmm0` into an unaligned memory location. Unaligned means the memory address is not a multiple of 16.
+
+In the `r96_rect()` case, the compiler has filled the 16-bytes of the `xmm0` register with the rectangle's color (which happened before the loop pictured above). Every `movdqu` we see then writes 4 pixels at a time with that color.
+
+There are actually multiple blocks using `movdqu` in the loop. Which one is used depends on how many pixels need to still be written in a row.
+
+The big one with label `loc_10000ba700` and 16 `movdqu` instructions is for the case where at least 256 bytes (or 64 pixels) are still to be written. The smaller block with label `loc_10000bb20` and two `movdqu` instructions is used when at least 32-bytes (or 8 pixels) are still to be written. For the case that less than 32-bytes still need to be written, the block with label `loc_10000bb50` is used. This one writes 4 bytes (or 1 pixel) at a time via the `mov` instruction.
+
+That's pretty good, albeit not optimal. E.g. we could rewrite this manually in assembly to ensure we can use `movdqa` for aligned memory writes, which will generally yield better throughput. However, as we don't want to drop down to assembly, we'll consider this to be good enough. It also means we don't have to special case for different “CPU" architectures like x86_64, ARM64, or WebAssembly.
+
+Here's what the CFG of the `blit()` loop looks like.
+
+<center><img src="blit_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
+
+It's a CFG for ants! You can open this [PDF](blit_cfg.pdf) if you want the details. If you squint hard enough blocks of [`movups`](https://c9x.me/x86/html/file_module_x86_id_208.html) instructions. That's misappropriated by the compiler to move 4 pixel colors read from the source image to the destination image at once, despite the fact that the pixel colors are `uint32_t` and not single-precision floats. Since we don't do any arithmetic on the values, this is fine.
+
+As in the `rect()` case, the compiler generated a bunch of specialized control flows, depending on how many pixels in a row are left to be written. The additional work of having to read the source pixels complicates the control flow considerably. However, the principle remains the same. The compiler managed to auto-vectorize the inner loop of `blit()`, yielding performance that's in the same ball park as the equally auto-vectorized `rect()`. Not bad!
+
+So what does our twice as slow `blit_keyed()` look like?
+
+<center><img src="blit_keyed_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
+
+That's not great. We don't even have to dig into this deep to see the issue. The compiler generated two big branches. The one on the left doesn't use any SIMD instructions, while the one on the right tries its hardest to use SIMD but devolved into a ball of conditional jumps. That alone will kill any performance gained from using SIMD to read/write more than 1 pixel at once. Have a look at the [PDF](blit_keyed_cfg.pdf) if you want to see the gory details.
+
 Discuss this post on [Twitter]() or [Mastodon]().
 
 --markdown-end
