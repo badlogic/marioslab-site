@@ -868,7 +868,7 @@ It's a CFG for ants! You can open this [PDF](blit_cfg.pdf) if you want the detai
 
 As in the `rect()` case, the compiler generated a bunch of specialized control flows, depending on how many pixels in a row are left to be written. The additional work of having to read the source pixels complicates the control flow considerably. However, the principle remains the same. The compiler managed to auto-vectorize the inner loop of `blit()`, yielding performance that's in the same ball park as the equally auto-vectorized `rect()`. Not bad!
 
-So what does our twice as slow `blit_keyed()` look like?
+So what does our twice as slow `blit_keyed()`  look like?
 
 <center><img src="blit_keyed_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
 
