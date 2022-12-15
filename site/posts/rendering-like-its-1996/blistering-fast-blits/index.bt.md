@@ -712,26 +712,28 @@ int main(void) {
 	struct mfb_window *window = mfb_open("11_blit_perf", output.width * 3, output.height * 3);
 	struct mfb_timer *timer = mfb_timer_create();
 	do {
-		srand(0);
 		r96_clear_with_color(&output, 0xff222222);
 
+        srand(0);
 		mfb_timer_reset(timer);
 		for (int i = 0; i < 20000; i++) {
 			r96_rect(&output, rand() % output.width, rand() % output.height, 64, 64, 0xffffffff);
 		}
-		printf("rect() took: %f\n", mfb_timer_delta(timer));
+		printf("rect()       %f\n", mfb_timer_delta(timer));
 
+        srand(0);
 		mfb_timer_reset(timer);
 		for (int i = 0; i < 20000; i++) {
 			blit(&output, &image, rand() % output.width, rand() % output.height);
 		}
-		printf("blit() took: %f\n", mfb_timer_delta(timer));
+		printf("blit()       %f\n", mfb_timer_delta(timer));
 
+        srand(0);
 		mfb_timer_reset(timer);
 		for (int i = 0; i < 20000; i++) {
 			blit_keyed(&output, &image, rand() % output.width, rand() % output.height, 0x0);
 		}
-		printf("blit_keyed() took: %f\n", mfb_timer_delta(timer));
+		printf("blit_keyed() %f\n", mfb_timer_delta(timer));
 
 		if (mfb_update_ex(window, output.pixels, output.width, output.height) < 0) break;
 	} while (mfb_wait_sync(window));
@@ -747,24 +749,24 @@ int main(void) {
 I've omitted the implementations of `blit()` and `blit_keyed()` for brevity's sake. The benchmark itself times drawing `20000` rectangles, `20000` DOOM grunts without color keying, and `20000` DOOM grunts with color keying. Each rectangle has a fixed size of 64x64 pixels, the same size as the DOOM grunt image, to make the comparison somewhat fairer. Here's some output on my machine using Clang.
 
 ```
-rect() took:       0.005832
-blit() took:       0.006717
-blit_keyed() took: 0.013974
-rect() took:       0.005910
-blit() took:       0.006602
-blit_keyed() took: 0.014015
-rect() took:       0.005946
-blit() took:       0.006691
-blit_keyed() took: 0.014020
+rect()       0.005832
+blit()       0.006717
+blit_keyed() 0.013974
+rect()       0.005910
+blit()       0.006602
+blit_keyed() 0.014015
+rect()       0.005946
+blit()       0.006691
+blit_keyed() 0.014020
 ```
 
 `r96_rect()` and `blit()` are pretty close performance-wise. However, `blit_keyed()` is twice as slow as either of these. That's not great. Let's investigate.
 
 ## Hey dude, where's my auto-vectorization?
-Let's compare the (inner) loops of `rect()`, `blit()`, and `blit_keyed()` first:
+Here are just the (inner) loops of `r96_rect()`, `blit()`, and `blit_keyed()`:
 
 ```
-// rect()
+// r96_rect()
 for (int y = y1; y <= y2; y++) {
     int32_t num_pixels = clipped_width;
     while (num_pixels--) {
@@ -800,9 +802,9 @@ for (int y = dst_y1; y <= dst_y2; y++) {
 }
 ```
 
-`blit()` does a little more work in the inner loop by fetching the source image pixel color, but is otherwise equivalent to `rect()`. The minor slow-down can be explained by that additional work. Thankfully the impact isn't huge, most likely due to good caching of the source image pixels in the [L1 cache of the CPU](https://en.wikipedia.org/wiki/CPU_cache).
+`blit()` does a little more work in the inner loop by fetching the source image pixel color, but is otherwise equivalent to `r96_rect()`. The minor slow-down can be explained by that additional work. Thankfully the impact isn't huge, most likely due to good caching of the source image pixels in the [L1 cache of the CPU](https://en.wikipedia.org/wiki/CPU_cache).
 
-`blit_keyed()` on the other hand does quite a bit more work. It'S also a bit convoluted. Let's clean it up. I created a copy of `blit_keyed()` called `blit_keyed_opt1()` in `11_blit_perf.c` and replaced the loop with this:
+`blit_keyed()`, on the other hand, does quite a bit more work. It's also a bit convoluted. Let's clean it up. I created a copy of `blit_keyed()` in `11_blit_perf.c` called `blit_keyed_opt1()`, and replaced the loop with this:
 
 ```
 for (int y = dst_y1; y <= dst_y2; y++) {
@@ -823,24 +825,26 @@ for (int y = dst_y1; y <= dst_y2; y++) {
 I then added a new timing loop in `main()` in `11_blit_perf.c`. Here are the new results:
 
 ```
-rect() took:            0.005780
-blit() took:            0.006572
-blit_keyed() took:      0.013927
-blit_keyed_opt1() took: 0.013758
-rect() took:            0.005887
-blit() took:            0.006622
-blit_keyed() took:      0.013951
-blit_keyed_opt1() took: 0.013832
-rect() took:            0.005892
-blit() took:            0.006708
-blit_keyed() took:      0.013938
-blit_keyed_opt1() took: 0.013739
+rect()            0.005780
+blit()            0.006572
+blit_keyed()      0.013927
+blit_keyed_opt1() 0.013758
+rect()            0.005887
+blit()            0.006622
+blit_keyed()      0.013951
+blit_keyed_opt1() 0.013832
+rect()            0.005892
+blit()            0.006708
+blit_keyed()      0.013938
+blit_keyed_opt1() 0.013739
 ```
 
 That didn't change anything. Since our `blit_keyed_opt1()` loop is as simple as it can get, it's time to look at the generated assembly.
 
 ### Looking at assembly control flow graphs
-This time however, we'll start by looking at the [control flow graph](https://en.wikipedia.org/wiki/Control-flow_graph) of the generated assembly, as that's a bit easier to follow than the linear listing we get from Godbolt Compiler Explorer. I'm using the [Hopper](https://www.hopperapp.com/) disassembler to generate those fancy CFG images below from the demo executable `11_blit_perf`.
+This time however, we'll start by looking at the [control flow graph](https://en.wikipedia.org/wiki/Control-flow_graph) of the generated assembly. That's a bit easier to follow than the linear listing we get from [Godbolt Compiler Explorer](https://godbolt.org).
+
+I'm using the [Hopper](https://www.hopperapp.com/) disassembler to generate those fancy CFG images below from the demo executable `11_blit_perf`.
 
 > **Note**: to generate the CFGs, I disabled LTO in the `CMakeLists.txt` file. Otherwise the linker would inline `blit()`, `blit_keyed()`, and `blit_keyed_opt1()`. The results are the same.
 
@@ -848,31 +852,356 @@ Here's the loop in `r96_rect()` as a CFG:
 
 <center><img src="rect_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
 
-Without going into too much detail, the important part of that graphic is the big fat block of `movdqu` instructions. If you see that generated for one of your memory moving loops, then you can be pretty sure the compiler has managed to vectorize large parts of your loop with [SIMD](https://en.wikipedia.org/wiki/Single_instruction,_multiple_data) instructions. This is know as [auto-vectorization](https://en.wikipedia.org/wiki/Automatic_vectorization) and we always want that for our loops if possible.
+Without going into too much detail, the important part of that graphic is the big fat block of `movdqu` instructions. If you see that generated for one of your memory moving loops, then you can be pretty sure the compiler has managed to vectorize large parts of your loop with [SIMD](https://en.wikipedia.org/wiki/Single_instruction,_multiple_data) instructions. This is know as [auto-vectorization](https://en.wikipedia.org/wiki/Automatic_vectorization) and we always want that for our loops, if possible.
 
 The [`movdqu`](https://c9x.me/x86/html/file_module_x86_id_184.html) instruction moves the 16-bytes stored in a 128-bit SSE register like `xmm0` into an unaligned memory location. Unaligned means the memory address is not a multiple of 16.
 
-In the `r96_rect()` case, the compiler has filled the 16-bytes of the `xmm0` register with the rectangle's color (which happened before the loop pictured above). Every `movdqu` we see then writes 4 pixels at a time with that color.
+In the `r96_rect()` case, the compiler has filled the 16-bytes of the `xmm0` register with 4 copies of the rectangle's color (which happened before the loop pictured above). Every `movdqu` we see then writes that color to 4 pixels at a time.
 
-There are actually multiple blocks using `movdqu` in the loop. Which one is used depends on how many pixels need to still be written in a row.
+There are actually multiple blocks using `movdqu` in the loop. Which one is used depends on how many pixels need to still be written to in a row.
 
-The big one with label `loc_10000ba700` and 16 `movdqu` instructions is for the case where at least 256 bytes (or 64 pixels) are still to be written. The smaller block with label `loc_10000bb20` and two `movdqu` instructions is used when at least 32-bytes (or 8 pixels) are still to be written. For the case that less than 32-bytes still need to be written, the block with label `loc_10000bb50` is used. This one writes 4 bytes (or 1 pixel) at a time via the `mov` instruction.
+The big one with label `loc_10000ba700` and 16 `movdqu` instructions is for the case where at least 256 bytes (or 64 pixels) are still to be written.
 
-That's pretty good, albeit not optimal. E.g. we could rewrite this manually in assembly to ensure we can use `movdqa` for aligned memory writes, which will generally yield better throughput. However, as we don't want to drop down to assembly, we'll consider this to be good enough. It also means we don't have to special case for different “CPU" architectures like x86_64, ARM64, or WebAssembly.
+The smaller block with label `loc_10000bb20` and two `movdqu` instructions is used when at least 32-bytes (or 8 pixels) are still to be written.
+
+For the case that less than 32-bytes still need to be written, the block with label `loc_10000bb50` is used. This one writes 4 bytes (or 1 pixel) at a time via the `mov` instruction.
+
+That's pretty good, albeit not optimal. E.g. we could rewrite this manually in assembly to ensure we can use `movdqa` for aligned memory writes, which will generally yield better throughput.
+
+However, as we don't want to drop down to assembly, we'll consider this to be good enough. It also means we don't have to special case for different “CPU" architectures like x86_64, ARM64, or WebAssembly.
 
 Here's what the CFG of the `blit()` loop looks like.
 
 <center><img src="blit_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
 
-It's a CFG for ants! You can open this [PDF](blit_cfg.pdf) if you want the details. If you squint hard enough blocks of [`movups`](https://c9x.me/x86/html/file_module_x86_id_208.html) instructions. That's misappropriated by the compiler to move 4 pixel colors read from the source image to the destination image at once, despite the fact that the pixel colors are `uint32_t` and not single-precision floats. Since we don't do any arithmetic on the values, this is fine.
+It's a CFG for ants! You can open this [PDF](blit_cfg.pdf) if you want the details. If you squint hard enough, you can see blocks of [`movups`](https://c9x.me/x86/html/file_module_x86_id_208.html) instructions. That instruction is misappropriated by the compiler to move 4 pixel colors read from the source image to the destination image at once, despite the fact that the pixel colors are `uint32_t` and not single-precision floats. Since we don't do any arithmetic on the values, this is fine.
 
-As in the `rect()` case, the compiler generated a bunch of specialized control flows, depending on how many pixels in a row are left to be written. The additional work of having to read the source pixels complicates the control flow considerably. However, the principle remains the same. The compiler managed to auto-vectorize the inner loop of `blit()`, yielding performance that's in the same ball park as the equally auto-vectorized `rect()`. Not bad!
+As in the `r96_rect()` case, the compiler generated a bunch of specialized control flows, depending on how many pixels in a row are left to be written. The additional work of having to read the source pixels complicates the control flow considerably. However, the principle remains the same. The compiler managed to auto-vectorize the inner loop of `blit()`, yielding performance that's in the same ball park as the equally auto-vectorized `r96_rect()`. Not bad!
 
-So what does our twice as slow `blit_keyed()`  look like?
+So what does our twice as slow `blit_keyed_opt1()`  look like?
 
 <center><img src="blit_keyed_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
 
-That's not great. We don't even have to dig into this deep to see the issue. The compiler generated two big branches. The one on the left doesn't use any SIMD instructions, while the one on the right tries its hardest to use SIMD but devolved into a ball of conditional jumps. That alone will kill any performance gained from using SIMD to read/write more than 1 pixel at once. Have a look at the [PDF](blit_keyed_cfg.pdf) if you want to see the gory details.
+That's not great. We don't even have to dig deeply into this to see the issue. The compiler generated two big branches. The one on the left doesn't use any SIMD instructions, while the one on the right tries its hardest to use SIMD but devolves into a ball of conditional jumps.
+
+That alone will kill any performance gained from using SIMD to read/write more than 1 pixel at once. Have a look at the [PDF](blit_keyed_cfg.pdf) if you want to see the gory details.
+
+Clearly, Clang can't deal with this simple `if` conditional in the inner loop. What about other compilers? And how can we make them generate passable vectorized code?
+
+## Asking the compiler why auto-vectorization goes wrong
+Time to switch to the [Godbolt compiler explorer](https://godbolt.org). I've pasted in `r96_rect()`, `blit()`, and `blit_keyed_opt1()` from above, plus the `r96_image` struct. I then set up Clang x86_64 and MSVC x86_64 with compiler flags that will make the compiler tell us what they vectorized, what they couldn't vectorize, and why.
+
+The flags to get auto-vectorization reports for Clang are:
+
+```
+-O3 -Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize -gline-tables-only -gcolumn-info
+```
+
+The flags for MSVC are:
+
+```
+/O2 /Qvec-report:2
+```
+
+Open this [Godbolt "project"](https://www.godbolt.org/z/5s9Ed6Ed8) to follow along.
+
+<center><img src="godbolt.png" style="width: 90%; margin-bottom: 1em;"></center>
+
+Clang tells us this:
+
+```
+// r96_rect()
+example.c:31:3: remark: vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]
+                while (num_pixels--) {
+                ^
+
+// blit()
+example.c:69:3: remark: vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]
+                while (num_pixels--) {
+                ^
+
+// blit_keyed_opt1()
+example.c:153:3: remark: vectorized loop (vectorization width: 4, interleaved count: 2) [-Rpass=loop-vectorize]
+                while (num_pixels--) {
+                ^
+```
+
+Lier, lier, pants on fire! OK, it DID vectorize `blit_keyed_opt1()`, but the vectorization doesn't have any positive effect on performance.
+
+MSVC is interesting too.
+
+```
+--- Analyzing function: r96_rect
+<source>(31) : info C5002: loop not vectorized due to reason '1301'
+<source>(29) : info C5002: loop not vectorized due to reason '1106'
+
+--- Analyzing function: blit_keyed_opt1
+<source>(108) : info C5002: loop not vectorized due to reason '1301'
+<source>(106) : info C5002: loop not vectorized due to reason '1106'
+
+--- Analyzing function: blit
+<source>(69) : info C5002: loop not vectorized due to reason '1301'
+<source>(67) : info C5002: loop not vectorized due to reason '1106'
+```
+
+Thank you, MSVC, I LOVE having to look up error and reason codes on the interweb instead of having you tell me directly what's up.
+
+MSVC didn't manage to vectorize any of the loops. The reasons given can be found [here](https://learn.microsoft.com/en-us/cpp/error-messages/tool-errors/vectorizer-and-parallelizer-messages?view=msvc-170). I have reproduced them here, so you don't have to look them up.
+
+* *1106*: outer loop not vectorized.
+* *1301*: loop stride isn't +1.
+
+We can ignore `1106`. It seems that MSVC can not deal with `while(num_pixels--)`.
+
+### Fulfilling MSVC +1 loop stride requirement
+
+We can fix that by replacing
+
+```
+int32_t num_pixels = clipped_width;
+while (num_pixels--) {
+```
+
+with
+
+```
+for (int i = 0; i < clipped_width; i++) {
+```
+
+I've fixed this up in `r96_rect()` and `blit()`, and made a copy of `blit_keyed_opt1()` called `blit_keyed_opt2()` which also has the fix. I then added a new timing loop for `blit_keyed_opt2()` to `main()`. Let's see if this helps with Clang as well:
+
+```
+rect()            0.005757
+blit()            0.006615
+blit_keyed()      0.014153
+blit_keyed_opt1() 0.013896
+blit_keyed_opt2() 0.014292
+rect()            0.005766
+blit()            0.006537
+blit_keyed()      0.014316
+blit_keyed_opt1() 0.014213
+blit_keyed_opt2() 0.014659
+rect()            0.005904
+blit()            0.006693
+blit_keyed()      0.014274
+blit_keyed_opt1() 0.014215
+blit_keyed_opt2() 0.014698
+```
+
+Welp, that didn't make any impact with Clang in terms of performance. We still get the "bad" vectorization in `blit_keyed_xxx()`.
+
+Checking the [updated Godbolt "project"](https://www.godbolt.org/z/rE6v6zYd8), we can see that MSVC is now a bit happier, but not much.
+
+```
+--- Analyzing function: r96_rect
+<source>(29) : info C5002: loop not vectorized due to reason '1106'
+
+--- Analyzing function: blit
+<source>(67) : info C5002: loop not vectorized due to reason '1300'
+<source>(66) : info C5002: loop not vectorized due to reason '1106'
+
+--- Analyzing function: blit_keyed_opt2
+<source>(105) : info C5002: loop not vectorized due to reason '1100'
+<source>(104) : info C5002: loop not vectorized due to reason '1106'
+Compiler returned: 0
+```
+
+It managed to vectorize the inner loop of `r96_rect()` given our change via `rep stosd` (yes, that too is kinda vectorized).
+
+But it still fails for the inner loops of `blit()` (reason `1300`) and `blit_keyed_opt2()` (reason `1100`):
+
+* **1300**: Loop body contains little or no computation.
+* **1100**: Loop contains control flow—for example, "if" or "?:".
+
+To `1300` for `blit()`'s inner-loop I say: are you kidding me, MSVC?! Clang thinks `blit()` has a vectorization worthy inner loop, and the benchmark data indicates that it's right. MSVC just throws its hands up in the air and refuses to vectorize the loop. Lazy compiler!
+
+The `1100` indicates, that the MSVC auto-vectorizer is not very good, given that the conditional could be easily translated to a masking SIMD operation (also known as [if-conversion](https://llvm.org/docs/Vectorizers.html#if-conversion)). But Clang also fails to do that properly.
+
+### Throwing "engineering" at the wall
+
+Where to go from here? Like any self-respecting engineer, we're going to blindly throw some best guesses at the wall. But only after we've read [A Guide to Vectorization with Intel C++ Compilers](https://d3f8ykwhia686p.cloudfront.net/1live/intel/CompilerAutovectorizationGuide.pdf). While this is supposed to apply to Intel's compiler, some of the take-aways surely apply to the auto-vectorizers of MSVC, Clang, and GCC as well. These compilers sadly don't have great documentation on how to make their auto-vectorizers happy.
+
+Let's start by making a copy of `blit_keyed_opt2()` called `blit_keyed_opt3()`, and add a timing loop to `main()` in `11_blit_perf.c`. We change the loop in `blit_keyed_opt3()` to this:
+
+```
+for (int y = dst_y1; y <= dst_y2; y++) {
+    for (int i = 0; i < clipped_width; i++) {
+        uint32_t color = src_pixel[i];
+        if (color != color_key) {
+            dst_pixel[i] = color;
+        }
+    }
+    dst_pixel += dst_next_row + clipped_width;
+    src_pixel += src_next_row + clipped_width;
+}
+```
+
+Maybe using indexing helps?
+
+Here are the micro-benchmark results using Clang:
+
+```
+rect()            0.005971
+blit()            0.006769
+blit_keyed()      0.014510
+blit_keyed_opt1() 0.014074
+blit_keyed_opt2() 0.014133
+blit_keyed_opt3() 0.014629
+rect()            0.005901
+blit()            0.006527
+blit_keyed()      0.014326
+blit_keyed_opt1() 0.014038
+blit_keyed_opt2() 0.014092
+blit_keyed_opt3() 0.014609
+rect()            0.005847
+blit()            0.006499
+blit_keyed()      0.014212
+blit_keyed_opt1() 0.014082
+blit_keyed_opt2() 0.014100
+blit_keyed_opt3() 0.014660
+```
+
+No change in performance with Clang. On the Godbolt site, Clang still claims everything is awesome regarding vectorization. MSVC is still unable to vectorize the loop, which makes sense, as we didn't kill the `if` statement.
+
+Another! `blit_keyed_opt4()` has this loop:
+
+```
+for (int y = dst_y1; y <= dst_y2; y++) {
+    for (int i = 0; i < clipped_width; i++) {
+        uint32_t src_color = *src_pixel;
+        uint32_t dst_color = *dst_pixel;
+        *dst_pixel = src_color != color_key ? src_color : dst_color;
+        src_pixel++;
+        dst_pixel++;
+    }
+    dst_pixel += dst_next_row;
+    src_pixel += src_next_row;
+}
+```
+
+The idea behind this is that the tenary `?:` operator can be reduced to a mathematical expression instead of a conditional jump. That should allow the vectorizer to do its job. Yes, it will fetch a pixel from the destination image, but that will also be in the cache in all likely-hood.
+
+Here are the micro-benchmark results using Clang:
+
+```
+rect()            0.006127
+blit()            0.006699
+blit_keyed()      0.014528
+blit_keyed_opt1() 0.014335
+blit_keyed_opt2() 0.014485
+blit_keyed_opt3() 0.014895
+blit_keyed_opt4() 0.008150
+rect()            0.006011
+blit()            0.006728
+blit_keyed()      0.014591
+blit_keyed_opt1() 0.014346
+blit_keyed_opt2() 0.014278
+blit_keyed_opt3() 0.014840
+blit_keyed_opt4() 0.008113
+rect()            0.005955
+blit()            0.006719
+blit_keyed()      0.014357
+blit_keyed_opt1() 0.014152
+blit_keyed_opt2() 0.014221
+blit_keyed_opt3() 0.014668
+blit_keyed_opt4() 0.008134
+```
+
+Holy cow, that did it for Clang! What does the vectorization report from MSVC say? [See for yourself in Godbolt Compiler Explorer](https://www.godbolt.org/z/KhreMaex9)
+
+```
+--- Analyzing function: blit_keyed_opt1
+<source>(152) : info C5002: loop not vectorized due to reason '1301'
+<source>(150) : info C5002: loop not vectorized due to reason '1106'
+
+--- Analyzing function: r96_rect
+<source>(29) : info C5002: loop not vectorized due to reason '1106'
+
+--- Analyzing function: blit
+<source>(68) : info C5002: loop not vectorized due to reason '1300'
+<source>(67) : info C5002: loop not vectorized due to reason '1106'
+
+--- Analyzing function: blit_keyed
+<source>(107) : info C5002: loop not vectorized due to reason '1301'
+<source>(105) : info C5002: loop not vectorized due to reason '1106'
+
+--- Analyzing function: blit_keyed_opt2
+<source>(195) : info C5002: loop not vectorized due to reason '1100'
+<source>(194) : info C5002: loop not vectorized due to reason '1106'
+
+--- Analyzing function: blit_keyed_opt3
+<source>(238) : info C5002: loop not vectorized due to reason '1100'
+<source>(237) : info C5002: loop not vectorized due to reason '1106'
+
+--- Analyzing function: blit_keyed_opt4
+<source>(279) : info C5001: loop vectorized
+<source>(278) : info C5002: loop not vectorized due to reason '1106'
+```
+
+Hallelujah, it vectorized the inner loop of `blit_keyed_opt4()`. The inner loop of `blit()` is still not vectorized (we didn't change it). How bad is that? Let's run the micro-benchmark on Windows with MSVC:
+
+```
+rect()                  0.023023
+blit()                  0.038542
+blit_keyed()            0.051895
+blit_keyed_opt1()       0.048662
+blit_keyed_opt2()       0.048759
+blit_keyed_opt3()       0.056734
+blit_keyed_opt4()       0.012353
+rect()                  0.023163
+blit()                  0.037512
+blit_keyed()            0.050863
+blit_keyed_opt1()       0.050506
+blit_keyed_opt2()       0.049140
+blit_keyed_opt3()       0.057044
+blit_keyed_opt4()       0.012292
+rect()                  0.023217
+blit()                  0.037487
+blit_keyed()            0.050150
+blit_keyed_opt1()       0.050790
+blit_keyed_opt2()       0.048245
+blit_keyed_opt3()       0.056707
+blit_keyed_opt4()       0.012285
+```
+
+MSVC is really, really special... Now `blit_keyed_opt4()` is faster than `r96_rect()` and `blit()`, even tho on paper it does a ton more work. I guess when MSVC vectorizes, it vectorizes real good. In absolute wall clock time, the code runs slower on my super beefy x86_64 DOOM slayer Windows machine than on my ARM64 M1 Max MacBook Pro. But such is life.
+
+Both `r96_rect()` and `blit()` have trivial loops, which MSVC should be able to optimize, especially in case of `r96_rect()`, where there can not be any aliasing between destination and source. Alas, it seems this is a [known issue](https://developercommunity.visualstudio.com/t/c-compiler-neither-vectorizes-trivial-code/825901).
+
+Interestingly, MSVC reports that the inner loop of `rect()` was vectorized. It did so via [`rep stosd`](https://faydoc.tripod.com/cpu/stosd.htm), which it considers a vectorization primitive. I guess since `rect()` is now slower than `blit_keyed_opt4()`, we can firmly state that `rep stosd` is not a great vectorization primitive. It's a super old instruction that was available even before MMX. So, why is MSVC reporting the inner loop as vectorized again?
+
+What about WebAssembly? There, we don't have any SIMD support (yet).
+
+```
+rect()                  0.021600
+r96_11_blit_perf.js:9 blit()                  0.038100
+r96_11_blit_perf.js:9 blit_keyed()            0.050900
+r96_11_blit_perf.js:9 blit_keyed_opt1()       0.055500
+r96_11_blit_perf.js:9 blit_keyed_opt2()       0.063100
+r96_11_blit_perf.js:9 blit_keyed_opt3()       0.063400
+r96_11_blit_perf.js:9 blit_keyed_opt4()       0.069900
+r96_11_blit_perf.js:9 rect()                  0.021700
+r96_11_blit_perf.js:9 blit()                  0.037800
+r96_11_blit_perf.js:9 blit_keyed()            0.050800
+r96_11_blit_perf.js:9 blit_keyed_opt1()       0.055400
+r96_11_blit_perf.js:9 blit_keyed_opt2()       0.063600
+r96_11_blit_perf.js:9 blit_keyed_opt3()       0.064200
+r96_11_blit_perf.js:9 blit_keyed_opt4()       0.069400
+r96_11_blit_perf.js:9 rect()                  0.021300
+r96_11_blit_perf.js:9 blit()                  0.036700
+r96_11_blit_perf.js:9 blit_keyed()            0.050500
+r96_11_blit_perf.js:9 blit_keyed_opt1()       0.056100
+r96_11_blit_perf.js:9 blit_keyed_opt2()       0.063400
+r96_11_blit_perf.js:9 blit_keyed_opt3()       0.063500
+r96_11_blit_perf.js:9 blit_keyed_opt4()       0.070600
+```
+
+`blit_keyed_opt4()` now loses out against the other variants. We could `#ifdef` our way out of this and use the best performing version on each platform. For maintainabilities sake, we won't do that though.
+
+> **Note:** yes, yes, I'm aware we could squeeze out a lot more performance if we went all in with SIMD intrinsics. But as I said earlier, I'd rather not get platform specific optimizations into the code base. The auto-vectorizers are good enough.
+
+## Next up
+What a journey!
 
 Discuss this post on [Twitter]() or [Mastodon]().
 
