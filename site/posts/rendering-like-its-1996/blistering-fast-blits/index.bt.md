@@ -4,7 +4,7 @@ metadata = {
 	summary: "Load image files and blit them to the screen.",
 	image: "amiga500.jpeg",
 	date: parseDate("2022/12/15 21:00"),
-	published: false,
+	published: true,
 }
 }}
 
