@@ -851,7 +851,7 @@ blit_keyed_opt1() 0.013739
 
 That didn't change anything. Since our `blit_keyed_opt1()` loop is as simple as it can get, it's time to look at the generated assembly.
 
-### Looking at assembly control flow graphs
+### Starring at assembly control flow graphs
 This time however, we'll start by looking at the [control flow graph](https://en.wikipedia.org/wiki/Control-flow_graph) of the generated assembly. That's a bit easier to follow than the linear listing we get from [Godbolt Compiler Explorer](https://godbolt.org).
 
 I'm using the [Hopper](https://www.hopperapp.com/) disassembler to generate those fancy CFG images below from the demo executable `11_blit_perf`.
