@@ -23,7 +23,7 @@ metadata = {
 As usual, we'll do some house keeping first.
 
 ## Simplifying the CMake build
-Look at the [CMakeLists.txt](https://github.com/badlogic/r96/blob/dont-be-square-00/CMakeLists.txt) file. Here's an excerpt:
+Look at the [CMakeLists.txt](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/CMakeLists.txt) file. Here's an excerpt:
 
 --markdown-end
 {{post.code("CMakeLists.txt", "cmake",
@@ -99,22 +99,24 @@ add_executable(r96_10_blit_keyed "src/10_blit_keyed.c")
 add_custom_target(r96_assets
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_CURRENT_SOURCE_DIR}/assets
-    ${CMAKE_CURRENT_BINARY_DIR}/assets
+    $<TARGET_FILE_DIR:r96_00_basic_window>/assets
 )
 
 add_custom_target(r96_web_assets
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_CURRENT_SOURCE_DIR}/web
-    ${CMAKE_CURRENT_BINARY_DIR}
+    $<TARGET_FILE_DIR:r96_00_basic_window>
 )
 `)}}
 --markdown-begin
 
 How nice! Each demo target is a single line that just specifies its name and the source file(s) its made from.
 
-I also moved the `r96_web_assets` target, responsible for copying all `web/*.html` to the build folder, to the top level. And I added a new target called `r96_assets`. It copies anything in the `assets/` folder to the build folder.
+I also moved the `r96_web_assets` target, responsible for copying all `web/*.html` to the build folder, to the top level. And I added a new target called `r96_assets`. It copies anything in the `assets/` folder to the folder where the executable of the `r96_00_basic_window` target will end up in.
 
-Why do we need that? Going forward, we'll not just generate our data programmatically, but we'll also want to load image files and other data from disk. Any such assets will go in the `assets/` folder, and the target makes sure they will be available in the `build/` folder as well.
+> **Note:** Why not use `${CMAKE_CURRENT_BINARY_DIR}` as the directory to copy too? Because when building with MSVC, the executables will end up in `build/Release` or `build/Debug`. `$<TARGET_FILE_DIR:r96_00_basic_window>` is a way to get that directory. With other toolchains, the directory will be `build/` or `${CMAKE_CURRENT_BINARY_DIR}`.
+
+Why do we need that? Going forward, we'll not just generate our data programmatically, but we'll also want to load image files and other data from disk. Any such assets will go in the `assets/` folder, and the target makes sure they will be available next to the executable, so relative paths work.
 
 We also need to link the `minifb` and `r96`library targets to each demo target. And every demo target should depend on the `r96_assets` and `r96_web_assets` targets, so we'll always have up-to-date asset files in the build folder. And if we build with Emscripten, we also need to set linker options, including the `EXPORT_NAME` by which we can resolve the WASM module in JavaScript.
 
@@ -159,9 +161,9 @@ And bam, we are down from 95 gruesome lines of CMake, to 73. Even better: to add
 ## Reading files from disk (or URL)
 If you've done any file I/O in C previously, you'll likely know where we'll be going: [`fopen()`](https://man7.org/linux/man-pages/man3/fopen.3.html) and friends. That's mostly cross-platform, and we could even [use `fopen()` with Emscripten](https://emscripten.org/docs/getting_started/Tutorial.html#using-files).
 
-But that comes with a few things I don't want: a virtual filesystem and quite an increase in size of the WASM module, as Emscripten will link in a bunch of stuff we won't really need.
+But that comes with a few things I don't want: a virtual filesystem and quite an increase in size of the WASM module. Emscripten will link in a bunch of stuff we won't really need.
 
-So let's role our own file reading! We want to specify a file path and get a bunch of bytes back. We also want to know how many bytes have been read. And we want to wrap that raw pointer to the memory block that holds the read bytes in a resource type. Let's call that type [`r96_byte_buffer`](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/r96/r96.h#L22):
+We role our own file reading! We want to specify a file path and get a bunch of bytes back. We also want to know how many bytes have been read. And we want to wrap that raw pointer to the memory block that holds the read bytes in a resource type. Let's call that type [`r96_byte_buffer`](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/r96/r96.h#L22):
 
 --markdown-end
 {{post.code("r96.h", "c", `
@@ -184,7 +186,7 @@ void r96_byte_buffer_dispose(r96_byte_buffer *buffer);
 `)}}
 --markdown-begin
 
-`r96_byte_buffer_init()` can be used if we want to allocate `num_bytes` bytes and keep track of both the ponter and the length of the buffer. We dispose `r96_byte_buffer` instances via, you guessed it, `r96_byte_buffer_dispose()`. I spare you the [implementation details](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/r96/r96.c#LL14-L17C2).
+`r96_byte_buffer_init()` can be used if we want to allocate `num_bytes` bytes and keep track of both the pointer and the length of the buffer. We dispose `r96_byte_buffer` instances via, you guessed it, `r96_byte_buffer_dispose()`. I spare you the [implementation details](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/r96/r96.c#LL14-L17C2).
 
 The interesting one is `r96_byte_buffer_init_from_file()`. We need two implementations: one for the desktop and one for the web. Here's the desktop version:
 
@@ -243,18 +245,18 @@ bool r96_byte_buffer_init_from_file(r96_byte_buffer *buffer, const char *path) {
 `)}}
 --markdown-begin
 
-OK, there's JavaScript code in our C. We got to be strong now. It's how we can interact with the JavaScript world from our pristine C.
+OK, there's JavaScript code in our C code. We got to be strong now. It's how we can interact with the JavaScript world from our pristine C.
 
-The [`EM_ASYNC_JS()`](https://emscripten.org/docs/porting/asyncify.html#making-async-web-apis-behave-as-if-they-were-synchronous) macro takes a function signature split up into return type, function name, and argument list, and the JavaScript implementation of the function. The macro will then generate a sort of trampoline that will call the JavaScript function from within WASM. The arguments are all passed as JavaScript numbers. And return values are numbers too.
+The [`EM_ASYNC_JS()`](https://emscripten.org/docs/porting/asyncify.html#making-async-web-apis-behave-as-if-they-were-synchronous) macro takes a function signature split up into return type, function name, argument list, and the JavaScript implementation of the function. The macro will then generate a sort of trampoline that calls the JavaScript function from within WASM. The arguments are all passed as JavaScript numbers. And return values are numbers too.
 
-The `_ASYNC_` part means, that the JavaScript function we define can use JavaScript's `await`, which will pause execution until the promise we wait for resolves. For our C code, it will look like `r96_byte_buffer_init()` is blocking. In reality, we hand back control to the browser, which will asynchronously download the data from the url (`path`).
+The `_ASYNC_` part means, that the JavaScript function we define can use JavaScript's [`await`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await). That will pause execution until the promise we wait for resolves. For our C code, it will look like `r96_byte_buffer_init()` is blocking. In reality, we hand back control to the browser, which will asynchronously download the data from the url (`path`).
 
 The implementation itself resolves the passed in pointer `path` to a JavaScript string. We then throw that at [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch) as a URL relative to the URL the WASM module is being run from. `fetch()` will asynchronously download the content from that URL. We then allocate memory on the WASM heap through `_malloc()` and copy the downloaded content over. Then we set the number of read bytes to the memory location specified by `size` and return the pointer. Pretty straight forward!
 
-In the `r96_byte_buffer_init_from_file()` we just call this fancy JavaScript function, which sets up the `r96_byte_buffer` based on the data returned from JavaScript. Fancy. Let's load some images.
+In the `r96_byte_buffer_init_from_file()` we just call this JavaScript function, which sets up the `r96_byte_buffer` based on the data returned from JavaScript. Fancy. Let's load some images.
 
 ## Loading images
-If we had a more masochist streak, we'd now be delving into image file formats and write a custom parser. Luckily for us, someone else has already done all the work, and we'll just stand on those particular giant's shoulders. [Sean Barrett](https://nothings.org/) has created an impressive set of [header-only file libraries](https://github.com/nothings/stb), which are easy to use and small.
+If we had a more masochist streak, we'd now be delving into image file formats and write a custom parser. Luckily for us, someone else has already done all the work, and we'll just stand on those particular giant's shoulders. [Sean Barrett](https://nothings.org/) has created an impressive set of [header-only file libraries](https://github.com/nothings/stb), which are easy to use and comparatively small.
 
 [stb_image](https://github.com/nothings/stb/blob/master/stb_image.h) is the go-to solution for light-weight image loading. I've copied the header file to `src/r96/`, then included it in `src/r96.c` as per the "installation" instructions:
 
@@ -279,7 +281,7 @@ And here's how we load image files into `r96_image`:
 bool r96_image_init_from_file(r96_image *image, const char *path) {
 	r96_byte_buffer buffer;
 	if (!r96_byte_buffer_init_from_file(&buffer, path)) return false;
-	image->pixels = (uint32_t *) stbi_load_from_memory(buffer.bytes, buffer.num_bytes, &image->width, &image->height, NULL, 4);
+	image->pixels = (uint32_t *) stbi_load_from_memory(buffer.bytes, (int)buffer.num_bytes, &image->width, &image->height, NULL, 4);
 	r96_byte_buffer_dispose(&buffer);
 	if (image->pixels == NULL) return false;
 	return true;
@@ -317,7 +319,9 @@ int main(void) {
 Which, as expected, prints `Loaded file 'assets/doom-grunt.png', 64x64 pixels`, both on the desktop and the web. Let's check if the pixels we loaded actually look like our little buddy above.
 
 ## Blitting images
-[Blitting](https://en.wikipedia.org/wiki/Bit_blit), which stands for bit block transfer, is an age old computer graphics tradition. It's a stand in verb for when we want to get pixels from one or more images onto another, possibly involving some boolean operations per pixel. Systems like the Commodore or Amiga 500 were advertised to feature a dedicated blitting chip, indicating to the gaming afficiandos that that machine will give the games extra punch (if the game programmers choose to use the blitter).
+[Blitting](https://en.wikipedia.org/wiki/Bit_blit), which stands for bit block transfer, is an age old computer graphics tradition. It's a stand-in verb for when we want to get pixels from one or more images onto another, possibly involving some boolean operations per pixel.
+
+Systems like the Commodore or Amiga 500 were advertised to feature a dedicated blitting chip, indicating to the gaming afficiandos that that machine will give their games extra punch.
 
 ### Copy blit
 In the simplest case, we copy the pixels of a source image to some location on a destination image, overwriting whatever has been in those destination pixels before the blit.
@@ -381,7 +385,7 @@ q5.loop();
 
 The source image is copied row by row to the destination image. This is very similar to drawing a rectangle, except that we look up the color for each pixel in each row of the destination rectangle in the source image!
 
-As usual, we also need to think about clipping. The arguments to our blitting function will be the destination image, the source image, and the `(x, y)` coordinates in the destination image to which the source image should be blitted to.
+As usual, we also need to think about clipping. The arguments to our blitting function will be the destination image, the source image, and the `(x, y)` coordinates in the destination image to which the source image should be blitted.
 
 The `(x, y)` coordinates and the source image `width` and `height` define a rectangle in the destination image. We can clip this rectangle just like we clipped single-color rectangles before.
 
@@ -534,17 +538,19 @@ int main(void) {
 `)}}
 --markdown-begin
 
-Let's get `main()` out of the way first. We load the `doom-grunt.png` image, set up an output `r96_image` to which we render, and which is later drawn to the window via `mfb_update_ex()`. We create the window and enter the main loop, where we clear the output image, draw the grunt at the center of the output image, and tell `minifb` to show our output pixels into the window. Not very surprising.
+Let's get `main()` out of the way first. We load the `doom-grunt.png` image, set up an output `r96_image` to which we render, and which is later drawn to the window via `mfb_update_ex()`. We create the window and enter the main loop, where we clear the output image, draw the grunt at the center of the output image, and tell `minifb` to show our output pixels in the window. Not very surprising.
 
 The interesting bits are located in the `blit()` function. It takes the destination image, the source image, and the location at which we should render the source image in the destination image.
 
 Lines 7-10 then setup the destination rectangle, based on the provided `(x, y)` coordinates and the source image `width` and `height`.
 
-Lines 11-12 define the coordinates from which we'll start fetch pixels from the source image.
+Lines 11-12 define the coordinates from which we'll start fetching pixels from the source image.
 
-Lines 14-17 do the trivial rejection test, like we did in `r96_rect()`, for when the destination rectangle is entirely outside the destination image.
+Lines 14-17 perform the same trivial rejection test we did in `r96_rect()`, for when the destination rectangle is entirely outside the destination image.
 
-Lines 19-28 are also copied almost verbatim from `r96_rect()` and clip the destination rectangle in case it is partially outside the destination image. Note that if the top left corner of the destination rectangle is outside the top and left bounds of the destination image, we also adjust `src_x1` and `src_y1`, the location from where we start fetching pixels from the source image.
+Lines 19-28 are also copied almost verbatim from `r96_rect()` and clip the destination rectangle in case it is partially outside the destination image.
+
+Note that if the top left corner of the destination rectangle is outside the top and left bounds of the destination image, we also adjust `src_x1` and `src_y1`, the location from where we start fetching pixels from the source image.
 
 We're done with clipping and proceed to calculate our loop invariants. Those should look familiar too. The only additions compared to `r96_rect()` are `src_next_row` and `src_pixel`, which are analogous to `dst_next_row` and `dst_pixel`, except they are used to access and iterate pixels in the source image. We start those off at the potentially clipped `src_x1` and `src_y1`!
 
@@ -556,7 +562,7 @@ And here it is in action:
 {{demo.r96Demo("09_blit", false)}}
 --markdown-begin
 
-Welcome to graphics programming!
+Whoops. Welcome to graphics programming!
 
 ### Color format conversion
 Turns out that `stb_image` returns pixels in the ABGR format instead of ARGB. Let's fix that in `r96_image_init_from_file()`:
@@ -566,7 +572,7 @@ Turns out that `stb_image` returns pixels in the ABGR format instead of ARGB. Le
 bool r96_image_init_from_file(r96_image *image, const char *path) {
 	r96_byte_buffer buffer;
 	if (!r96_byte_buffer_init_from_file(&buffer, path)) return false;
-	image->pixels = (uint32_t *) stbi_load_from_memory(buffer.bytes, buffer.num_bytes, &image->width, &image->height, NULL, 4);
+	image->pixels = (uint32_t *) stbi_load_from_memory(buffer.bytes, (int)buffer.num_bytes, &image->width, &image->height, NULL, 4);
 	r96_byte_buffer_dispose(&buffer);
 	if (image->pixels == NULL) return false;
 
@@ -589,7 +595,7 @@ We swap the `r` and `b` component of each pixel and call it a day:
 Much better, but not quite perfect yet.
 
 ### Keyed blit
-Little DOOM guy has a bad case of black rectangle background. In the source image, those pixels all have the value `0x00000000`. To get rid of those pixels when blitting, we'll need a new blitter: a [color keying](https://en.wikipedia.org/wiki/Chroma_key) blitter.
+Little DOOM guy has a bad case of black rectangle background. In the source image, those pixels all have the value `0x00000000`. To get rid of those pixels when blitting, we'll need to implement a [color keying](https://en.wikipedia.org/wiki/Chroma_key) blitter.
 
 Before we write the source pixel color to the destination pixel, we check if it is equal to a color key we specify. If it is, we leave the destination pixel alone, and move on to the next pixel. That's it!
 
@@ -714,21 +720,21 @@ int main(void) {
 	do {
 		r96_clear_with_color(&output, 0xff222222);
 
-        srand(0);
+		srand(0);
 		mfb_timer_reset(timer);
 		for (int i = 0; i < 20000; i++) {
 			r96_rect(&output, rand() % output.width, rand() % output.height, 64, 64, 0xffffffff);
 		}
 		printf("rect()       %f\n", mfb_timer_delta(timer));
 
-        srand(0);
+		srand(0);
 		mfb_timer_reset(timer);
 		for (int i = 0; i < 20000; i++) {
 			blit(&output, &image, rand() % output.width, rand() % output.height);
 		}
 		printf("blit()       %f\n", mfb_timer_delta(timer));
 
-        srand(0);
+		srand(0);
 		mfb_timer_reset(timer);
 		for (int i = 0; i < 20000; i++) {
 			blit_keyed(&output, &image, rand() % output.width, rand() % output.height, 0x0);
@@ -746,7 +752,11 @@ int main(void) {
 `)}}
 --markdown-begin
 
-I've omitted the implementations of `blit()` and `blit_keyed()` for brevity's sake. The benchmark itself times drawing `20000` rectangles, `20000` DOOM grunts without color keying, and `20000` DOOM grunts with color keying. Each rectangle has a fixed size of 64x64 pixels, the same size as the DOOM grunt image, to make the comparison somewhat fairer. Here's some output on my machine using Clang.
+I've omitted the implementations of `blit()` and `blit_keyed()` above for brevity's sake.
+
+The benchmark code in `main()` times drawing `20000` rectangles, `20000` DOOM grunts without color keying, and `20000` DOOM grunts with color keying. Each rectangle has a fixed size of 64x64 pixels, the same size as the DOOM grunt image, to make the comparison somewhat fairer. We also re-initialize the seed for `rand()` via `srand(0)` before each timing loop, so they each draw to the exact same destination rectangles.
+
+Here's what I get on macOS with Clang version 14.0.0 that ships with the latest Xcode:
 
 ```
 rect()       0.005832
@@ -763,7 +773,7 @@ blit_keyed() 0.014020
 `r96_rect()` and `blit()` are pretty close performance-wise. However, `blit_keyed()` is twice as slow as either of these. That's not great. Let's investigate.
 
 ## Hey dude, where's my auto-vectorization?
-Here are just the (inner) loops of `r96_rect()`, `blit()`, and `blit_keyed()`:
+Here are just the (inner) loops of `r96_rect()`, `blit()`, and `blit_keyed()` for comparison:
 
 ```
 // r96_rect()
@@ -846,17 +856,17 @@ This time however, we'll start by looking at the [control flow graph](https://en
 
 I'm using the [Hopper](https://www.hopperapp.com/) disassembler to generate those fancy CFG images below from the demo executable `11_blit_perf`.
 
-> **Note**: to generate the CFGs, I disabled LTO in the `CMakeLists.txt` file. Otherwise the linker would inline `blit()`, `blit_keyed()`, and `blit_keyed_opt1()`. The results are the same.
-
 Here's the loop in `r96_rect()` as a CFG:
 
 <center><img src="rect_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
 
-Without going into too much detail, the important part of that graphic is the big fat block of `movdqu` instructions. If you see that generated for one of your memory moving loops, then you can be pretty sure the compiler has managed to vectorize large parts of your loop with [SIMD](https://en.wikipedia.org/wiki/Single_instruction,_multiple_data) instructions. This is know as [auto-vectorization](https://en.wikipedia.org/wiki/Automatic_vectorization) and we always want that for our loops, if possible.
+At first glance, we see the big fat block of `movdqu` instructions standing out.
 
-The [`movdqu`](https://c9x.me/x86/html/file_module_x86_id_184.html) instruction moves the 16-bytes stored in a 128-bit SSE register like `xmm0` into an unaligned memory location. Unaligned means the memory address is not a multiple of 16.
+If you see that generated for one of your memory moving loops, then you can be pretty sure the compiler has managed to vectorize large parts of your loop with [SIMD](https://en.wikipedia.org/wiki/Single_instruction,_multiple_data) instructions. This is know as [auto-vectorization](https://en.wikipedia.org/wiki/Automatic_vectorization) and we always want that for our loops, if possible.
 
-In the `r96_rect()` case, the compiler has filled the 16-bytes of the `xmm0` register with 4 copies of the rectangle's color (which happened before the loop pictured above). Every `movdqu` we see then writes that color to 4 pixels at a time.
+The [`movdqu`](https://c9x.me/x86/html/file_module_x86_id_184.html) instruction moves the 16-bytes stored in a 128-bit SSE register like `xmm0` into an unaligned memory location. In this case, unaligned means the memory address is not a multiple of 16.
+
+For `r96_rect()`, the compiler generated code to fill the 16-bytes of the `xmm0` register with 4 copies of the rectangle's color (which happened before the loop pictured above). Every `movdqu` we see then writes that color to 4 pixels in the destination image in one step.
 
 There are actually multiple blocks using `movdqu` in the loop. Which one is used depends on how many pixels need to still be written to in a row.
 
@@ -866,23 +876,29 @@ The smaller block with label `loc_10000bb20` and two `movdqu` instructions is us
 
 For the case that less than 32-bytes still need to be written, the block with label `loc_10000bb50` is used. This one writes 4 bytes (or 1 pixel) at a time via the `mov` instruction.
 
-That's pretty good, albeit not optimal. E.g. we could rewrite this manually in assembly to ensure we can use `movdqa` for aligned memory writes, which will generally yield better throughput.
+That's pretty good, albeit not optimal. We could rewrite this manually in assembly or use intrinsics to ensure we can use `movdqa` for aligned memory writes, which will generally yield better throughput.
 
-However, as we don't want to drop down to assembly, we'll consider this to be good enough. It also means we don't have to special case for different “CPU" architectures like x86_64, ARM64, or WebAssembly.
+However, as we don't want to drop down to assembly or use CPU architecture specific intrinsics, we'll consider this to be good enough.
 
 Here's what the CFG of the `blit()` loop looks like.
 
 <center><img src="blit_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
 
-It's a CFG for ants! You can open this [PDF](blit_cfg.pdf) if you want the details. If you squint hard enough, you can see blocks of [`movups`](https://c9x.me/x86/html/file_module_x86_id_208.html) instructions. That instruction is misappropriated by the compiler to move 4 pixel colors read from the source image to the destination image at once, despite the fact that the pixel colors are `uint32_t` and not single-precision floats. Since we don't do any arithmetic on the values, this is fine.
+It's a CFG for ants! You can open this [PDF](blit_cfg.pdf) if you want the details.
 
-As in the `r96_rect()` case, the compiler generated a bunch of specialized control flows, depending on how many pixels in a row are left to be written. The additional work of having to read the source pixels complicates the control flow considerably. However, the principle remains the same. The compiler managed to auto-vectorize the inner loop of `blit()`, yielding performance that's in the same ball park as the equally auto-vectorized `r96_rect()`. Not bad!
+If you squint hard enough, you can see blocks of [`movups`](https://c9x.me/x86/html/file_module_x86_id_208.html) instructions. That instruction is misappropriated by the compiler to move 4 pixel colors read from the source image to the destination image at once, despite the fact that the pixel colors are `uint32_t` and not single-precision floats. Since we don't do any arithmetic on the values, this is fine.
+
+As in the `r96_rect()` case, the compiler generated a bunch of specialized control flows, depending on how many pixels in a row are left to be written. The additional work of having to read the source pixels complicates the control flow considerably. However, the principle remains the same.
+
+The compiler managed to auto-vectorize the inner loop of `blit()`, yielding performance that's in the same ball park as the equally auto-vectorized `r96_rect()`. Not bad!
 
 So what does our twice as slow `blit_keyed_opt1()`  look like?
 
 <center><img src="blit_keyed_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
 
-That's not great. We don't even have to dig deeply into this to see the issue. The compiler generated two big branches. The one on the left doesn't use any SIMD instructions, while the one on the right tries its hardest to use SIMD but devolves into a ball of conditional jumps.
+That's not great. We don't even have to dig deeply into this to see the issue. The compiler generated two big branches.
+
+The one on the left doesn't use any SIMD instructions, while the one on the right tries its hardest to use SIMD but devolves into a ball of conditional jumps.
 
 That alone will kill any performance gained from using SIMD to read/write more than 1 pixel at once. Have a look at the [PDF](blit_keyed_cfg.pdf) if you want to see the gory details.
 
@@ -946,7 +962,7 @@ MSVC is interesting too.
 
 Thank you, MSVC, I LOVE having to look up error and reason codes on the interweb instead of having you tell me directly what's up.
 
-MSVC didn't manage to vectorize any of the loops. The reasons given can be found [here](https://learn.microsoft.com/en-us/cpp/error-messages/tool-errors/vectorizer-and-parallelizer-messages?view=msvc-170). I have reproduced them here, so you don't have to look them up.
+MSVC didn't manage to vectorize any of the loops. The reasons given can be found [here](https://learn.microsoft.com/en-us/cpp/error-messages/tool-errors/vectorizer-and-parallelizer-messages?view=msvc-170). I have reproduced them below, because I'm way more user friendly than MSVC.
 
 * *1106*: outer loop not vectorized.
 * *1301*: loop stride isn't +1.
@@ -968,7 +984,9 @@ with
 for (int i = 0; i < clipped_width; i++) {
 ```
 
-I've fixed this up in `r96_rect()` and `blit()`, and made a copy of `blit_keyed_opt1()` called `blit_keyed_opt2()` which also has the fix. I then added a new timing loop for `blit_keyed_opt2()` to `main()`. Let's see if this helps with Clang as well:
+> **Note:** If you wondered why I went with `while(num_pixels--)` in the first place: I've intentionally written the loop like this, so MSVC would throw up. No, really.
+
+I've fixed this up in `r96_rect()` and `blit()`, and made a copy of `blit_keyed_opt1()` called `blit_keyed_opt2()` which also has the fix. I then added a new timing loop for `blit_keyed_opt2()` to `main()`. Let's see if this helps Clang generate better performing auto-vectorized loops:
 
 ```
 rect()            0.005757
@@ -988,7 +1006,7 @@ blit_keyed_opt1() 0.014215
 blit_keyed_opt2() 0.014698
 ```
 
-Welp, that didn't make any impact with Clang in terms of performance. We still get the "bad" vectorization in `blit_keyed_xxx()`.
+Welp, that didn't make any impact with Clang in terms of performance. We still get the "bad" vectorization in `blit_keyed_opt2()`.
 
 Checking the [updated Godbolt "project"](https://www.godbolt.org/z/rE6v6zYd8), we can see that MSVC is now a bit happier, but not much.
 
@@ -1006,20 +1024,28 @@ Checking the [updated Godbolt "project"](https://www.godbolt.org/z/rE6v6zYd8), w
 Compiler returned: 0
 ```
 
-It managed to vectorize the inner loop of `r96_rect()` given our change via `rep stosd` (yes, that too is kinda vectorized).
+It managed to vectorize the inner loop of `r96_rect()` given our change. Though vectorization is a bit of a strong claim. It actually uses [`rep stosd`](https://faydoc.tripod.com/cpu/stosd.htm), an instruction as old as I am. In the year of our Thread Ripper Lord 2022, MSVC has many actually vectorized instructions at its disposal, but fails to use them here for some reason.
 
-But it still fails for the inner loops of `blit()` (reason `1300`) and `blit_keyed_opt2()` (reason `1100`):
+MSVC also still fails to vectorizer the inner loops of `blit()` (reason `1300`) and `blit_keyed_opt2()` (reason `1100`):
 
 * **1300**: Loop body contains little or no computation.
 * **1100**: Loop contains control flow—for example, "if" or "?:".
 
-To `1300` for `blit()`'s inner-loop I say: are you kidding me, MSVC?! Clang thinks `blit()` has a vectorization worthy inner loop, and the benchmark data indicates that it's right. MSVC just throws its hands up in the air and refuses to vectorize the loop. Lazy compiler!
+To `1300` for `blit()`'s inner-loop I say: are you kidding me, MSVC?! Clang thinks `blit()` has a vectorization worthy inner loop, and the benchmark data indicates that it's right. MSVC just throws its hands up in the air and refuses to vectorize the loop. Lazy compiler bad!
 
-The `1100` indicates, that the MSVC auto-vectorizer is not very good, given that the conditional could be easily translated to a masking SIMD operation (also known as [if-conversion](https://llvm.org/docs/Vectorizers.html#if-conversion)). But Clang also fails to do that properly.
+The `1100` indicates, that the MSVC auto-vectorizer is not very good, given that the conditional could be easily translated to a masking SIMD operation (also known as [if-conversion](https://llvm.org/docs/Vectorizers.html#if-conversion)).
+
+But Clang also fails to do that properly. Both compilers should feel bad. Especially Clang, since it claims it can auto-vectorize any conditional through its fancy if-conversion optimizer pass.
+
+I mean, it does auto-vectorize conditionals. It just does it badly.
 
 ### Throwing "engineering" at the wall
 
-Where to go from here? Like any self-respecting engineer, we're going to blindly throw some best guesses at the wall. But only after we've read [A Guide to Vectorization with Intel C++ Compilers](https://d3f8ykwhia686p.cloudfront.net/1live/intel/CompilerAutovectorizationGuide.pdf). While this is supposed to apply to Intel's compiler, some of the take-aways surely apply to the auto-vectorizers of MSVC, Clang, and GCC as well. These compilers sadly don't have great documentation on how to make their auto-vectorizers happy.
+Where to go from here?
+
+Like any self-respecting engineer, we're going to blindly throw some best guesses at the wall. But only after we've read [A Guide to Vectorization with Intel C++ Compilers](https://d3f8ykwhia686p.cloudfront.net/1live/intel/CompilerAutovectorizationGuide.pdf).
+
+While this is supposed to apply to Intel's compiler, some of the take-aways surely apply to the auto-vectorizers of MSVC, Clang, and GCC as well. These compilers sadly don't have great documentation on how to make their auto-vectorizers happy.
 
 Let's start by making a copy of `blit_keyed_opt2()` called `blit_keyed_opt3()`, and add a timing loop to `main()` in `11_blit_perf.c`. We change the loop in `blit_keyed_opt3()` to this:
 
@@ -1063,7 +1089,7 @@ blit_keyed_opt3() 0.014660
 
 No change in performance with Clang. On the Godbolt site, Clang still claims everything is awesome regarding vectorization. MSVC is still unable to vectorize the loop, which makes sense, as we didn't kill the `if` statement.
 
-Another! `blit_keyed_opt4()` has this loop:
+Let's guess some more! `blit_keyed_opt4()` has this loop:
 
 ```
 for (int y = dst_y1; y <= dst_y2; y++) {
@@ -1164,44 +1190,48 @@ blit_keyed_opt3()       0.056707
 blit_keyed_opt4()       0.012285
 ```
 
-MSVC is really, really special... Now `blit_keyed_opt4()` is faster than `r96_rect()` and `blit()`, even tho on paper it does a ton more work. I guess when MSVC vectorizes, it vectorizes real good. In absolute wall clock time, the code runs slower on my super beefy x86_64 DOOM slayer Windows machine than on my ARM64 M1 Max MacBook Pro. But such is life.
+MSVC is really, really special... Now `blit_keyed_opt4()` is faster than `r96_rect()` and `blit()`, even though on paper it does a ton more work.
 
-Both `r96_rect()` and `blit()` have trivial loops, which MSVC should be able to optimize, especially in case of `r96_rect()`, where there can not be any aliasing between destination and source. Alas, it seems this is a [known issue](https://developercommunity.visualstudio.com/t/c-compiler-neither-vectorizes-trivial-code/825901).
+I guess when MSVC vectorizes, it vectorizes real good. In absolute wall clock time, the code runs slower on my super beefy x86_64 DOOM slayer Windows machine than on my ARM64 M1 Max MacBook Pro. But such is life.
 
-Interestingly, MSVC reports that the inner loop of `rect()` was vectorized. It did so via [`rep stosd`](https://faydoc.tripod.com/cpu/stosd.htm), which it considers a vectorization primitive. I guess since `rect()` is now slower than `blit_keyed_opt4()`, we can firmly state that `rep stosd` is not a great vectorization primitive. It's a super old instruction that was available even before MMX. So, why is MSVC reporting the inner loop as vectorized again?
+Both `r96_rect()` and `blit()` have trivial loops, which MSVC should be able to optimize. Especially in case of `r96_rect()`, where there can not be any aliasing between destination and source. Alas, it seems this is a [known issue](https://developercommunity.visualstudio.com/t/c-compiler-neither-vectorizes-trivial-code/825901).
 
-What about WebAssembly? There, we don't have any SIMD support (yet).
+What about WebAssembly? We don't have any SIMD support there (yet).
 
 ```
 rect()                  0.021600
-r96_11_blit_perf.js:9 blit()                  0.038100
-r96_11_blit_perf.js:9 blit_keyed()            0.050900
-r96_11_blit_perf.js:9 blit_keyed_opt1()       0.055500
-r96_11_blit_perf.js:9 blit_keyed_opt2()       0.063100
-r96_11_blit_perf.js:9 blit_keyed_opt3()       0.063400
-r96_11_blit_perf.js:9 blit_keyed_opt4()       0.069900
-r96_11_blit_perf.js:9 rect()                  0.021700
-r96_11_blit_perf.js:9 blit()                  0.037800
-r96_11_blit_perf.js:9 blit_keyed()            0.050800
-r96_11_blit_perf.js:9 blit_keyed_opt1()       0.055400
-r96_11_blit_perf.js:9 blit_keyed_opt2()       0.063600
-r96_11_blit_perf.js:9 blit_keyed_opt3()       0.064200
-r96_11_blit_perf.js:9 blit_keyed_opt4()       0.069400
-r96_11_blit_perf.js:9 rect()                  0.021300
-r96_11_blit_perf.js:9 blit()                  0.036700
-r96_11_blit_perf.js:9 blit_keyed()            0.050500
-r96_11_blit_perf.js:9 blit_keyed_opt1()       0.056100
-r96_11_blit_perf.js:9 blit_keyed_opt2()       0.063400
-r96_11_blit_perf.js:9 blit_keyed_opt3()       0.063500
-r96_11_blit_perf.js:9 blit_keyed_opt4()       0.070600
+blit()                  0.038100
+blit_keyed()            0.050900
+blit_keyed_opt1()       0.055500
+blit_keyed_opt2()       0.063100
+blit_keyed_opt3()       0.063400
+blit_keyed_opt4()       0.069900
+rect()                  0.021700
+blit()                  0.037800
+blit_keyed()            0.050800
+blit_keyed_opt1()       0.055400
+blit_keyed_opt2()       0.063600
+blit_keyed_opt3()       0.064200
+blit_keyed_opt4()       0.069400
+rect()                  0.021300
+blit()                  0.036700
+blit_keyed()            0.050500
+blit_keyed_opt1()       0.056100
+blit_keyed_opt2()       0.063400
+blit_keyed_opt3()       0.063500
+blit_keyed_opt4()       0.070600
 ```
 
-`blit_keyed_opt4()` now loses out against the other variants. We could `#ifdef` our way out of this and use the best performing version on each platform. For maintainabilities sake, we won't do that though.
+`blit_keyed_opt4()` now loses out against the other variants. We could `#ifdef` our way out of this and use the best performing version on each platform.
 
-> **Note:** yes, yes, I'm aware we could squeeze out a lot more performance if we went all in with SIMD intrinsics. But as I said earlier, I'd rather not get platform specific optimizations into the code base. The auto-vectorizers are good enough.
+For maintainability's sake, we won't do that though.
+
+> **Note:* `blit()` and `blit_keyed_opt4()` have been promoted to `r96` library functions and shall henceforth be known as `r96_blit()` and `r96_blit_keyed()`.
 
 ## Next up
-What a journey!
+What a journey! It feels like we solved a murder mystery, where MSVC is the murderer. And while we solved one mystery, the mystery of MSVC not being able to vectorize `r96_rect()` nor `blit()` remains.
+
+Next time, we'll keep things short, I promise! We'll be looking into bitmap fonts, so we no longer need to print to the console.
 
 Discuss this post on [Twitter]() or [Mastodon]().
 

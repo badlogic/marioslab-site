@@ -1217,7 +1217,7 @@ Since this is as good as it gets, `rect_opt()` has been promoted `r96.c` and sha
 
 ## Again, Mario, REALLY?
 
-Welp, I guess I can't write short blog posts. But we learned a lot again! I'm undecided what we'll look into next time. Either drawing lines, or loading and drawing images. It's going to be fun none the less.
+Welp, I guess I can't write short blog posts. But we learned a lot again! I'm undecided what we'll look into [next time](/posts/rendering-like-its-1996/blistering-fast-blits/). Either drawing lines, or loading and drawing images. It's going to be fun none the less.
 
 Discuss this post on [Twitter]() or [Mastodon]().
 
