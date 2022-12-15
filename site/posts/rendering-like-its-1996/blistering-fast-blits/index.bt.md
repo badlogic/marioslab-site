@@ -904,7 +904,7 @@ That alone will kill any performance gained from using SIMD to read/write more t
 
 Clearly, Clang can't deal with this simple `if` conditional in the inner loop. What about other compilers? And how can we make them generate passable vectorized code?
 
-## Asking the compiler why auto-vectorization goes wrong
+### Asking the compiler why auto-vectorization goes wrong
 Time to switch to the [Godbolt compiler explorer](https://godbolt.org). I've pasted in `r96_rect()`, `blit()`, and `blit_keyed_opt1()` from above, plus the `r96_image` struct. I then set up Clang x86_64 and MSVC x86_64 with compiler flags that will make the compiler tell us what they vectorized, what they couldn't vectorize, and why.
 
 The flags to get auto-vectorization reports for Clang are:
