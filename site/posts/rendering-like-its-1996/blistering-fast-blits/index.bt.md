@@ -1233,7 +1233,7 @@ What a journey! It feels like we solved a murder mystery, where MSVC is the murd
 
 Next time, we'll keep things short, I promise! We'll be looking into bitmap fonts, so we no longer need to print to the console.
 
-Discuss this post on [Twitter]() or [Mastodon]().
+Discuss this post on [Twitter](https://twitter.com/badlogicgames/status/1603466400424726528) or [Mastodon](https://mastodon.social/@badlogicgames/109519253257304337).
 
 --markdown-end
 <script>tableOfContents()</script>
