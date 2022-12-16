@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CFG</title>
+    <script src="/js/code.js"></script>
+    <script src="./viz.js"></script>
+    <script src="./full.render.js"></script>
+    <style>
+        body {
+            background: black;
+            font: 200 16px/1.5 monospace;
+            font-feature-settings: "kern" 1;
+            font-kerning: normal;
+            font-weight: 400;
+            font-size: 16px;
+            color: #bbbbbb;
+            margin: 0;
+        }
+
+        a,
+        a:visited {
+            color: rgb(254, 121, 5);
+            text-decoration: none;
+        }
+
+        .assembly {
+            background: none;
+            border: none;
+            border-right: 1px solid #222;
+            outline: none !important;
+            color: #bbb;
+            width: 80ch;
+            resize: none;
+            overflow: scroll;
+        }
+
+        .graphview {
+            background: white;
+            overflow: scroll;
+            min-height: 0;
+            min-width: 0;
+        }
+
+        .row {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .fullpage {
+            width: 100%;
+            height: 100vh;
+        }
+
+        .fill {
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="column fullpage">
+        <h1 style="margin: 0 auto"></h1>
+        <div class="row">
+            <textarea class="assembly"></textarea>
+            <div class="graphview">
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+
+    const assembly = document.querySelector(".assembly");
+    const graphView = document.querySelector(".graphview");
+
+    assembly.addEventListener("input", () => {
+        generateGraph(assembly.value);
+    })
+
+    async function downloadExample(url) {
+        let response = await fetch(url);
+        if (!response.ok) throw new Error("Couldn't download example " + url);
+        return await response.text();
+    };
+
+    function debug(str) {
+        console.log(str);
+    }
+
+    function parseMSVC(code) {
+        const lines = code.split(/\r?\n/);
+        const functions = [];
+
+        let isLabelLine = (line) => {
+            if (line.indexOf(":") > 0) {
+                for (let i = 0; i < line.indexOf(":"); i++) {
+                    if (line.charAt(i) == " ") return false;
+                }
+                return true;
+            }
+        }
+
+        let func = null;
+        let nodeId = 0;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (isLabelLine(line)) {
+                const label = line.substr(0, line.indexOf(":")).trim();
+                if (label.indexOf("@") < 0) continue; // Ignore first label after proc, has no @
+                let node = {
+                    id: nodeId++,
+                    lines: []
+                };
+                func.nodes.push(node);
+                func.labels.push({ label: label, node: node });
+                func.labeledNodes[label] = node;
+            } else if (line.indexOf("PROC") > 0) {
+                const label = line.substr(0, line.indexOf("PROC")).trim();
+                nodeId = 0;
+                func = {
+                    name: label,
+                    labels: [],
+                    labeledNodes: {},
+                    start: i + 2,  // Function starts after first label
+                    end: null,     // End is exclusive
+                    nodes: [],
+                    edges: [],
+                    rootNode: {
+                        id: nodeId++,
+                        lines: []
+                    }
+                };
+                func.nodes.push(func.rootNode);
+                func.labels.push({ label: label, node: func.rootNode });
+                func.labeledNodes[label] = func.rootNode;
+                functions.push(func);
+            } else if (line.indexOf(" ENDP") > 0) {
+                func.end = i;
+                func = null;
+            }
+        }
+
+        debug(functions);
+
+        for (let i = 0; i < functions.length; i++) {
+            const func = functions[i];
+            let node = func.rootNode;
+
+            for (let j = func.start; j < func.end; j++) {
+                const line = lines[j];
+
+                if (isLabelLine(line)) {
+                    const label = line.substr(0, line.indexOf(":")).trim();
+                    let nextNode = func.labeledNodes[label];
+                    if (node.lines.length > 0 && node.lines[node.lines.length - 1].trim().indexOf("jmp") == 0) {
+                        if (node.lines[node.lines.length - 1].indexOf(label) > 0)
+                            func.edges.push({ from: node.id, to: nextNode.id });
+                    } else {
+                        func.edges.push({ from: node.id, to: nextNode.id });
+                    }
+                    node = nextNode;
+                    continue;
+                }
+
+                node.lines.push(line);
+
+                let foundLabel = null;
+                for (let k = 0; k < func.labels.length; k++) {
+                    let label = func.labels[k];
+                    if (line.indexOf(label.label) > 0) {
+                        if (foundLabel == null) {
+                            foundLabel = label;
+                        } else {
+                            if (label.label.length > foundLabel.label.length) {
+                                foundLabel = label;
+                            }
+                        }
+                    }
+                }
+                if (foundLabel) {
+                    func.edges.push({ from: node.id, to: foundLabel.node.id });
+                    if (j < func.end - 1 && !isLabelLine(lines[j + 1])) {
+                        let nextNode = {
+                            id: func.nodes.length,
+                            lines: []
+                        };
+                        func.nodes.push(nextNode);
+                        func.edges.push({ from: node.id, to: nextNode.id });
+                        node = nextNode;
+                    }
+                }
+            }
+        }
+
+        return functions;
+    }
+
+    function parseClangGCC(code) {
+        const lines = code.split(/\r?\n/);
+        const functions = [];
+
+        let isLabelLine = (line) => {
+            if (line.indexOf(":") > 0) {
+                for (let i = 0; i < line.indexOf(":"); i++) {
+                    if (line.charAt(i) == " ") return false;
+                }
+                return true;
+            }
+        }
+
+        let func = null;
+        let nodeId = 0;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (isLabelLine(line)) {
+                const label = line.substr(0, line.indexOf(":")).trim();
+                if (label.charAt(0) == ".") {
+                    let node = {
+                        id: nodeId++,
+                        lines: []
+                    };
+                    func.nodes.push(node);
+                    func.labels.push({ label: label, node: node });
+                    func.labeledNodes[label] = node;
+                } else {
+                    if (func) {
+                        func.end = i;
+                        func = null;
+                    }
+
+                    nodeId = 0;
+                    func = {
+                        name: label,
+                        labels: [],
+                        labeledNodes: {},
+                        start: i + 2,  // Function starts after first label
+                        end: null,     // End is exclusive
+                        nodes: [],
+                        edges: [],
+                        rootNode: {
+                            id: nodeId++,
+                            lines: []
+                        }
+                    };
+                    func.nodes.push(func.rootNode);
+                    func.labels.push({ label: label, node: func.rootNode });
+                    func.labeledNodes[label] = func.rootNode;
+                    functions.push(func);
+                }
+            }
+        }
+        if (func && !func.end) func.end = lines.length;
+
+        debug(functions);
+
+        for (let i = 0; i < functions.length; i++) {
+            const func = functions[i];
+            let node = func.rootNode;
+
+            for (let j = func.start; j < func.end; j++) {
+                const line = lines[j];
+
+                if (isLabelLine(line)) {
+                    const label = line.substr(0, line.indexOf(":")).trim();
+                    let nextNode = func.labeledNodes[label];
+                    if (node.lines.length > 0 && node.lines[node.lines.length - 1].trim().indexOf("jmp") == 0) {
+                        if (node.lines[node.lines.length - 1].indexOf(label) > 0)
+                            func.edges.push({ from: node.id, to: nextNode.id });
+                    } else {
+                        func.edges.push({ from: node.id, to: nextNode.id });
+                    }
+                    node = nextNode;
+                    continue;
+                }
+
+                node.lines.push(line);
+
+                let foundLabel = null;
+                for (let k = 0; k < func.labels.length; k++) {
+                    let label = func.labels[k];
+                    if (line.indexOf(label.label) > 0) {
+                        if (foundLabel == null) {
+                            foundLabel = label;
+                        } else {
+                            if (label.label.length > foundLabel.label.length) {
+                                foundLabel = label;
+                            }
+                        }
+                    }
+                }
+                if (foundLabel) {
+                    func.edges.push({ from: node.id, to: foundLabel.node.id });
+                    if (j < func.end - 1 && !isLabelLine(lines[j + 1])) {
+                        let nextNode = {
+                            id: func.nodes.length,
+                            lines: []
+                        };
+                        func.nodes.push(nextNode);
+                        func.edges.push({ from: node.id, to: nextNode.id });
+                        node = nextNode;
+                    }
+                }
+            }
+        }
+
+        return functions;
+    }
+
+    function generateGraph(code) {
+        console.log("Generating graph");
+        let graph;
+        if (code.indexOf("PROC") >= 0 && code.indexOf("ENDP") >= 0) {
+            graph = parseMSVC(code);
+        } else {
+            graph = parseClangGCC(code);
+        }
+
+        let func = graph[0];
+
+        let dot = 'digraph G {\n';
+        dot += 'f [shape=box,fontname="Courier",label="' + func.name + '"]\n';
+        for (let i = 0; i < func.nodes.length; i++) {
+            let node = func.nodes[i];
+            dot += node.id + ' [shape=box,fontname="Courier",label="' + node.lines.map((l) => l.trim()).join("\\l") + '\\l"]\n';
+        }
+
+        dot += 'f -> 0\n';
+        for (let i = 0; i < func.edges.length; i++) {
+            let edge = func.edges[i];
+            dot += edge.from + " -> " + edge.to + "\n";
+        }
+        dot += "\n}"
+        console.log(dot);
+
+        var container = document.querySelector('.graphview');
+        var viz = new Viz();
+        viz.renderSVGElement(dot)
+            .then(function (svg) {
+                container.innerHTML = "";
+                container.appendChild(svg);
+                panZoom = svgPanZoom(svg, {
+                    zoomEnabled: true,
+                    controlIconsEnabled: true,
+                    fit: true,
+                    center: true,
+                    minZoom: 0.1
+                });
+
+                svg.addEventListener('paneresize', function (e) {
+                    panZoom.resize();
+                }, false);
+                window.addEventListener('resize', function (e) {
+                    panZoom.resize();
+                });
+            }).catch(error => {
+                viz = new Viz();
+            });
+    }
+
+    async function init() {
+        let example = await downloadExample("example-clang.c");
+        assembly.textContent = example;
+        generateGraph(example);
+    }
+    init();
+</script>
+
+</html>
