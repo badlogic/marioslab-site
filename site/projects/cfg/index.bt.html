@@ -267,6 +267,7 @@
                     id: nodeId++,
                     lines: [],
                     start: i,
+                    label: label
                 };
                 func.nodes.push(node);
                 func.labels.push({ label: label, node: node });
@@ -286,6 +287,7 @@
                         id: nodeId++,
                         lines: [],
                         start: i,
+                        label: label
                     }
                 };
                 func.nodes.push(func.rootNode);
@@ -329,6 +331,7 @@
                         id: nodeId++,
                         lines: [],
                         start: i,
+                        label: label
                     };
                     func.nodes.push(node);
                     func.labels.push({ label: label, node: node });
@@ -352,6 +355,7 @@
                             id: nodeId++,
                             lines: [],
                             start: i,
+                            label: label
                         }
                     };
                     func.nodes.push(func.rootNode);
@@ -410,14 +414,33 @@
         dot += 'node [shape=box,fontname="Courier",fontsize="10",fontcolor="#bbbbbb",color="#bbbbbb",bgcolor="black"]\n';
         for (let i = 0; i < func.nodes.length; i++) {
             let node = func.nodes[i];
-            let lines = node.lines.map((l) => l.trim()).join("\\l");
+            let lines;
+            let label = node.label;
+            if (label) {
+                label = label + ":\\l";
+                lines = node.lines.map((l) => l.trim()).map((l) => "   " + l).join("\\l");
+            } else {
+                label = "";
+                lines = node.lines.map((l) => l.trim()).join("\\l");
+            }
             lines = lines.split('"').join('\\"');
-            dot += node.id + ' [label="' + lines + '\\l"]\n';
+            dot += node.id + ' [label="' + label + lines + '\\l"]\n';
         }
 
         for (let i = 0; i < func.edges.length; i++) {
             let edge = func.edges[i];
-            dot += edge.from + " -> " + edge.to + '\n';
+            let from = func.nodes[edge.from];
+            let to = func.nodes[edge.to];
+            let attributes = "";
+            if (to.label) {
+                if (from.lines.length > 0 && from.lines[from.lines.length - 1].indexOf(to.label) >= 0)
+                    attributes = '[color="darkgreen"]';
+                else
+                    attributes = '[color="#aa0000"]';
+            } else {
+                attributes = '[color="#aa0000"]';
+            }
+            dot += edge.from + " -> " + edge.to + attributes + '\n';
         }
         dot += "\n}"
         debug(dot);
@@ -433,48 +456,33 @@
                 svg.setAttribute("height", graphView.clientHeight);
 
                 let eventsHandler = {
-                    haltEventListeners: ['touchstart', 'touchend', 'touchmove', 'touchleave', 'touchcancel']
-                    , init: function (options) {
-                        var instance = options.instance
-                            , initialScale = 1
-                            , pannedX = 0
-                            , pannedY = 0
-
+                    haltEventListeners: ['touchstart', 'touchend', 'touchmove', 'touchleave', 'touchcancel'],
+                    init: function (options) {
+                        var instance = options.instance, initialScale = 1, pannedX = 0, pannedY = 0;
                         this.hammer = Hammer(options.svgElement, {
                             inputClass: Hammer.SUPPORT_POINTER_EVENTS ? Hammer.PointerEventInput : Hammer.TouchInput
-                        })
+                        });
 
-                        this.hammer.get('pinch').set({ enable: true })
-                        this.hammer.on('doubletap', function (ev) {
-                            instance.zoomIn()
-                        })
+                        this.hammer.get('pinch').set({ enable: true });
+                        this.hammer.on('doubletap', function (ev) { instance.zoomIn() });
 
                         this.hammer.on('panstart panmove', function (ev) {
                             if (ev.type === 'panstart') {
                                 pannedX = 0
                                 pannedY = 0
                             }
-
                             instance.panBy({ x: ev.deltaX - pannedX, y: ev.deltaY - pannedY })
                             pannedX = ev.deltaX
                             pannedY = ev.deltaY
-                        })
+                        });
 
                         this.hammer.on('pinchstart pinchmove', function (ev) {
-                            if (ev.type === 'pinchstart') {
-                                initialScale = instance.getZoom()
-                                instance.zoomAtPoint(initialScale * ev.scale, { x: ev.center.x, y: ev.center.y })
-                            }
-
+                            if (ev.type === 'pinchstart') initialScale = instance.getZoom()
                             instance.zoomAtPoint(initialScale * ev.scale, { x: ev.center.x, y: ev.center.y })
                         })
-
                         options.svgElement.addEventListener('touchmove', function (e) { e.preventDefault(); });
-                    }
-
-                    , destroy: function () {
-                        this.hammer.destroy()
-                    }
+                    },
+                    destroy: () => this.hammer.destroy()
                 }
 
                 svgPanZoom(svg, {
