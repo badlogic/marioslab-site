@@ -7,9 +7,9 @@
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0">
     <title>Mario's assembly CFG viewer</title>
     <script src="/js/code.js"></script>
-    <script src="./viz.js"></script>
-    <script src="./full.render.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.14.0/ace.js" integrity="sha512-WYlXqL7GPpZL2ImDErTX0RMKy5hR17vGW5yY04p9Z+YhYFJcUUFRT31N29euNB4sLNNf/s0XQXZfzg3uKSoOdA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>{{include raw "./_viz.js"}}</script>
+    <script>{{include raw "./_full.render.js"}}</script>
+    <script>{{include raw "./_ace.js"}}</script>
     <style>
         body {
             background: black;
@@ -155,6 +155,7 @@
 
 <script>
 
+    ace.config.set('basePath', './');
     const assembly = ace.edit(document.querySelector(".assembly"));
     assembly.setTheme("ace/theme/twilight");
     assembly.setShowPrintMargin(false);
