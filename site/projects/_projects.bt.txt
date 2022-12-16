@@ -2,6 +2,11 @@
 
 projects = [
 	{
+		title: "Mario's assembly CFG viewer",
+		description: `Paste your (dis-)assembly in the right pane, view the control flow graph in the left pane. Best combined with <a href="https://godbolt.org">Compiler Explorer</a>.`,
+		url: "https://marioslab.io/projects/cfg",
+	},
+	{
 		title: "BMFG",
 		description: "The biggest, meanest bitmap font generator you've ever seen.",
 		url: "https://marioslab.io/projects/bmfg",
