@@ -140,7 +140,7 @@
     <div class="main">
         <div class="right-pane">
             <div style="background: darkslategray; padding-left: 1em;">MSVC/Clang/GCC assembly (x86/ARM)</div>
-            <textarea class="assembly"></textarea>
+            <div class="assembly"></div>
         </div>
         <div class="left-pane">
             <div style=" background: rgb(152, 61, 0); display: flex; flex-direction: row;">
@@ -155,11 +155,15 @@
 
 <script>
 
-    const assembly = document.querySelector(".assembly");
+    const assembly = ace.edit(document.querySelector(".assembly"));
+    assembly.setTheme("ace/theme/twilight");
+    assembly.setShowPrintMargin(false);
+
     const graphView = document.querySelector(".graphview");
 
-    assembly.addEventListener("input", () => {
-        generateGraph(assembly.value);
+
+    assembly.addEventListener("change", () => {
+        generateGraph(assembly.getValue());
     })
 
     async function downloadExample(url) {
@@ -167,6 +171,12 @@
         if (!response.ok) throw new Error("Couldn't download example " + url);
         return await response.text();
     };
+
+    async function init() {
+        let example = await downloadExample("example-clang.c");
+        assembly.setValue(example, -1);
+        generateGraph(example);
+    }
 
     function debug(str) {
         console.log(str);
@@ -411,7 +421,10 @@
                     svgNode.addEventListener("click", (ev) => {
                         let nodeId = Number.parseInt(svgNode.querySelector("title").textContent);
                         let node = func.nodes[nodeId];
-                        console.log(node);
+                        let start = node.start + 1;
+                        let end = start + node.lines.length;
+                        assembly.gotoLine(start);
+                        assembly.selection.setSelectionRange(new ace.Range(start, 0, end, 0));
                     });
                 }
 
@@ -421,11 +434,6 @@
             });
     }
 
-    async function init() {
-        let example = await downloadExample("example-clang.c");
-        assembly.textContent = example;
-        generateGraph(example);
-    }
     init();
 </script>
 
