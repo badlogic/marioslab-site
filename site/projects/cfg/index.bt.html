@@ -161,6 +161,7 @@
     const assembly = ace.edit(document.querySelector(".assembly"));
     assembly.setTheme("ace/theme/twilight");
     assembly.setShowPrintMargin(false);
+    assembly.session.setMode("ace/mode/assembly_x86")
 
     const graphView = document.querySelector(".graphview");
 
