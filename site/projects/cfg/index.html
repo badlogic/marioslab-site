@@ -39,10 +39,10 @@
         }
 
         .graphview {
-            background: white;
+            background: black;
             overflow: scroll;
-            min-height: 0;
-            min-width: 0;
+            flex: 1;
+            text-align: center;
         }
 
         .row {
@@ -71,7 +71,7 @@
 <body>
     <div class="column fullpage">
         <h1 style="margin: 0 auto"></h1>
-        <div class="row">
+        <div class="row fill">
             <textarea class="assembly"></textarea>
             <div class="graphview">
             </div>
@@ -328,17 +328,17 @@
 
         let func = graph[0];
 
-        let dot = 'digraph G {\n';
-        dot += 'f [shape=box,fontname="Courier",label="' + func.name + '"]\n';
+        let dot = 'digraph G {\nbgcolor="black"\nfontcolor="#bbbbbb"\nfontsize="12"\n';
+        dot += 'f [shape=box,fontname="Courier",fontcolor="#bbbbbb",color="#bbbbbb",label="' + func.name + '"]\n';
         for (let i = 0; i < func.nodes.length; i++) {
             let node = func.nodes[i];
-            dot += node.id + ' [shape=box,fontname="Courier",label="' + node.lines.map((l) => l.trim()).join("\\l") + '\\l"]\n';
+            dot += node.id + ' [shape=box,fontname="Courier",fontsize="10",fontcolor="#bbbbbb",color="#bbbbbb",label="' + node.lines.map((l) => l.trim()).join("\\l") + '\\l"]\n';
         }
 
-        dot += 'f -> 0\n';
+        dot += 'f -> 0 [color="#bbbbbb"]\n';
         for (let i = 0; i < func.edges.length; i++) {
             let edge = func.edges[i];
-            dot += edge.from + " -> " + edge.to + "\n";
+            dot += edge.from + " -> " + edge.to + ' [color="#bbbbbb"]\n';
         }
         dot += "\n}"
         console.log(dot);
