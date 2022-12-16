@@ -393,7 +393,7 @@
         let dot = 'digraph G {\n';
         dot += 'bgcolor="black"\n';
         dot += 'edge [color="#bbbbbb"]\n';
-        dot += 'node [shape=box,fontname="Courier",fontsize="10",fontcolor="#bbbbbb",color="#bbbbbb"]\n';
+        dot += 'node [shape=box,fontname="Courier",fontsize="10",fontcolor="#bbbbbb",color="#bbbbbb",bgcolor="black"]\n';
         for (let i = 0; i < func.nodes.length; i++) {
             let node = func.nodes[i];
             let lines = node.lines.map((l) => l.trim()).join("\\l");
@@ -418,6 +418,8 @@
                 let svgNodes = svg.querySelectorAll(".node");
                 for (let i = 0; i < svgNodes.length; i++) {
                     let svgNode = svgNodes[i];
+                    let bbox = svgNode.getBBox();
+                    svgNode.innerHTML = '<rect x="' + bbox.x + '" y="' + bbox.y + '" width="' + bbox.width + '" height="' + bbox.height + '"></rect>' + svgNode.innerHTML;
                     svgNode.addEventListener("click", (ev) => {
                         let nodeId = Number.parseInt(svgNode.querySelector("title").textContent);
                         let node = func.nodes[nodeId];
