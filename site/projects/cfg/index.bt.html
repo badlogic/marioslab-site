@@ -7,10 +7,11 @@
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0">
     <title>Mario's assembly CFG viewer</title>
     <script src="/js/code.js"></script>
-    <script>{{include raw "./_viz.js"}}</script>
-    <script>{{include raw "./_full.render.js"}}</script>
-    <script>{{include raw "./_ace.js"}}</script>
-    <script src="svg-pan-zoom.min.js"></script>
+    <script>{{include raw "./_viz.js" }}</script>
+    <script>{{include raw "./_full.render.js" }}</script>
+    <script>{{include raw "./_ace.js" }}</script>
+    <script src="./hammer.js"></script>
+    <script>{{include raw "./_svg-pan-zoom.min.js" }}</script>
     <style>
         body {
             background: black;
@@ -65,8 +66,8 @@
 
         .graphview {
             background: black;
-            overflow: scroll;
             text-align: center;
+            overflow: hidden;
         }
 
         .main {
@@ -416,32 +417,82 @@
             .then(function (svg) {
                 container.innerHTML = "";
                 container.appendChild(svg);
+
+                let eventsHandler = {
+                    haltEventListeners: ['touchstart', 'touchend', 'touchmove', 'touchleave', 'touchcancel']
+                    , init: function (options) {
+                        var instance = options.instance
+                            , initialScale = 1
+                            , pannedX = 0
+                            , pannedY = 0
+
+                        this.hammer = Hammer(options.svgElement, {
+                            inputClass: Hammer.SUPPORT_POINTER_EVENTS ? Hammer.PointerEventInput : Hammer.TouchInput
+                        })
+
+                        this.hammer.get('pinch').set({ enable: true })
+                        this.hammer.on('doubletap', function (ev) {
+                            instance.zoomIn()
+                        })
+
+                        this.hammer.on('panstart panmove', function (ev) {
+                            if (ev.type === 'panstart') {
+                                pannedX = 0
+                                pannedY = 0
+                            }
+
+                            instance.panBy({ x: ev.deltaX - pannedX, y: ev.deltaY - pannedY })
+                            pannedX = ev.deltaX
+                            pannedY = ev.deltaY
+                        })
+
+                        this.hammer.on('pinchstart pinchmove', function (ev) {
+                            if (ev.type === 'pinchstart') {
+                                initialScale = instance.getZoom()
+                                instance.zoomAtPoint(initialScale * ev.scale, { x: ev.center.x, y: ev.center.y })
+                            }
+
+                            instance.zoomAtPoint(initialScale * ev.scale, { x: ev.center.x, y: ev.center.y })
+                        })
+
+                        options.svgElement.addEventListener('touchmove', function (e) { e.preventDefault(); });
+                    }
+
+                    , destroy: function () {
+                        this.hammer.destroy()
+                    }
+                }
+
                 svgPanZoom(svg, {
                     minZoom: 0.2,
                     fit: true,
                     contain: true,
                     center: true,
                     dblClickZoomEnabled: false,
-                    zoomScaleSensitivity: 0.3
+                    zoomScaleSensitivity: 0.3,
+                    customEventsHandler: eventsHandler
                 });
                 let svgNodes = svg.querySelectorAll(".node");
                 for (let i = 0; i < svgNodes.length; i++) {
                     let svgNode = svgNodes[i];
                     let bbox = svgNode.getBBox();
                     svgNode.innerHTML = '<rect x="' + bbox.x + '" y="' + bbox.y + '" width="' + bbox.width + '" height="' + bbox.height + '"></rect>' + svgNode.innerHTML;
-                    svgNode.addEventListener("click", (ev) => {
+                    let listener = (ev) => {
                         let nodeId = Number.parseInt(svgNode.querySelector("title").textContent);
                         let node = func.nodes[nodeId];
                         let start = node.start + 1;
                         let end = start + node.lines.length;
                         assembly.gotoLine(start);
                         assembly.selection.setSelectionRange(new ace.Range(start, 0, end, 0));
-                    });
+                    }
+                    svgNode.addEventListener("click", listener);
+                    svgNode.addEventListener("touchdown", listener);
                 }
 
             }).catch(error => {
                 viz = new Viz();
                 container.innerHTML = "";
+                throw error;
             });
     }
 
