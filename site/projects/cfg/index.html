@@ -9,6 +9,7 @@
     <script src="/js/code.js"></script>
     <script src="./viz.js"></script>
     <script src="./full.render.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.14.0/ace.js" integrity="sha512-WYlXqL7GPpZL2ImDErTX0RMKy5hR17vGW5yY04p9Z+YhYFJcUUFRT31N29euNB4sLNNf/s0XQXZfzg3uKSoOdA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         body {
             background: black;
@@ -107,10 +108,12 @@
             .main {
                 flex-direction: column !important;
             }
+
             .header {
                 display: flex;
                 flex-direction: column;
             }
+
             .links {
                 text-align: left;
             }
@@ -169,7 +172,7 @@
         console.log(str);
     }
 
-    function isLabelLine (line) {
+    function isLabelLine(line) {
         if (line.indexOf(":") > 0) {
             for (let i = 0; i < line.indexOf(":"); i++) {
                 if (line.charAt(i) == " ") return false;
@@ -219,7 +222,8 @@
                     if (j < func.end - 1 && !isLabelLine(lines[j + 1])) {
                         let nextNode = {
                             id: func.nodes.length,
-                            lines: []
+                            lines: [],
+                            start: j
                         };
                         func.nodes.push(nextNode);
                         func.edges.push({ from: node.id, to: nextNode.id });
@@ -243,7 +247,8 @@
                 if (label.indexOf("@") < 0) continue; // Ignore first label after proc, has no @
                 let node = {
                     id: nodeId++,
-                    lines: []
+                    lines: [],
+                    start: i,
                 };
                 func.nodes.push(node);
                 func.labels.push({ label: label, node: node });
@@ -261,7 +266,8 @@
                     edges: [],
                     rootNode: {
                         id: nodeId++,
-                        lines: []
+                        lines: [],
+                        start: i,
                     }
                 };
                 func.nodes.push(func.rootNode);
@@ -303,7 +309,8 @@
                 if (label.charAt(0) == ".") {
                     let node = {
                         id: nodeId++,
-                        lines: []
+                        lines: [],
+                        start: i,
                     };
                     func.nodes.push(node);
                     func.labels.push({ label: label, node: node });
@@ -325,7 +332,8 @@
                         edges: [],
                         rootNode: {
                             id: nodeId++,
-                            lines: []
+                            lines: [],
+                            start: i,
                         }
                     };
                     func.nodes.push(func.rootNode);
@@ -372,17 +380,20 @@
     }
 
     function renderGraph(func) {
-        let dot = 'digraph G {\nbgcolor="black"\nfontcolor="#bbbbbb"\nfontsize="12"\n';
+        let dot = 'digraph G {\n';
+        dot += 'bgcolor="black"\n';
+        dot += 'edge [color="#bbbbbb"]\n';
+        dot += 'node [shape=box,fontname="Courier",fontsize="10",fontcolor="#bbbbbb",color="#bbbbbb"]\n';
         for (let i = 0; i < func.nodes.length; i++) {
             let node = func.nodes[i];
             let lines = node.lines.map((l) => l.trim()).join("\\l");
             lines = lines.split('"').join('\\"');
-            dot += node.id + ' [shape=box,fontname="Courier",fontsize="10",fontcolor="#bbbbbb",color="#bbbbbb",label="' + lines + '\\l"]\n';
+            dot += node.id + ' [label="' + lines + '\\l"]\n';
         }
 
         for (let i = 0; i < func.edges.length; i++) {
             let edge = func.edges[i];
-            dot += edge.from + " -> " + edge.to + ' [color="#bbbbbb"]\n';
+            dot += edge.from + " -> " + edge.to + '\n';
         }
         dot += "\n}"
         debug(dot);
@@ -393,6 +404,17 @@
             .then(function (svg) {
                 container.innerHTML = "";
                 container.appendChild(svg);
+
+                let svgNodes = svg.querySelectorAll(".node");
+                for (let i = 0; i < svgNodes.length; i++) {
+                    let svgNode = svgNodes[i];
+                    svgNode.addEventListener("click", (ev) => {
+                        let nodeId = Number.parseInt(svgNode.querySelector("title").textContent);
+                        let node = func.nodes[nodeId];
+                        console.log(node);
+                    });
+                }
+
             }).catch(error => {
                 viz = new Viz();
                 container.innerHTML = "";
