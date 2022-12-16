@@ -34,6 +34,7 @@
             outline: none !important;
             color: #bbb;
             width: 80ch;
+            min-width: 80ch;
             resize: none;
             overflow: scroll;
         }
@@ -43,6 +44,7 @@
             overflow: scroll;
             flex: 1;
             text-align: center;
+            max-height: calc(100vh - 1.5em);
         }
 
         .row {
@@ -65,6 +67,28 @@
         .fill {
             flex: 1;
         }
+
+        select {
+            appearance: none;
+            background-color: transparent;
+            border: none;
+            padding: 0 1em 0 0;
+            margin: 0;
+            width: 100%;
+            font-family: inherit;
+            font-size: inherit;
+            cursor: inherit;
+            line-height: inherit;
+            border-bottom: 1px solid #222;
+            color: #ccc;
+            outline: none !important;
+            height: 1.5em;
+        }
+
+        #function-name {
+            background: rgb(152, 61, 0);
+            color: #ccc;
+        }
     </style>
 </head>
 
@@ -73,7 +97,11 @@
         <h1 style="margin: 0 auto"></h1>
         <div class="row fill">
             <textarea class="assembly"></textarea>
-            <div class="graphview">
+            <div class="column fill">
+                <select id="function-name">
+                </select>
+                <div class="graphview">
+                </div>
             </div>
         </div>
     </div>
@@ -326,16 +354,32 @@
             graph = parseClangGCC(code);
         }
 
-        let func = graph[0];
+        let functionSelect = document.querySelector("#function-name");
+        functionSelect.innerHTML = "";
+        for (let i = 0; i < graph.length; i++) {
+            let func = graph[i];
+            let option = document.createElement("option");
+            option.value = i;
+            option.innerText = func.name;
+            functionSelect.appendChild(option);
+        }
+        functionSelect.onchange = () => {
+            renderGraph(graph[functionSelect.value]);
+        }
 
+        let func = graph[0];
+        if (func) renderGraph(func)
+        else document.querySelector('.graphview').innerHTML = "";
+
+    }
+
+    function renderGraph(func) {
         let dot = 'digraph G {\nbgcolor="black"\nfontcolor="#bbbbbb"\nfontsize="12"\n';
-        dot += 'f [shape=box,fontname="Courier",fontcolor="#bbbbbb",color="#bbbbbb",label="' + func.name + '"]\n';
         for (let i = 0; i < func.nodes.length; i++) {
             let node = func.nodes[i];
             dot += node.id + ' [shape=box,fontname="Courier",fontsize="10",fontcolor="#bbbbbb",color="#bbbbbb",label="' + node.lines.map((l) => l.trim()).join("\\l") + '\\l"]\n';
         }
 
-        dot += 'f -> 0 [color="#bbbbbb"]\n';
         for (let i = 0; i < func.edges.length; i++) {
             let edge = func.edges[i];
             dot += edge.from + " -> " + edge.to + ' [color="#bbbbbb"]\n';
@@ -349,22 +393,9 @@
             .then(function (svg) {
                 container.innerHTML = "";
                 container.appendChild(svg);
-                panZoom = svgPanZoom(svg, {
-                    zoomEnabled: true,
-                    controlIconsEnabled: true,
-                    fit: true,
-                    center: true,
-                    minZoom: 0.1
-                });
-
-                svg.addEventListener('paneresize', function (e) {
-                    panZoom.resize();
-                }, false);
-                window.addEventListener('resize', function (e) {
-                    panZoom.resize();
-                });
             }).catch(error => {
                 viz = new Viz();
+                container.innerHTML = "";
             });
     }
 
