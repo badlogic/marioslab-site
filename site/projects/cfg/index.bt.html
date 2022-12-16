@@ -10,6 +10,7 @@
     <script>{{include raw "./_viz.js"}}</script>
     <script>{{include raw "./_full.render.js"}}</script>
     <script>{{include raw "./_ace.js"}}</script>
+    <script src="svg-pan-zoom.min.js"></script>
     <style>
         body {
             background: black;
@@ -415,7 +416,14 @@
             .then(function (svg) {
                 container.innerHTML = "";
                 container.appendChild(svg);
-
+                svgPanZoom(svg, {
+                    minZoom: 0.2,
+                    fit: true,
+                    contain: true,
+                    center: true,
+                    dblClickZoomEnabled: false,
+                    zoomScaleSensitivity: 0.3
+                });
                 let svgNodes = svg.querySelectorAll(".node");
                 for (let i = 0; i < svgNodes.length; i++) {
                     let svgNode = svgNodes[i];
