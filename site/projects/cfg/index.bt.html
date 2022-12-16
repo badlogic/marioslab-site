@@ -68,6 +68,7 @@
             background: black;
             text-align: center;
             overflow: hidden;
+            flex: 1;
         }
 
         .main {
@@ -161,9 +162,8 @@
     const assembly = ace.edit(document.querySelector(".assembly"));
     assembly.setTheme("ace/theme/twilight");
     assembly.setShowPrintMargin(false);
-    assembly.session.setMode("ace/mode/assembly_x86")
-
     const graphView = document.querySelector(".graphview");
+    let svg = null;
 
 
     assembly.addEventListener("change", () => {
@@ -206,7 +206,11 @@
                 if (isLabelLine(line)) {
                     const label = line.substr(0, line.indexOf(":")).trim();
                     let nextNode = func.labeledNodes[label];
-                    if (node.lines.length > 0 && node.lines[node.lines.length - 1].trim().indexOf("jmp") == 0) {
+                    if (node.lines.length > 0 &&
+                        (
+                            node.lines[node.lines.length - 1].trim().indexOf("jmp") == 0 |
+                            node.lines[node.lines.length - 1].trim().indexOf("b ") == 0
+                        ) ) {
                         if (node.lines[node.lines.length - 1].indexOf(label) > 0)
                             func.edges.push({ from: node.id, to: nextNode.id });
                     } else {
@@ -374,6 +378,12 @@
             graph = parseClangGCC(code);
         }
 
+        if (code.indexOf("rbp") > 0 || code.indexOf("ebp") > 0) {
+            assembly.session.setMode("ace/mode/assembly_x86")
+        } else {
+            assembly.session.setMode(null);
+        }
+
         let functionSelect = document.querySelector("#function-name");
         functionSelect.innerHTML = "";
         for (let i = 0; i < graph.length; i++) {
@@ -412,12 +422,15 @@
         dot += "\n}"
         debug(dot);
 
-        var container = document.querySelector('.graphview');
         var viz = new Viz();
         viz.renderSVGElement(dot)
-            .then(function (svg) {
-                container.innerHTML = "";
-                container.appendChild(svg);
+            .then(function (renderedSvg) {
+                svg = renderedSvg;
+                graphView.innerHTML = "";
+                graphView.appendChild(svg);
+
+                svg.setAttribute("width", graphView.clientWidth);
+                svg.setAttribute("height", graphView.clientHeight);
 
                 let eventsHandler = {
                     haltEventListeners: ['touchstart', 'touchend', 'touchmove', 'touchleave', 'touchcancel']
@@ -492,11 +505,18 @@
 
             }).catch(error => {
                 viz = new Viz();
-                container.innerHTML = "";
+                graphView.innerHTML = "";
                 throw error;
             });
     }
 
+    window.addEventListener("resize", (event) => {
+        if (svg) {
+            console.log("Setting SVG size", graphView.clientWidth, graphView.clientHeight);
+            svg.setAttribute("width", graphView.clientWidth);
+            svg.setAttribute("height", graphView.clientHeight);
+        }
+    });
     init();
 </script>
 
