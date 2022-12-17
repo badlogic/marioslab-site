@@ -11,6 +11,13 @@
             "mainClass": "io.marioslab.MariosLab",
             "projectName": "marioslab-site",
             "args": "-i site -o output -w -d -r -p \"\""
-        }
+        },
+        {
+            "type": "pwa-chrome",
+            "request": "launch",
+            "name": "New CFG",
+            "url": "http://localhost:8000/projects/cfg/index2.html",
+            "webRoot": "${workspaceFolder}"
+        },
     ]
 }

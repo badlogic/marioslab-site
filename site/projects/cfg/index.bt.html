@@ -7,11 +7,9 @@
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0">
     <title>Mario's assembly CFG viewer</title>
     <script src="/js/code.js"></script>
-    <script>{{include raw "./js/_viz.js" }}</script>
-    <script>{{include raw "./js/_lite.render.js" }}</script>
-    <script>{{include raw "./js/_ace.js" }}</script>
-    <script src="./js/hammer.js"></script>
-    <script>{{include raw "./js/_svg-pan-zoom.min.js" }}</script>
+    <script>{{include raw "./js/_ace.js"}}</script>
+    <script>{{include raw"./js/asmcfg.min.js"}}</script>
+
     <style>
         body {
             background: black;
@@ -71,6 +69,12 @@
             flex: 1;
         }
 
+        .graphview svg {
+            width: 100%;
+            height: 100%;
+            outline: none;
+        }
+
         .main {
             display: flex;
             flex-direction: row;
@@ -123,8 +127,26 @@
         }
 
         .node {
+            white-space: nowrap;
+            font-family: Courier;
             cursor: pointer;
-            user-select: none;
+            color: #ccc;
+            stroke: none;
+            fill: #ccc;
+        }
+
+        /* Style node bounding rectangle */
+        .node rect {
+            stroke: #ccc;
+            fill: #000;
+            stroke-width: 1.5px;
+        }
+
+        /* Style edges */
+        .edgePath path.path {
+            stroke: #ccc;
+            stroke-width: 1.5px;
+            fill: none;
         }
     </style>
 </head>
@@ -151,6 +173,9 @@
                 <select id="function-name" style="padding-left: 1em;"></select>
             </div>
             <div class="graphview">
+                <svg>
+                    <g />
+                </svg>
             </div>
         </div>
     </div>
@@ -163,7 +188,7 @@
     assembly.setTheme("ace/theme/twilight");
     assembly.setShowPrintMargin(false);
     const graphView = document.querySelector(".graphview");
-    let svg = null;
+    let svgGraph = document.querySelector(".graphview svg");
 
 
     assembly.addEventListener("change", () => {
@@ -179,350 +204,72 @@
     async function init() {
         let example = await downloadExample("examples/example-clang.c");
         assembly.setValue(example, -1);
-        generateGraph(example);
+        // generateGraph(example);
     }
 
-    function debug(str) {
-        console.log(str);
-    }
-
-    function isLabelLine(line) {
-        if (line.indexOf(":") > 0) {
-            for (let i = 0; i < line.indexOf(":"); i++) {
-                if (line.charAt(i) == " ") return false;
-            }
-            return true;
-        }
-    }
-
-    function buildGraph(lines, functions) {
-        for (let i = 0; i < functions.length; i++) {
-            const func = functions[i];
-            let node = func.rootNode;
-
-            for (let j = func.start; j < func.end; j++) {
-                const line = lines[j];
-
-                if (isLabelLine(line)) {
-                    const label = line.substr(0, line.indexOf(":")).trim();
-                    let nextNode = func.labeledNodes[label];
-                    if (node.lines.length > 0 &&
-                        (
-                            node.lines[node.lines.length - 1].trim().indexOf("jmp") == 0 |
-                            node.lines[node.lines.length - 1].trim().indexOf("b ") == 0
-                        ) ) {
-                        if (node.lines[node.lines.length - 1].indexOf(label) > 0)
-                            func.edges.push({ from: node.id, to: nextNode.id });
-                    } else {
-                        func.edges.push({ from: node.id, to: nextNode.id });
-                    }
-                    node = nextNode;
-                    continue;
-                }
-
-                node.lines.push(line);
-
-                let foundLabel = null;
-                for (let k = 0; k < func.labels.length; k++) {
-                    let label = func.labels[k];
-                    if (line.indexOf(label.label) > 0) {
-                        if (foundLabel == null) {
-                            foundLabel = label;
-                        } else {
-                            if (label.label.length > foundLabel.label.length) {
-                                foundLabel = label;
-                            }
-                        }
-                    }
-                }
-                if (foundLabel) {
-                    func.edges.push({ from: node.id, to: foundLabel.node.id });
-                    if (j < func.end - 1 && !isLabelLine(lines[j + 1])) {
-                        let nextNode = {
-                            id: func.nodes.length,
-                            lines: [],
-                            start: j
-                        };
-                        func.nodes.push(nextNode);
-                        func.edges.push({ from: node.id, to: nextNode.id });
-                        node = nextNode;
-                    }
-                }
-            }
-        }
-    }
-
-    function parseMSVC(code) {
-        const lines = code.split(/\r?\n/);
-        const functions = [];
-
-        let func = null;
-        let nodeId = 0;
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            if (isLabelLine(line)) {
-                const label = line.substr(0, line.indexOf(":")).trim();
-                if (label.indexOf("@") < 0) continue; // Ignore first label after proc, has no @
-                let node = {
-                    id: nodeId++,
-                    lines: [],
-                    start: i,
-                    label: label
-                };
-                func.nodes.push(node);
-                func.labels.push({ label: label, node: node });
-                func.labeledNodes[label] = node;
-            } else if (line.indexOf("PROC") > 0) {
-                const label = line.substr(0, line.indexOf("PROC")).trim();
-                nodeId = 0;
-                func = {
-                    name: label,
-                    labels: [],
-                    labeledNodes: {},
-                    start: i + 2,  // Function starts after first label
-                    end: null,     // End is exclusive
-                    nodes: [],
-                    edges: [],
-                    rootNode: {
-                        id: nodeId++,
-                        lines: [],
-                        start: i,
-                        label: label
-                    }
-                };
-                func.nodes.push(func.rootNode);
-                func.labels.push({ label: label, node: func.rootNode });
-                func.labeledNodes[label] = func.rootNode;
-                functions.push(func);
-            } else if (line.indexOf(" ENDP") > 0) {
-                func.end = i;
-                func = null;
-            }
-        }
-
-        debug(functions);
-
-        buildGraph(lines, functions)
-
-        return functions;
-    }
-
-    function parseClangGCC(code) {
-        const lines = code.split(/\r?\n/);
-        const functions = [];
-
-        let isLabelLine = (line) => {
-            if (line.indexOf(":") > 0) {
-                for (let i = 0; i < line.indexOf(":"); i++) {
-                    if (line.charAt(i) == " ") return false;
-                }
-                return true;
-            }
-        }
-
-        let func = null;
-        let nodeId = 0;
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            if (isLabelLine(line)) {
-                const label = line.substr(0, line.indexOf(":")).trim();
-                if (label.charAt(0) == ".") {
-                    let node = {
-                        id: nodeId++,
-                        lines: [],
-                        start: i,
-                        label: label
-                    };
-                    func.nodes.push(node);
-                    func.labels.push({ label: label, node: node });
-                    func.labeledNodes[label] = node;
-                } else {
-                    if (func) {
-                        func.end = i;
-                        func = null;
-                    }
-
-                    nodeId = 0;
-                    func = {
-                        name: label,
-                        labels: [],
-                        labeledNodes: {},
-                        start: i + 1,  // Function starts after first label
-                        end: null,     // End is exclusive
-                        nodes: [],
-                        edges: [],
-                        rootNode: {
-                            id: nodeId++,
-                            lines: [],
-                            start: i,
-                            label: label
-                        }
-                    };
-                    func.nodes.push(func.rootNode);
-                    func.labels.push({ label: label, node: func.rootNode });
-                    func.labeledNodes[label] = func.rootNode;
-                    functions.push(func);
-                }
-            }
-        }
-        if (func && !func.end) func.end = lines.length;
-
-        debug(functions);
-
-        buildGraph(lines, functions);
-
-        return functions;
-    }
-
-    function generateGraph(code) {
-        let graph;
-        if (code.indexOf("PROC") >= 0 && code.indexOf("ENDP") >= 0) {
-            graph = parseMSVC(code);
-        } else {
-            graph = parseClangGCC(code);
-        }
-
+    async function generateGraph(code) {
         if (code.indexOf("rbp") > 0 || code.indexOf("ebp") > 0) {
             assembly.session.setMode("ace/mode/assembly_x86")
         } else {
             assembly.session.setMode(null);
         }
 
+        let functions = asmcfg.parse(code);
+
         let functionSelect = document.querySelector("#function-name");
         functionSelect.innerHTML = "";
-        for (let i = 0; i < graph.length; i++) {
-            let func = graph[i];
+        for (let i = 0; i < functions.length; i++) {
+            let func = functions[i];
             let option = document.createElement("option");
             option.value = i;
             option.innerText = func.name;
             functionSelect.appendChild(option);
         }
         functionSelect.onchange = () => {
-            renderGraph(graph[functionSelect.value]);
+            renderGraph(functions[functionSelect.value]);
         }
 
-        let func = graph[0];
+        let func = functions[0];
         if (func) renderGraph(func)
         else document.querySelector('.graphview').innerHTML = "";
-
     }
 
-    function renderGraph(func) {
-        let dot = 'digraph G {\n';
-        dot += 'bgcolor="black"\n';
-        dot += 'edge [color="#bbbbbb"]\n';
-        dot += 'node [shape=box,fontname="Courier",fontsize="10",fontcolor="#bbbbbb",color="#bbbbbb",bgcolor="black"]\n';
-        for (let i = 0; i < func.nodes.length; i++) {
-            let node = func.nodes[i];
-            let lines;
-            let label = node.label;
-            if (label) {
-                label = label + ":\\l";
-                lines = node.lines.map((l) => l.trim()).map((l) => "   " + l).join("\\l");
-            } else {
-                label = "";
-                lines = node.lines.map((l) => l.trim()).join("\\l");
-            }
-            lines = lines.split('"').join('\\"');
-            dot += node.id + ' [label="' + label + lines + '\\l"]\n';
-        }
+    async function renderGraph(func) {
+        // Complex case, styling is done by modifying graphlib nodes and edges.
+        // See https://dagrejs.github.io/project/dagre-d3/latest/demo/style-attrs.html
+        let graph = await asmcfg.renderGraphlib(func);
+        let edges = graph.edges();
+        for (let i = 0; i < edges.length; i++) {
+            let edge = edges[i];
+            let fromNode = func.nodes[edge.v];
+            let toNode = func.nodes[edge.w];
 
-        for (let i = 0; i < func.edges.length; i++) {
-            let edge = func.edges[i];
-            let from = func.nodes[edge.from];
-            let to = func.nodes[edge.to];
-            let attributes = "";
-            if (to.label) {
-                if (from.lines.length > 0 && from.lines[from.lines.length - 1].indexOf(to.label) >= 0)
-                    attributes = '[color="darkgreen"]';
+            // Highlight edges green or red, based on whether they are a result of a taken
+            // conditional jump (green), or a fall through (red). To determine this, we
+            // check if the last line of the "from" node has the label of the "to" node.
+            if (toNode.label) {
+                if (fromNode.lines.length > 0 && fromNode.lines[fromNode.lines.length - 1].indexOf(toNode.label) >= 0)
+                    graph.setEdge(edge.v, edge.w, { style: "stroke: #00aa00", arrowheadStyle: "stroke: #00aa00; fill: #00aa00;" });
                 else
-                    attributes = '[color="#aa0000"]';
+                    graph.setEdge(edge.v, edge.w, { style: "stroke: #aa0000", arrowheadStyle: "stroke: #aa0000; fill: #aa0000;" });
             } else {
-                attributes = '[color="#aa0000"]';
+                graph.setEdge(edge.v, edge.w, { style: "stroke: #aa0000", arrowheadStyle: "stroke: #aa0000; fill: #aa0000;" });
             }
-            dot += edge.from + " -> " + edge.to + attributes + '\n';
         }
-        dot += "\n}"
-        debug(dot);
 
-        var viz = new Viz();
-        viz.renderSVGElement(dot)
-            .then(function (renderedSvg) {
-                svg = renderedSvg;
-                graphView.innerHTML = "";
-                graphView.appendChild(svg);
-
-                svg.setAttribute("width", graphView.clientWidth);
-                svg.setAttribute("height", graphView.clientHeight);
-
-                let eventsHandler = {
-                    haltEventListeners: ['touchstart', 'touchend', 'touchmove', 'touchleave', 'touchcancel'],
-                    init: function (options) {
-                        var instance = options.instance, initialScale = 1, pannedX = 0, pannedY = 0;
-                        this.hammer = Hammer(options.svgElement, {
-                            inputClass: Hammer.SUPPORT_POINTER_EVENTS ? Hammer.PointerEventInput : Hammer.TouchInput
-                        });
-
-                        this.hammer.get('pinch').set({ enable: true });
-                        this.hammer.on('doubletap', function (ev) { instance.zoomIn() });
-
-                        this.hammer.on('panstart panmove', function (ev) {
-                            if (ev.type === 'panstart') {
-                                pannedX = 0
-                                pannedY = 0
-                            }
-                            instance.panBy({ x: ev.deltaX - pannedX, y: ev.deltaY - pannedY })
-                            pannedX = ev.deltaX
-                            pannedY = ev.deltaY
-                        });
-
-                        this.hammer.on('pinchstart pinchmove', function (ev) {
-                            if (ev.type === 'pinchstart') initialScale = instance.getZoom()
-                            instance.zoomAtPoint(initialScale * ev.scale, { x: ev.center.x, y: ev.center.y })
-                        })
-                        options.svgElement.addEventListener('touchmove', function (e) { e.preventDefault(); });
-                    },
-                    destroy: () => this.hammer.destroy()
-                }
-
-                svgPanZoom(svg, {
-                    minZoom: 0.2,
-                    fit: true,
-                    contain: true,
-                    center: true,
-                    dblClickZoomEnabled: false,
-                    zoomScaleSensitivity: 0.3,
-                    customEventsHandler: eventsHandler
-                });
-                let svgNodes = svg.querySelectorAll(".node");
-                for (let i = 0; i < svgNodes.length; i++) {
-                    let svgNode = svgNodes[i];
-                    let bbox = svgNode.getBBox();
-                    svgNode.innerHTML = '<rect x="' + bbox.x + '" y="' + bbox.y + '" width="' + bbox.width + '" height="' + bbox.height + '"></rect>' + svgNode.innerHTML;
-                    let listener = (ev) => {
-                        let nodeId = Number.parseInt(svgNode.querySelector("title").textContent);
-                        let node = func.nodes[nodeId];
-                        let start = node.start + 1;
-                        let end = start + node.lines.length;
-                        assembly.gotoLine(start);
-                        assembly.selection.setSelectionRange(new ace.Range(start, 0, end, 0));
-                    }
-                    svgNode.addEventListener("click", listener);
-                    svgNode.addEventListener("touchdown", listener);
-                }
-
-            }).catch(error => {
-                viz = new Viz();
-                graphView.innerHTML = "";
-                throw error;
-            });
+        // Render the styled graphlib graph to the SVG element.
+        await asmcfg.renderSvgFromGraphlib(graph, svgGraph);
+        asmcfg.makeInteractive(svgGraph.querySelector("g"), func, (lineStart, lineEnd, node, func) => {
+            assembly.gotoLine(lineStart);
+            assembly.selection.setSelectionRange(new ace.Range(lineStart, 0, lineEnd, 0));
+        });
     }
 
     window.addEventListener("resize", (event) => {
-        if (svg) {
+        if (svgGraph) {
             console.log("Setting SVG size", graphView.clientWidth, graphView.clientHeight);
-            svg.setAttribute("width", graphView.clientWidth);
-            svg.setAttribute("height", graphView.clientHeight);
+            svgGraph.setAttribute("width", graphView.clientWidth);
+            svgGraph.setAttribute("height", graphView.clientHeight);
         }
     });
     init();
