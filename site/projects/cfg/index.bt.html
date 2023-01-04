@@ -7,8 +7,8 @@
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0">
     <title>Mario's assembly CFG viewer</title>
     <script src="/js/code.js"></script>
-    <script>{{include raw "./js/_ace.js"}}</script>
-    <script>{{include raw"./js/asmcfg.min.js"}}</script>
+    <script>{{include raw"./js/asmcfg.min.js" }}</script>
+    <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.14.0/src/ace.js"></script>
 
     <style>
         body {
@@ -231,7 +231,9 @@
 
         let func = functions[0];
         if (func) renderGraph(func)
-        else document.querySelector('.graphview').innerHTML = "";
+        else {
+            document.querySelector('.graphview > svg > g').innerHTML = "";
+        }
     }
 
     async function renderGraph(func) {
