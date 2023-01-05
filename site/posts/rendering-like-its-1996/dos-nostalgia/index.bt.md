@@ -245,7 +245,7 @@ Another alternative is running the program and integrated GDB stub on a real mac
 
 > **Note:** when debugging the demos compiled for DOS, we'll be using DOSBox-x instead of 86Box. Two reasons: getting data into and out of 86Box is very annoying. And there is no serial port over TCP emulation in 86Box, so the debugger couldn't even connect. It should be possible to hook the debugger up with a program running in MS-DOS or FreeDOS in VirtualBox though.
 
-## Again, Mario, REALLY?
+## Next time on "Mario writes a lot"
 
 Discuss this post on [Twitter]() or [Mastodon]().
 
