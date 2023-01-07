@@ -191,11 +191,11 @@ In our demo above, we render to a 320x240 output `r96_image`. The call to `r96_c
 
 That's one of the reasons pretty much all older DOS games targeting 386 or 486 would use [mode 13h](https://en.wikipedia.org/wiki/Mode_13h) or derivatives like [Mode X](https://en.wikipedia.org/wiki/Mode_X). Both of these video modes use 8 bits to encode a pixel's color. But instead of directly encoding the color's red, green and blue component, the 8-bit value is an index into a palette with a total of 256 colors. That cuts down on memory and bandwidth needs considerably.
 
-In our demo's case, we'd go from `3.8MB` to `0.95MB` of data per frame. That translates to 12-20 frames per second, which is still not great, but often playable enough. That's about the frame rate I got when playing [MicroProse's Formula One Grand Prix](https://www.youtube.com/watch?v=qATaCWHLAxw) on my 486.
+If we went mode 13h on our demo, we'd go from `3.8MB` to `0.95MB` of data per frame. That translates to 12-20 frames per second, which is still not great, but often playable enough. That's about the frame rate I got when playing [MicroProse's Formula One Grand Prix](https://www.youtube.com/watch?v=qATaCWHLAxw) on my 486.
 
-So what's the solution? Draw less each frame! DOOM and Quake relied on various techniques like [binary space partitioning](https://twobithistory.org/2019/11/06/doom-bsp.html) to avoid drawing things that are invisible or occluded. Drawing less things means touching less memory. Consider that 100 grunts are about 5.3 screens worth of pixels. That's a lot of overdraw.
+So what's the solution? Draw less each frame! DOOM and Quake relied on various techniques like [binary space partitioning](https://twobithistory.org/2019/11/06/doom-bsp.html) to avoid drawing things that are invisible or occluded. Drawing less means touching less memory. Consider that 100 grunts are about 5.3 screens worth of pixels. That's a lot of overdraw.
 
-And yes, we could probably squeeze a lot of cycles out of the blitting functions if we handcrafted some 32-bit x86 assembly. But DJGPP actually does a pretty good job at producing fast machine code. And I don't want to drop down into assembly land.
+Yes, we could probably squeeze a lot of cycles out of the blitting functions if we handcrafted some 32-bit x86 assembly. But DJGPP actually does a pretty good job at producing fast machine code. And I don't want to drop down into assembly land.
 
 > **Note:** modern hardware won't save you from these issues either sometimes. When NVIDIA sent me a prototype Tegra board in the early 2010s, I soon found out that you could only render about 2 full-screen alpha blended rectangles through OpenGL ES before the frame-rate takes a heavy hit.
 
@@ -232,6 +232,35 @@ If you want to debug any of the demos in DOS, you'll have to add the 3 pieces of
 > **Note:** when debugging the demos compiled for DOS, we'll be using DOSBox-x instead of 86Box. Two reasons: getting data into and out of 86Box is very annoying. And there is no serial port over TCP emulation in 86Box, so the debugger couldn't even connect. It should be possible to hook the debugger up with a program running in MS-DOS or FreeDOS in VirtualBox though.
 
 ## Bitmap fonts
+Rendering text these days is really, really hard. When we go zooming around documents or web pages via mouse wheel or touch zoom, we expect text to scale seamlessly and stay crisp. If we want to get fancy, we add [kerning](https://en.wikipedia.org/wiki/Kerning) and [hinting](https://en.wikipedia.org/wiki/Font_hinting) to the mix.
+
+It gets even harder when non-latin scripts like [arabic script](https://en.wikipedia.org/wiki/Arabic_script) or [CJK script](https://en.wikipedia.org/wiki/CJK_characters) need to get put on a screen. Now you have to deal with [ligatures](https://fonts.google.com/knowledge/glossary/ligature), mixed left-to-right and [right-to-left layouting](https://en.wikipedia.org/wiki/Right-to-left_script), and various other nightmares.
+
+And to top it all off, what you get out of a font file is usually a vector representation of not a character, but a [glyph](https://en.wikipedia.org/wiki/Glyph), which can be a character, or a part of a character, and oh my, this is all very complicated.
+
+Thankfully, there are various libraries that can help us draw text. For translating a text string to a set of glyphs, or [shaping](https://harfbuzz.github.io/what-is-harfbuzz.html#what-is-text-shaping) as it's usually called, you can use [HarfBuzz](https://harfbuzz.github.io/). If you want to rasterize those glyphs, which are usually given in vector form, you can use [FreeType](http://freetype.org/). If you  want to use your GPU to do most of that, you can use [Slug](https://sluglibrary.com/). Your operating system usually also comes with [APIs to draw text](https://learn.microsoft.com/en-us/windows/win32/directwrite/direct-write-portal).
+
+We aren't going to do any of that though. We'll be going somewhat old school and draw inspiration from [VGA text mode fonts](https://en.wikipedia.org/wiki/VGA_text_mode#Fonts), but with a 2022 spirit (aka being wasteful).
+
+Our system will be capable of drawing text where each character is encoded as 1 byte. Classic old `char *`. That's a total of 256 characters.
+
+ We'll use the  [ISO-8859-1 character set](https://en.wikipedia.org/wiki/ISO/IEC_8859-1) which is sometimes incorrectly referred to as extended [ASCII](https://en.wikipedia.org/wiki/ASCII). The first 128 characters correspond to ASCII. The other 128 characters map to glyphs from various mostly western scripts. The entire character set corresponds to the first 256 Unicode code points. Here are the glyphs we'll support:
+
+--markdown-end
+{{post.figureMaxWidth("iso-8859-1.png", "The ISO-8859-1 character set <a href='https://en.wikipedia.org/wiki/ISO/IEC_8859-1'>Source: Wikipedia</a>", "80%")}}
+--markdown-begin
+
+The characters from `0-31` are labeled as undefined above. In ASCII, those are non-printable [control characters](https://en.wikipedia.org/wiki/ASCII#Control_characters).
+
+When we render a text, we'll interpret a character with encoding `9` as `\t` (tab), and a character with encoding `10` as `\n` (newline). We'll ignore all other characters in the range `0-31` and `127-159`.
+
+Each of these characters maps to a glyph image. E.g. the character with encoding `78` (0x4e) maps to the glyph image `H`.
+
+In VGA fonts, and most bitamp fonts in general.
+
+ What glyph image we use for each character is entirely up to us, but we'll stick to a standard.
+
+
 
 
 ## Next time on "Mario writes a lot of words"
