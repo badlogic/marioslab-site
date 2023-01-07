@@ -47,7 +47,7 @@ metadata = {
 </p>
 
 <p>
-	You'll be able to follow along both here, and by playing with the <a href="https://github.com/badlogic/r96">code on GitHub</a>. In addition to the render-y bits, I'll also demonstrate how I set up a cross-platform C project and show you how I structure, build, and debug C code in such a project. I love seeing and learning from other people's workflows. Maybe that's true for you too.
+	You'll be able to follow along both here, and by playing with the <a href="https://github.com/badlogic/r96">code on GitHub</a>. For each blog post, there will be one tagged commit in the <code>main</code> branch you can check out. In addition to the render-y bits, I'll also demonstrate how I set up a cross-platform C project and show you how I structure, build, and debug C code in such a project. I love seeing and learning from other people's workflows. Maybe that's true for you too.
 </p>
 
 <p>
@@ -60,353 +60,342 @@ metadata = {
 </p>
 
 <p>
-	I'll use <a href="https://cmake.org/">CMake</a> as the build tool, not because I love it, but because my favorite C/C++ IDE <a href="https://www.jetbrains.com/clion/">CLion</a> has first class support for it. Other development environments understand CMake as well these days, including <a href="https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-170">Visual Studio</a> if that's your kink.
+	In terms of ompilers, I'll be using <a href="https://github.com/mstorsjo/llvm-mingw">Clang with MinGW headers and standard libraries</a> on Windows, Clang through Xcode on macOS, and GCC on Linux. Why Clang on Windows? Because Visual Studio is a multi-gigabyte download, and setting up builds for it is a terrible experience. Clang also generates better code.
 </p>
 
 <p>
-	The pixels we'll generate need to be thrown up on the display somehow. On Windows, Linux, and macOS we'll use <a href="https://github.com/emoon/minifb">minifb</a>. In a few lines of code, we can open a window, process keyboard and mouse input, and give it a bunch of pixels to draw to the window. It can even upscale our low resolution output if needed. Since minifb does not have browser support, I've written a web backend myself and submitted it as a <a href="https://github.com/emoon/minifb/pull/94">pull request</a> to the upstream repo. In the meantime, we'll use my <a href="https://github.com/badlogic/minifb/tree/web">minifb fork</a>, which has web support baked in.
+	I'll use <a href="https://cmake.org/">CMake</a> as the meta build tool, not because I love it, but because my favorite C/C++ IDE <a href="https://www.jetbrains.com/clion/">CLion</a> has first class support for it. Other development environments understand CMake as well these days, including <a href="https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-170">Visual Studio</a> if that's your kink. For actually executing the builds, I'll use <a href="https://ninja-build.org/">Ninja</a>, which is wicked fast, especially compared to MSBuild and consorts.
 </p>
 
 <p>
-	To get the code running in the browser, we'll use <a href="https://emscripten.org/">emscripten</a> to compile the C code to <a href="https://developer.mozilla.org/en-US/docs/WebAssembly">WASM</a> and a small <code>.js</code> file, which loads the <code>.wasm</code> file and exposes our C functions to JavaScript.
-</p>
-
-<p class="note">
-	<strong>Note:</strong> The instructions below have been superseded by a much simpler setup in follow up blog posts. Have a look at the <a href="https://github.com/badlogic/r96/blob/main/README.md">the latest README.md on GitHub</a> for instructions. If you check out tags earlier than <code>dos-nostalgia</code>, you'll have to use the below instructions. Sorry!
+	The pixels we'll generate need to be thrown up on the display somehow. On Windows, Linux, and macOS we'll use <a href="https://github.com/emoon/MiniFB">MiniFB</a>. In a few lines of code, we can open a window, process keyboard and mouse input, and give it a bunch of pixels to draw to the window. It can even upscale our low resolution output if needed. Since MiniFB does not have browser support, I've written a web backend myself and submitted it as a <a href="https://github.com/emoon/MiniFB/pull/94">pull request</a> to the upstream repo. In the meantime, we'll use my <a href="https://github.com/badlogic/MiniFB/tree/web">MiniFB fork</a>, which has web support baked in.
 </p>
 
 <p>
-	To follow along by compiling, running and debugging the code of this series, you'll need to install a few things:
+	To get the code running in the browser, we'll use <a href="https://emscripten.org/">Emscripten</a> to compile the C code to <a href="https://developer.mozilla.org/en-US/docs/WebAssembly">WASM</a> and a small <code>.js</code> file, which loads the <code>.wasm</code> file and exposes our C functions to JavaScript.
+</p>
+
+<h2>Getting the source code and tools</h2>
+
+<p>
+	That's a lot of tools! I've tried to make it as simple for you to follow along as possible. Here's what you need to install:
 </p>
 
 <ul>
+	<li><a href="https://code.visualstudio.com/">Visual Studio Code</a></li>
+		<ul><li>Make sure <code>code</code> can be called on the command line! Open VS Code, press <code>CTRL+SHIFT+P</code> (or <code>CMD+SHIFT+P</code> on macOS), type <code>Shell Command: Install 'code' command in PATH</code> and hit enter.</li></ul>
 	<li><strong>Windows:</strong>
 		<ul>
-			<li><a href="https://git-scm.com/download/win">Git for Windows</a>. Make sure its available on the command line via the system PATH.</li>
-			<li><a href="https://visualstudio.microsoft.com/vs/features/cplusplus/">Visual Studio with C++ support</a></li>
-			<li><a href="https://cmake.org/download/">CMake</a>. Make sure you add CMake to the system PATH during installation, so you can execute it from the command line</li>
-			<li><a href="https://github.com/ninja-build/ninja/releases">Ninja</a>. Put the <code>ninja.exe</code> file somewhere and make sure it's available on the command line via your system PATH</li>
-			<li><a href="https://www.python.org/">Python</a>. Make sure it's available on the command line via your system PATH</li>
+			<li><a href="https://git-scm.com/download/win">Git for Windows</a>. Make sure its available on the command line via the system PATH.</li>			
 		</ul>
 	</li>
 	<li><strong>Linux:</strong>
 		<ul>
-			<li><a href="https://gcc.gnu.org/">GCC</a> and Git. On Ubuntu <code>sudo apt install build-essential git gdb</code> will do</li>
-			<li>x11-dev library. On Ubuntu: <code>sudo apt install libx11-dev</code></li>
-			<li><a href="https://cmake.org/download/">CMake</a>. On Ubuntu: <code>sudo apt install cmake</code></li>
-			<li><a href="https://github.com/ninja-build/ninja/releases">Ninja</a>. On Ubuntu: <code>sudo apt install ninja</code></li>
+			<li>Git, <a href="https://gcc.gnu.org/">GCC</a>, <a href="https://www.sourceware.org/gdb">GDB</a>, Python, CMake, Curl, libx11-dev, libxkbcommon-dev, and libgl1-mesa-dev. On Ubuntu <code>sudo apt install build-essential git gdb python3.11 cmake curl libx11-dev libxkbcommon-dev libgl1-mesa-dev</code></li>			
 		</ul>
 	</li>
 	<li><strong>macOS:</strong>
 		<ul>
-			<li><a href="https://developer.apple.com/xcode/">Xcode</a>. Make sure to also install the <a href="https://mac.install.guide/commandlinetools/4.html">command line tools</a></li>
-			<li><a href="https://cmake.org/download/">CMake</a>, e.g. via <a href="https://brew.sh/">brew</a> <code>brew install cmake</code></li>
-			<li><a href="https://github.com/ninja-build/ninja/releases">Ninja</a>, e.g. via brew <code>brew install ninja</code></li>
+			<li><a href="https://developer.apple.com/xcode/">Xcode</a>. Make sure to also install the <a href="https://mac.install.guide/commandlinetools/4.html">command line tools</a></li>			
 		</ul>
 	</li>
 </ul>
 
 <p>
-	Finally, to test things in the browser, you'll need to install <a href="https://emscripten.org/docs/getting_started/downloads.html">emscripten</a>. Welcome to cross-platform development.
+	Once you've installed the above, clone the repository and execute the <code>tools/download-tools.sh</code> script (on Windows, use Git Bash, which comes with Git for Windows):
 </p>
 
-<p>
-	If you know your way around cross-platform C/C++ development with CMake and already have a preferred editor/IDE setup, skip the next section.
-</p>
-
-<h2>Setting up VS Code for C development</h2>
-<p>
-	Yes, we could do all development from the command line. But I'm old and cranky and need my UI safe space. Don't @ me.
-</p>
-<p>
-	I'm not religious in general, but for C/C++ work I now exclusively use <a href="https://www.jetbrains.com/clion/">CLion</a>. However, that has a price tag, and since I want everyone to be able to follow along, we'll be using <a href="https://code.visualstudio.com/">Visual Studio Code</a> (or VS Code for short), which is available for Windows, Linux, and macOS. Here's how that's set up:
-</p>
-
-<ul>
-	<li>Install <a href="https://code.visualstudio.com/Download">VS Code</a></li>
-	<li>Open VS Code and install these extensions:
-		<ul>
-			<li><a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools-extension-pack">C/C++ Extension Pack</a>. Provides C/C++ debugging, CMake support, and bad intellisense which we'll disable</li>
-			<li><a href="https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd">clangd</a>. Provides good intellisense</li>
-		</ul>
-	</li>
-	<li>Re-open VS Code for good measure</li>
-	<li>Open the command palette (<code>CTRL+SHIFT+P</code> or <code>CMD+SHIFT+P</code> on macOS), type <code>user setting</code> and select <code>Preferences: Open User-Settings (JSON)</code></li>
-	<li>At the bottom of the freshly opened <code>settings.json</code> file, add the following lines before the closing <code>}</code>:
-		{{post.code("settings.json", "json",
+{{post.code("", "bash",`
+git clone https://github.com/badlogic/r96
+cd r96 && ./tools/download-tools.sh
 `
-"C_Cpp.intelliSenseEngine": "Disabled"
-"cmake.configureOnOpen": true,
-"cmake.configureArgs": ["-DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE"],
-`
-		)}}
-	This will disable the bad intellisense of the C/C++ extension, ensures that CMake projects are automatically configured when opened in VS Code, and that CMake always builds a <code>compile_commands.json</code> file, which the clangd extension needs to provide intellisense/auto-completion.
-	</li>
-</ul>
+)}}
 
 <p>
-	With everything installed and set up, let's briefly have a look at how we can use VS Code for C development.
-</p>
-
-<h2>Using VS Code for C development</h2>
-<p>
-	Let's start by creating a simple CMake project.
-</p>
-
-<ul>
-	<li>Create a folder <code>quickstart</code> somewhere on your hard disk</li>
-	<li>Open the folder in VS Code</li>
-	<li>Create a folder called <code>src</code>, and within it a file called <code>quickstart.c</code> with the following content:
-	{{post.code("quickstart.c", "c",
-`
-#include <stdio.h>
-
-int main(void) {
-	char *text = "Hello World\n";
-	printf("%s", text);
-	return 0;
-}
-`
-	)}}
-	</li>
-	<li>Create a file called <code>CMakeLists.txt</code> in the root of the folder with the following content:
-		{{post.code("CMakeLists.txt", "cmake",
-`
-cmake_minimum_required(VERSION 3.21.1)
-project(quickstart)
-
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED TRUE)
-
-if(MSVC)
-    add_compile_options(/W4 /WX)
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
-endif()
-
-add_executable(quickstart "src/quickstart.c")
-`
-		)}}
-	</li>
-</ul>
-
-<p>
-	The <code>quickstart.c</code> file should be pretty self-explanatory. If not, then this blog post series may not be for you.
+	The <code>download-tools.sh</code> script will download all remaining tools that are needed, like CMake, Ninja, Clang for Windows, Python, a small static file server, Emscripten, and Visual Studio Code extensions needed for C/C++ development. See the <a href="https://github.com/badlogic/r96/blob/main/README.md">README.md</a> for details.
 </p>
 
 <p>
-	The <code>CMakeLists.txt</code> file defines our build. Line 1 defines the minimally required CMake version. Line 2 specifies the project name. Lines 4 and 5 ensure that the compiler uses and must support the C99 standard. Lines 7 to 11 set the warning level to "extremely pedantic, warnings are errors", the Microsoft C++ compiler way as well as the Clang/GCC way. These flags will be added to any target we build.
+	Finally, to follow the code of a specific blog post, check out the corresponding tag. For this blog post:
 </p>
 
-<p>
-	A target is (usually) a library or an executable from a set of source files. We can add as many targets as we want, build them all at once, or build just one specifically. Targets can also depend on each other. CMake is smart enough to figure out which targets need to be build when building a specific target.
-</p>
-
-<p>
-In line 13 we define an executable target called <code>quickstart</code>, which is build from the <code>src/quickstart.c</code> file.
-</p>
-
-<p>
-	To clean, build, run and debug, we can either use the CMake extension commands  from the command palette (search for <code>cmake</code> in the palette to see what's available), or use the CMake UI at the bottom of the VS Code window:
-</p>
-
-{{post.figureMaxWidth("cmake-ui.png", "The CMake extension UI.", "80%")}}
-
-<p>
-	Let's run through the CMake UI real quick:
-</p>
-
-<ul>
-	<li><code>[Debug]</code>: Let's you select the currently active variant. A variant is a fancy name for build type, e.g. release or debug</li>
-	<li><code>No active kit</code>: Let's you select the currently active kit. A kit is a compiler toolchain for a specific architecture, e.g. Clang for x86_64, Visual Studio for ARM64, etc. Always select a specific toolchain, otherwise the debugger may not work!</li>
-	<li><code>Build</code>: Triggers a build of the target(s) specified in the next setting, using the currently selected variant and kit</li>
-	<li><code>[all]</code>: Specifies which targets will be build, like our <code>quickstart</code> executable target. For small projects, it's fine to leave this as <code>[all]</code></li>
-	<li><code>Debug</code>: Builds the selected target(s) as specified by the previous settings, then starts a debugging session for the target specified in the last setting of the ui (in the screenshot that's <code>[quickstart]</code>)</li>
-	<li><code>Run</code>: Builds the selected target(s) as specified by the previous settings, then starts the target specified in the last setting of the ui (in the screenshot that's <code>[quickstart]</code>)</li>
-	<li><code>[quickstart]</code>: Let's you specify which target will be run or debugged when clicking one of the previous two buttons or using the corresponding command from the palette.</li>
-</ul>
-
-<p>
-	All of these except the last one have a command equivalent in the command palette:
-</p>
-
-<ul>
-	<li><code>CMake: Select Variant</code></li>
-	<li><code>CMake: Select a Variant</code></li>
-	<li><code>CMake: Build</code></li>
-	<li><code>CMake: Set Build Target</code></li>
-	<li><code>CMake: Debug</code></li>
-	<li><code>CMake: Run Without Debugging</code></li>
-</ul>
-
-<p>I usually use the UI to set the variant, kit, targets to be build, and target to be debugged/run, as I do not change these settings often. I use the commands from the palette for building, debugging and running as I do that frequently. Using hot keys to do these tasks saves a lot of time.</p>
-
-<p>You may be asked by the CMake extension to select a kit, or in case no kits have been configured yet, scan for kits:</p>
-
-{{post.figureMaxWidth("scan-kits.png", "", "80%")}}
-
-<p><a href="https://github.com/microsoft/vscode-cmake-tools/blob/main/docs/kits.md#how-kits-are-found-and-defined">Scanning for kits</a> means searching for compiler toolchains on your system. Once the scan is complete, you'll be able to select a specific kit to build, run, and debug your targets with.</p>
-
-<p>If the scan fails to find a specific kit, you can also add a kit configuration manually. We have to do exactly that for the emscripten toolchain.</p>
-
-<ul>
-	<li>Run the <code>CMake: Edit User-Local Kits</code> commands</li>
-	<li>At the end of the <code>cmake-tools-kits.json</code> file, add the following lines before the closing <code>]</code>:
-		{{post.code("cmake-tools-kits.json", "json",
-`
-,{
-	"name": "Emscripten",
-	"toolchainFile": "/Users/badlogic/workspaces/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
-}
-`
-		)}}
-	</li>
-	<li>Replace the <code>"toolchainFile"</code> path with the path to your emscripten installation's toolchain file.</li>
-</ul>
-
-<p>
-	Congratulations, you can now also compile your C code for the web by selecting the emscripten kit! The emscripten toolchain doesn't output executables, but a pair of <code>.js</code> and <code>.wasm</code> files. On their own, they can't be run or debugged. They need to be loaded with a little JavaScript within an HTML document. We'll have a look at how that works in the next section.
-</p>
-
-<p>
-	When a build completes, you can find all its output in the <code>build/</code> folder.
-</p>
+{{post.code("", "bash", `
+git checkout 01-babys-first-pixel
+`)}}
 
 <p class="note">
-	<strong>Note:</strong> The clangd intellisense/auto-completion will only start working correctly once we've build the project at least once. It requires the <code>compile_commands.json</code> file that the build will generate.
+	<strong>Note:</strong> we may add new tools in future blog posts. After checking out a tag for a blog post, make sure to run <code>tools/download-tools.sh</code> again.
 </p>
 
-<p>
-	For our final trick, let's set a breakpoint anywhere in <code>src/quickstart.c</code> and start a debugging session either through the CMake UI or the corresponding command from the palette:
-</p>
 
-{{post.figureMaxWidth("debug.png", "This will do pig, this will do.", "80%")}}
-
-<p>
-	We're ready to build the scaffold of our little "Rendering like it's 1996" project. And since that's a mouthful, the project shall henceforth be known as <code>r96</code>
-</p>
-
-<h2>The r96 project scaffold</h2>
+<h2>The r96 project</h2>
 
 <p>
 	These are the goals for the project scaffold:
 </p>
 
 <ul>
+	<li>Make building and debugging for the desktop and the web trivial.</li>
 	<li>Allow adding new demo apps that work without code modification on both the desktop and in the browser</li>
-	<li>Make creating re-usable code easy, to be used by demo apps.</li>
-	<li>Make building for the desktop and the web trivial</li>
+	<li>Make creating re-usable code easy.</li>
 </ul>
 
 <p>
-	Like any good TV cook, I've already prepared a little something. Clone the <a href="https://github.com/badlogic/r96"><code>r96</code></a> repository and check out the <code>babys-first-pixel-00</code> branch.
+	Let's see how I tried to achieve the above. Open your clone of the <code>r96</code> Git repository in VS Code and have a look what's inside.
 </p>
 
-{{post.code("", "bash",
-"
-git clone https://github.com/badlogic/r96 --branch babys-first-pixel-00
-"
-)}}
-
-<p>
-	Open it in VS Code. You'll be asked to select a kit. Select whatever makes sense for your host OS. Here's what you'll get.
+<p class="note">
+	The first time you open the project in VS Code, you'll be asked to select a configure preset. Choose <code>Desktop debug</code>. We'll discuss what this means below.
 </p>
 
 <h3>File structure</h3>
-</p>
 
-{{post.figureMaxWidth("r96-files.png", "Initial file tree of r96.", "200px")}}
-
-<p>
-	The <code>.gitignore</code>, <code>CMakeLists.txt</code>, <code>LICENSE</code>, and <code>README.md</code> files are pretty self-explanatory. The <code>.clang-format</code> file stores the formatting settings used to format the code via, you guessed it, <a href="https://clang.llvm.org/docs/ClangFormat.html">clang-format</a>. The C/C++ extension uses the settings in that file whenever you format a C/C++ source file in VS Code. The file can also be used to format the entire code base from the command line.
-</p>
+{{post.figureMaxWidth("r96-files.png", "", "200px")}}
 
 <p>
-	The <code>src</code> folder contains our code. Re-usable code goes into <code>src/r96/</code>. Demo apps go into the root of the <code>src/</code> folder. There's one demo app so far called <code>00_basic_window.c</code>. Any demo apps we write in subsequent blog posts will also go into <code>src/</code> and start with a sequential number, so we immediately see in which order they were written.
+	The <code>.gitignore</code>, <code>LICENSE</code>, and <code>README.md</code> files are pretty self-explanatory.
 </p>
 
 <p>
-	The <code>web/</code> folder may be weird, even scary to seasoned C veterans. But we need it to run our demo apps on the web. A small price to pay. It contains one <code>.html</code> file per demo app. The purpose of that file is to:
+	The <code>CMakeLists.txt</code> and <code>CMakePresets.json</code> define our build. We'll look into these in a later section.
+</p>
+	
+<p>
+	The <code>.clang-format</code> file stores the formatting settings used to format the code via, you guessed it, <a href="https://clang.llvm.org/docs/ClangFormat.html">clang-format</a>. The VS Code C/C++ extension uses the settings in that file whenever you format a C/C++ source file. The file can also be used to format the entire code base from the command line.
+</p>
+
+<p>
+	The <code>src/</code> folder contains our code. Re-usable code goes into <code>src/r96/</code>. Demo apps go into the root of the <code>src/</code> folder. There are two demo apps so far called <code>00_basic_window.c</code> and <code>01_drawing_a_pixel.c</code>. Any demo apps we write in subsequent blog posts will also go into <code>src/</code> and start with a sequential number, so we immediately see in which order they were written.
+</p>
+
+<p>
+	The <code>src/web/</code> folder may be weird, even scary to seasoned C veterans. But we need it to run our demo apps on the web. A small price to pay. It contains one <code>.html</code> file per demo app. The purpose of that file is to:
 </p>
 
 <ul>
-	<li>Load the <code>.js</code> and <code>.wasm</code> files generated by emscripten for the demo app executable target</li>
+	<li>Load the <code>.js</code> and <code>.wasm</code> files generated by Emscripten for the demo app executable target</li>
 	<li>Provide the demo app with a HTML5 canvas element to draw to</li>
 	<li>Kick off the demo apps execution by calling its <code>main()</code> function</li>
 </ul>
 <p>
-	For any demo app we write in the future, we'll add a source file to the <code>src/</code> folder, and a corresponding <code>.html</code> file to the <code>web/</code> folder.
+	For any demo app we write in the future, we'll add a source file to the <code>src/</code> folder, and a corresponding <code>.html</code> file to the <code>src/web/</code> folder.
 </p>
 
-<p>The <code>web/index.html</code> file is just a plain listing linking to all the <code>.html</code> files of our demo apps. The <code>web/r96.css</code> file is a CSS style sheet used to make the elements in the demo app <code>.html</code> files a little prettier.</p>
+<p>The <code>src/web/index.html</code> file is just a plain listing linking to all the <code>.html</code> files of our demo apps. The <code>src/web/r96.css</code> file is a CSS style sheet used to make the elements in the demo app <code>.html</code> files a little prettier.</p>
 
 <p>
-	When you build the project for the first time through CMake, a transient <code>build/</code> folder will be created. It contains the build output: executable files for desktop builds, <code>.js</code>/<code>.wasm</code>/<code>.html</code> files for web builds.
+	The <code>.vscode/</code> folder contains settings and launch configurations so working on the project is a nice experience.
 </p>
 
 <p>
-	To run a desktop build, just run the executable file. To run a web build, have a web browser of your choice serve the contents of the <code>build/</code> folder and point your browser at it. E.g. serve the files via <code>python -m http.server --directory build</code>, open <a href="http://localhost:8000">http://localhost:8000</a> in your browser.
+	Finally, the <code>tools/</code> folder contains scripts to download the necessary tools. When executing the <code>tools/download-tools.sh</code> script, some of the tools actually get installed in the <code>tools/</code> folder so they don't clog up your system. The folder also contains scripts and batch files used by the launch configurations to do their work.
 </p>
 
-<h3>Dissecting the CMakeLists.txt file</h3>
+<p>
+	The details of the <code>.vscode</code> and <code>tools</code> folder are all gory and duct tape-y. You can have a look if you must. For the remained of the series, their content doesn't matter much.
+</p>
 
-<p>To understand how the build is setup, we need to dissect the <code>CMakeLists.txt</code> file. Here it is in all its glory, section by section.</p>
+<p class="note">
+	<strong>Note:</strong> the first time you open a source file in VS Code, you will be asked if you want to install <code>clangd</code>. Click <code>Yes</code>.
+</p>
 
-{{post.code("CMakeLists.txt", "cmake",
-"
+<h3>Building</h3>
+
+<p>
+	The first time you open the project in VS Code, you'll be asked to select a <a href="https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html">CMake configure preset</a>.
+</p>
+
+{{post.figureMaxWidth("preset.png", "", "400px")}}
+
+<p>
+	A configure preset defines for what platform the code should be build and with what compiler and build flags that should happen. The presets are defined in <a href="https://github.com/badlogic/r96/blob/01-babys-first-pixel/CMakePresets.json">CMakePresets.json</a>.
+</p>
+
+<p>
+	For each platform the <code>r96</code> project supports, there is a corresponding <code>debug</code> and <code>release</code> configure preset. To start, we'll select <code>Desktop debug</code>. You can also select the configure preset in the status bar at the bottom of VS Code.
+</p>
+
+{{post.figureMaxWidth("change-preset.png", "", "200px")}}
+
+<p>
+	To build the project for the selected platform and build type (<code>debug</code> or <code>release</code>), click the <code>Build</code> button in the status bar.
+</p>
+
+{{post.figureMaxWidth("build.png", "", "100px")}}
+
+<p>
+	Alternatively, you can open the VS Code command palette (<code>CTRL+SHIFT+P</code> or <code>CMD+SHIFT+P</code> on macOS), type <code>CMake: Build</code>, and hit enter.
+</p>
+
+<p>
+	In both cases, the <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode.cmake-tools">CMake Tools</a> extension, which was installed as part of <code>tools/download-tools.sh</code>, will configure the CMake build if necessary, then incrementally build the libraries and executables defined in <a href="https://github.com/badlogic/r96/blob/01-babys-first-pixel/CMakeLists.txt">CMakeLists.txt</a>.
+</p>
+
+<p>
+	The resulting build output consisting of executables and assets can be found in <code>build/&lt;os&gt;-&lt;build-type&gt;</code>. E.g. for <code>Desktop debug</code>, the build output will be located in <code>build/windows-debug</code>, <code>build/linux-debug</code>, or <code>build/macos-debug</code> depending on what operating system you are on. For <code>Web release</code> the output will be in <code>build/web-output</code>, and so on.
+</p>
+
+<p class="note">
+	<strong>Note:</strong> To learn more about how to use VS Code CMake integration, check out the <a href="https://vector-of-bool.github.io/docs/vscode-cmake-tools/index.html">documentation</a>.
+</p>
+
+<p>
+	You can of course also build the project on the command line:
+</p>
+
+{{post.code("", "bash", `
+# Configure a Windows debug build and execute the build
+cmake --preset windows-debug
+cmake --build build/windows-debug
+
+# Configure a web release build and execute the build
+cmake --preset web-release
+cmake --build build/web-release
+`)}}
+
+<h3>Debugging</h3>
+<p>
+	The <a href="https://github.com/badlogic/r96/blob/01-babys-first-pixel/.vscode/launch.json">launch.json</a> file in the <code>.vscode/</code> folder defines launch configurations for each platform. Click the launch button in the status bar to select the launch configuration and start a debugging session. 
+</p>
+
+{{post.figureMaxWidth("launch.png", "", "300px")}}
+
+<p>
+	After clicking this status bar entry, you'll be asked to select a launch configuration:
+</p>
+
+{{post.figureMaxWidth("launch-configs.png", "", "200px")}}
+
+<p>
+	When you first start a debugging session, you'll be asked to select a launch target, aka the executable you want to launch:
+</p>
+
+{{post.figureMaxWidth("launch-targets.png", "", "500px")}}
+
+<p>
+	You can also change the launch target in the status bar:
+</p>
+
+{{post.figureMaxWidth("launch-target-status-bar.png", "", "200px")}}
+
+<p>
+	After selecting the launch target, the code is incrementally rebuild, and the debugging session starts. 
+</p>
+
+<p>
+	Instead of going through the status bar, you can also start a new debugging sessions by pressing `F5`. This will launch a session for the currently selected launch configuration, configure preset, and launch target.
+</p>
+
+<p>
+	<strong>Important:</strong> the launch configuration MUST match the preset you selected:
+<p>
+
+<ul>
+	<li><code>Desktop debug target</code>: select the <code>Desktop debug</code> or <code>Desktop release</code> preset.</li>
+	<li><code>Web debug target</code>: select the <code>Web debug</code> or <code>Web release</code> preset.</li>
+</ul>
+
+<p>
+	Debugging a desktop build is the standard experience you are used to. Set breakpoints and watches, interrupt the program at any time, and so on.
+</p>
+
+<p>
+	Debugging the C code compiled to WASM directly in VS Code is not possible. When you start a web debugging session, the respective launch configuration starts a local static file server and opens the `.html` file corresponding to the selected launch target in a browser tab.
+</p>
+
+<p>
+	When you are done "debugging", close the browser tab, and close the debugging session in VS Code by clicking the "Stop" button in the debugger controls.
+</p>
+
+<p>
+ If you feel adventurous: it is possible to <a href="https://developer.chrome.com/blog/wasm-debugging-2020/">debug the C and JavaScript code in Chrome</a>
+</p>
+
+<h3>Dissecting the CMakeLists.txt and CMakePresets.json files</h3>
+
+<p>To understand how the build is setup, we need to understand the <a href="https://github.com/badlogic/r96/blob/01-babys-first-pixel/CMakeLists.txt">CMakeLists.txt</a> and <a href="https://github.com/badlogic/r96/blob/01-babys-first-pixel/CMakePresets.json">CMakePresets.json</a> files.</p>
+
+<p>
+	We've already had a brief look at the <code>CMakePresets.json</code> file above. It defines a <a href="https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html">configure preset</a> for each operating system and build type combination. Let's have a look at one of the presets, specifically, the one used for Windows debug builds.
+</p>
+
+{{post.code("", "json", `
+{
+	"name": "windows-debug",
+	"displayName": "Desktop debug",
+	"description": "",
+	"generator": "Ninja",
+	"binaryDir": "${sourceDir}/build/${presetName}",
+	"cacheVariables": {
+		"CMAKE_BUILD_TYPE": "Debug",
+		"CMAKE_MAKE_PROGRAM": "${sourceDir}/tools/desktop/ninja/ninja"
+	},
+	"toolchainFile": "${sourceDir}/tools/desktop/toolchain-clang-mingw.cmake",
+	"condition": {
+		"type": "equals",
+		"lhs": "${hostSystemName}",
+		"rhs": "Windows"
+	}
+},
+`)}}
+
+<p>
+The important bits are:
+</p>
+
+<ul>
+	<li><code>generator</code>: we use tell CMake to generate a <a href="https://ninja-build.org">Ninja</a> build.</li>
+	<li><code>binaryDir</code>: specifies the output directory for the build. In this case it maps to <code>build/windows-debig</code> through variable substitution.</li>
+	<li><code>CMAKE_BUILD_TYPE</code>: tells CMake we want the binaries to include debugging information.</li>
+	<li><code>CMAKE_MAKE_PROGRAM</code>: tells CMake were to find the Ninja executable. The <code>tools/download-tools.sh</code> script downloaded the executable to <code>tools/desktop/ninja/</code></li>
+	<li><code>toolchainFile</code>: where to find the compiler and linker. On Windows, we use <a href="https://github.com/mstorsjo/llvm-mingw">Clang with MinGW headers and standard libraries.</a>, which the <code>tools/download-tools.sh</code> script downloads to <code>tools/desktop/clang</code>. The <a href="https://github.com/badlogic/r96/blob/01-babys-first-pixel/tools/desktop/toolchain-clang-mingw.cmake">toolchain file</a> references the compiler and linker in that location and sets up a few other CMake cache variables.</li>
+	<li><code>condition</code>: tells CMake to only enable this configure preset if we're running on Windows.</li>
+</ul>
+
+<p>
+	The other configure presets are pretty similar and only differ in what operating system they should be available on, as well as the toolchain being used. On macOS and Linux, the default toolchain is used (GCC or Xcode's Clang). On the web, the Emscripten toolchain is used through a toolchain file that ships with Emscripten.
+</p>
+
+<p>
+	We could work without this presets file, but that would mean we'd have to specify all these parameters manually every time we configure a CMake build. With the presets, this becomes <code>cmake --preset &lt;preset-name&gt;</code>. Much nicer!
+</p>
+
+<p>
+	The <code>CMakeLists.txt</code> file defines the actual build itself, i.e. which source files make up which libraries and executables, and what compiler flags to use. Let's go through it section by section. We start out with this:
+</p>
+
+{{post.code("CMakeLists.txt", "cmake", `
 cmake_minimum_required(VERSION 3.21.1)
 project(r96)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED TRUE)
-"
-)}}
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+`)}}
 
 <p>
-	The first few lines we already know from our quickstart example project above. The project name is <code>r96</code> and we force C99.
+	We define the minimum CMake version and project name, and enable (and require) C99 support. The final line makes CMake generate a <a href="">compile_commands.json</a> file in the build folder. This is also known as a <a href="https://clang.llvm.org/docs/JSONCompilationDatabase.html">compilation database</a> and used by many IDEs to understand a CMake build. In our case, the file is used by the <a href="https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd">clang VS Code extension</a> to provide us with code completion and other niceities.
 </p>
 
-{{post.code("", "cmake",
-"
+{{post.code("CMakeLists.txt", "cmake", `
 include(FetchContent)
-FetchContent_Declare(minifb GIT_REPOSITORY https://github.com/badlogic/minifb GIT_TAG web)
+FetchContent_Declare(minifb GIT_REPOSITORY https://github.com/badlogic/minifb GIT_TAG dos-pr-master)
 set(MINIFB_BUILD_EXAMPLES CACHE INTERNAL FALSE)
 FetchContent_MakeAvailable(minifb)
-"
-)}}
+`)}}
 
 <p>
-	Next we pull in minifb via CMake's <a href="https://cmake.org/cmake/help/latest/module/FetchContent.html">FetchContent</a> mechanism. CMake veterans may sneer at this and rather use a Git submodule. But I like it that way, thank you very much. This magic incantation will clone my minifb fork with web support, disable the minifb example targets, and finally make the remaining minifb library target available to the targets defined in our own <code>CMakeLists.txt</code>. Nice.
+	Next we pull in MiniFB via CMake's <a href="https://cmake.org/cmake/help/latest/module/FetchContent.html">FetchContent</a> mechanism. CMake veterans may sneer at this and rather use a Git submodule. But I like it that way, thank you very much. This magic incantation will clone my MiniFB fork with web support, disable the MiniFB example targets, and finally make the remaining MiniFB library target available to the targets defined in our own <code>CMakeLists.txt</code>. Nice.
 </p>
 
 {{post.code("", "cmake",
 `
-if(MSVC)
-    add_compile_options(/W4 /WX)
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
-
-    if(EMSCRIPTEN)
-        add_link_options(
-			-sSTRICT=1
-			-sENVIRONMENT=web
-			-sLLD_REPORT_UNDEFINED
-			-sMODULARIZE=1
-			-sALLOW_MEMORY_GROWTH=1
-			-sALLOW_TABLE_GROWTH
-			-sMALLOC=emmalloc
-			-sEXPORT_ALL=1
-			-sEXPORTED_FUNCTIONS=["_malloc","_free","_main"]
-			-sASYNCIFY
-			--no-entry
-        )
-    endif()
-endif()
+add_compile_options(-Wall -Wextra -Wpedantic -Wno-implicit-fallthrough)
 `
 )}}
 
 <p>
-	In the next section, we set the "pedantic warnings are errors" compiler flags again. If we build with the emscripten toolchain, we add additional linker flags specific to emscripten via <code>add_link_options()</code>. These linker flags will get used by all subsequently defined executable targets. These are the flags I use for all my WASM projects after about a year of playing with emscripten and WASM. You can learn more about them in emscripten's <a href="https://github.com/emscripten-core/emscripten/blob/main/src/settings.js">settings.js</a> file.
+	In the next section, we set the "pedantic warnings are errors" compiler flags again.
 </p>
 
 {{post.code("", "cmake",
@@ -422,49 +411,65 @@ add_library(r96 "src/r96/r96.c")
 {{post.code("", "cmake",
 `
 add_executable(r96_00_basic_window "src/00_basic_window.c")
-target_link_libraries(r96_00_basic_window LINK_PUBLIC minifb r96)
+add_executable(r96_01_drawing_a_pixel "src/01_drawing_a_pixel.c")
 `
 )}}
 
 <p>
-	That's exactly what we do in the next two lines! First we declare an executable target for our first demo app called <code>r96_00_basic_window</code>. It's compiled from <code>00_basic_window.c</code> and links to the <code>minifb</code> and <code>r96</code> library targets. We'll follow this exact pattern for all future demo apps.
+	We define two executable targets for the demos of this blog post.
 </p>
 
 {{post.code("", "cmake",
 `
-if(EMSCRIPTEN)
-    add_custom_target(r96_web_assets
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_CURRENT_SOURCE_DIR}/web
-            ${CMAKE_CURRENT_BINARY_DIR}
-    )
-
-    add_dependencies(r96_00_basic_window r96_web_assets)
-    target_link_options(r96_00_basic_window PRIVATE -sEXPORT_NAME=r96_00_basic_window)
-endif()
+add_custom_target(r96_web_assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/web
+    $<TARGET_FILE_DIR:r96_00_basic_window>
+)
 `
 )}}
 
 <p>
-	In the final section of the <code>CMakeLists.txt</code> file, we again do something emscripten specific. First, we add a custom target called <code>r96_web_assets</code>. It copies the files from the <code>web/</code> folder to the build output folder <code>build/</code>, so the <code>.html</code> file of each demo app ends up with its <code>.js</code> and <code>.wasm</code> counter parts in the <code>build/</code> folder.
+	We define a custom target that copies all the <code>.html</code> files from <code>src/web/</code> to the output folder. This target is needed for web builds.
 </p>
 
+{{post.code("", "cmake",
+`
+get_property(targets DIRECTORY "${_dir}" PROPERTY BUILDSYSTEM_TARGETS)
+list(REMOVE_ITEM targets minifb r96 r96_assets r96_web_assets)
+foreach(target IN LISTS targets)
+    target_link_libraries(${target} LINK_PUBLIC minifb r96)    
+    if(EMSCRIPTEN)
+        add_dependencies(${target} r96_web_assets)
+        target_link_options(${target} PRIVATE
+                "-sSTRICT=1"
+                "-sENVIRONMENT=web"
+                "-sLLD_REPORT_UNDEFINED"
+                "-sMODULARIZE=1"
+                "-sALLOW_MEMORY_GROWTH=1"
+                "-sALLOW_TABLE_GROWTH"
+                "-sMALLOC=emmalloc"
+                "-sEXPORT_ALL=1"
+                "-sEXPORTED_FUNCTIONS=[\"_malloc\",\"_free\",\"_main\"]"
+                "-sASYNCIFY"
+                "--no-entry"
+                "-sEXPORT_NAME=${target}"
+        )
+    endif()
+endforeach()
+`
+)}}
+
 <p>
-	The <code>r96_web_assets</code> target is added as a dependency to the <code>r96_00_basic_window</code> demo app target. Anytime the demo app target is build through emscripten, the custom asset target will be executed as well.
+	And then stuff gets crazy! The first two lines compiles a list of all demo executable targets. We then iterate through those executable targets and link the <code>r96</code> library target to each of them. If we build for the web, we also add the custom <code>r96_web_assets</code> target to the executable as a dependency, so the <code>.html</code> files get copied over to the output folder. Finally, we add a few Emscripten specific linker options.
 </p>
 
-<p>
-	Finally, we add an emscripten specific linker flag <code>-sEXPORT_NAME</code> for the <code>r96_00_basic_window</code> target via <code>target_link_options()</code>. It specifies the module name by which the JavaScript code in the corresponding <code>.html</code> file can load and run the demo app's <code>.wasm</code> code.
-</p>
+<p>The purpose of this evil incantation is to reduce the amount of CMake spaghetti needed when adding a new demo. All we need to do is add a single <code>add_executable_target()</code> line, specifiyng the demo name and source files its composed of. The evil incantation will take care it's linked up with all the necessary bits automatically. Nice!</p>
+
+<h2>The first demo app: 00_basic_window</h2>
 
 <p>
-	You can switch between the desktop and web build by simply choosing the corresponding kit aka compiler toolchain in the CMake UI in VS Code.
-</p>
-
-<h3>The first demo app: 00_basic_window</h3>
-
-<p>
-	Before we can get our hands dirty with programmatically creating the most beautiful pixels in the world, we need to understand how minifb works and how a demo app is structured in terms of code. With no further ado, here's <code>src/00_basic_window.c</code>:
+	Before we can get our hands dirty with programmatically creating the most beautiful pixels in the world, we need to understand how MiniFB works and how a demo app is structured in terms of code. With no further ado, here's <code>src/00_basic_window.c</code>:
 </p>
 
 {{post.code("00_basic_window.c", "c",
@@ -486,49 +491,38 @@ int main(void) {
 )}}
 
 <p>
-	This is a minimal minifb app that opens a window with a drawing area of 320x240 pixels (line 6). It then allocates a buffer of 320x240 <code>unit32_t</code> elements (line 7). Each <code>uint32_t</code> element encodes the color of a pixel. Next, we keep drawing the contents of the buffer to the window via <code>mfb_update_ex()</code> (line 9) until <code>mfb_wait_sync()</code> returns false (line 10), e.g. because the user pressed the ESC key to quit the app. It can't get any simpler.
+	This is a minimal MiniFB app that opens a window with a drawing area of 320x240 pixels (line 6). It then allocates a buffer of 320x240 <code>unit32_t</code> elements (line 7). Each <code>uint32_t</code> element encodes the color of a pixel. Next, we keep drawing the contents of the buffer to the window via <code>mfb_update_ex()</code> (line 9) until <code>mfb_wait_sync()</code> returns false (line 10), e.g. because the user pressed the ESC key to quit the app. It can't get any simpler.
 </p>
 
 <h3>Running the demo app on the desktop</h3>
 
 <p>
-	To compile and run (or debug) our little demo app on the desktop, select the desktop compiler toolchain kit in the CMake UI at the bottom of VS Code, select the <code>r96_00_basic_window</code> target as the target that's going to be run, and finally click on the debug or play button, or run <code>CMake: Debug</code> or <code>CMake: Run Without Debugging</code> from the command palette. You'll get this:
+	To compile and run (or debug) our little demo app on the desktop, select the <code>Desktop debug</code> configure preset in the VS Code status bar, select the <code>r96_00_basic_window</code> target as the launch target, and the <code>Desktop debug target</code> launch configuration. Press <code>F5</code> and you'll get this:
 </p>
 
 {{post.figureMaxWidth("desktop.png", "r96_00_basic_window on the desktop.", "320px")}}
 
 <p>
-	Most impressive. Now how do we run the same demo app in the browser?
+	Most impressive. You can make changes to the code and just hit <code>F5</code> again to rebuild and restart the demo app.
+</p>
+
+<p>
+	Now how do we run the same demo app in the browser?
 </p>
 
 <h3>Running the demo app on the web</h3>
 
 <p>
-	First, select the emscripten kit in the CMake UI. Next, open a terminal in VS Code and start a web server. Yes, you read that right. Since you have Python installed it's easy:
-</p>
-
-{{post.code("", "bash",
-"
-python3 -m http.server --directory build
-"
-)}}
-
-<p>
-	The server serves all files in the <code>build/</code> folder and listens for incoming connections on port 80 on localhost. Opening <a href="https://localhost:8000">https://localhost:8000</a> in a browser will show you the <code>build/index.html</code> file. Keep the server running in the background while you work on the web version of a demo app.
-</p>
-<p>
-	Next, click the <code>Build</code> button in the CMake GUI, or run the <code>CMake: Build</code> command from the command palette. This will copy the files from the <code>web/</code> folder over to the <code>build/</code> folder. It will also use emscripten to compile the demo app code (and its dependencies) to <code>.js</code> and <code>.wasm</code> files, which also get copied to the <code>build/</code> folder.
-</p>
-
-<p>Now open a browser, go to <a href="http://localhost:8000/00_basic_window.html">http://localhost:8000/00_basic_window.html</a> and tada!
+	Select the <code>Web debug</code> configure preset, and the <code>Web debug target</code> launch configuraton and press <code>F5</code>. You'll see this:
 </p>
 
 {{post.figureMaxWidth("browser.png", "r96_00_basic_window running in the browser.", "80%")}}
 
-
-<p class="note">
-	<strong>Note:</strong> you can not use the debug or run functionality in VS Code, as the C/C++ extension doesn't know how to do that for emscripten generated "executables". If you want to test a code change, saved the changed source files, trigger a CMake build using the emscripten kit, and refresh the page in the browser.
+<p>
+	The launch configuration starts a static file server (<code>tools/web/static-server</code>) which serves the files in <code>build/web-debug/</code> on port <code>8123</code>. The static server will also automatically open a browser tab with the URL corresponding to the demo's <code>.html</code> file.
 </p>
+
+<p>When you're done being amazed by this, close the browser tab, and click the <code>Stop</code> button in the debugger controls in VS Code. If you want to be amazed again, just press <code>F5</code></p>
 
 <h3>How the web version works</h3>
 
@@ -568,7 +562,7 @@ python3 -m http.server --directory build
 </p>
 
 <p>
-	How does minifb know to render to the canvas? In our C code we have this line:
+	How does MiniFB know to render to the canvas? In our C code we have this line:
 </p>
 
 {{post.code("", "c",
@@ -578,7 +572,7 @@ struct mfb_window *window = mfb_open("00_basic_window", res_x, res_y);
 )}}
 
 <p>
-	Instead of opening a window with "00_basic_window" as the title, the minifb web backend uses the first argument passed to <code>mfb_open()</code> to search a canvas element with that string as its id. Any calls to <code>mfb_update_ex()</code> will then draw the contents of the provided buffer to this canvas.
+	Instead of opening a window with "00_basic_window" as the title, the MiniFB web backend uses the first argument passed to <code>mfb_open()</code> to search a canvas element with that string as its id. Any calls to <code>mfb_update_ex()</code> will then draw the contents of the provided buffer to this canvas.
 </p>
 
 <p>
@@ -586,16 +580,12 @@ struct mfb_window *window = mfb_open("00_basic_window", res_x, res_y);
 </p>
 
 <p>
-	The minifb web backend I wrote uses an emscripten feature called <a href="https://emscripten.org/docs/porting/asyncify.html">Asyncify</a>. In the implementation of <code>mfb_wait_sync()</code>, I call <code>emscripten_sleep(0)</code>. This gives back control to the browser engine, so it can process any DOM events and not freeze. Our native C code will then resume again, without our C code ever knowing that it was actually put to sleep. The Asyncify feature rewrites our C code (or rather its WASM representation) to use continuations. That allows pausing and resuming the C code transparently. Super cool!
-</p>
-
-<p>
-	Bonus point: I use <a href="https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame"><code>requestAnimationFrame()</code></a> as the "yielding" primitive. This means that our main loop will be synced to the screen refresh rate (unless the browser implements it as a software vsync, which is usually the case, but doesn't matter for our purpose).
+	The MiniFB web backend I wrote uses an Emscripten feature called <a href="https://emscripten.org/docs/porting/asyncify.html">Asyncify</a>. In the implementation of <code>mfb_wait_sync()</code>, I call <code>emscripten_sleep(0)</code>. This gives back control to the browser engine, so it can process any DOM events and not freeze. Our native C code will then resume again, without our C code ever knowing that it was actually put to sleep. The Asyncify feature rewrites our C code (or rather its WASM representation) to use continuations. That allows pausing and resuming the C code transparently. Super cool!
 </p>
 
 <h3>Can I debug the C code in the browser?</h3>
 <p>
-	Yes, we can in Chrome. When we build using the debug variant, emscripten will emit DWARF information in the resulting <code>.wasm</code> file. Chrome can use that information to provide native code debugging right in the developer tools. To get that working:
+	Yes, we can in Chrome. When we build using the <code>Web debug</code> configure preset, Emscripten will emit DWARF information in the resulting <code>.wasm</code> file. Chrome can use that information to provide native code debugging right in the developer tools. To get that working:
 </p>
 
 <ul>
@@ -608,7 +598,7 @@ struct mfb_window *window = mfb_open("00_basic_window", res_x, res_y);
 </ul>
 
 <p>
-	Make sure the demo app was build using the debug variant, (re-)load the demo app <code>.html</code> file in the browser, then open the dev tools, and click on the <code>Sources</code> tab. You can find all the <code>.c</code> files that make up our little demo app under the <code>file://</code> node, including the minifb sources. Open up <code>00_basic_window.c</code> and set a breakpoint inside the loop:
+	 Launch the demo app using the <code>Web debug target</code> launch config in VS code, then open the dev tools in the browser, and click on the <code>Sources</code> tab. You can find all the <code>.c</code> files that make up our little demo app under the <code>file://</code> node, including the MiniFB sources. Open up <code>00_basic_window.c</code> and set a breakpoint inside the loop:
 </p>
 
 {{post.figureMaxWidth("chrome-debug.png", "C/C++ debugging in Chrome", "80%")}}
@@ -687,7 +677,8 @@ uint32_t color = (alpha << 24) | (red << 16) | (green << 8) | blue;
 "
 #include <stdint.h>
 
-#define R96_ARGB(alpha, red, green, blue) (((uint8_t)alpha << 24) | ((uint8_t)red << 16) | ((uint8_t)green << 8) | (uint8_t)blue)
+#define R96_ARGB(alpha, red, green, blue) (uint32_t)(((uint8_t) (alpha) << 24) | ((uint8_t) (red) << 16) | ((uint8_t) (green) << 8) | (uint8_t) (blue))
+
 
 "
 )}}
@@ -721,7 +712,7 @@ uint32_t *pixels = (uint32_t *)malloc(res_x * res_y * sizeof(uint32_t))
 </p>
 
 <p>
-This raster is passed to <code>mfb_update_ex()</code> to be drawn to the window. The reason the window content remains black is that the pixels all have the color <code>0x00000000</code> aka black (at least when building the debug variant or for emscripten).
+This raster is passed to <code>mfb_update_ex()</code> to be drawn to the window. The reason the window content remains black is that the pixels all have the color <code>0x00000000</code> aka black (at least when building the debug variant or for Emscripten).
 </p>
 
 <p>
@@ -813,51 +804,6 @@ pixels[160 + 120 * res_x] = R96_ARGB(255, 255, 0, 0);
 <p>Alright, time to draw some pixels!</p>
 
 <h3>Demo app: drawing a pixel</h3>
-
-<p>
-	Let's add a new demo app to draw a pixel:
-</p>
-
-<ul>
-	<li>Add a file <code>src/01_drawing_a_pixel.c</code> and copy the contents from <code>src/00_basic_window.c</code> to it
-		<ul>
-			<li>Change the first argument to <code>mfb_open()</code> to <code>"01_drawing_a_pixel"</code></li>
-		</ul>
-	</li>
-	<li>Add a file to <code>web/01_drawing_a_pixel.html</code> and copy the contents from <code>web/00_basic_window.html</code> to it
-		<ul>
-			<li>Change the <code>src</code> of the <code>&lt;script&gt;</code> element to <code>'r96_01_drawing_a_pixel.js'</code></li>
-			<li>Change the canvas <code>id</code> to <code>'01_drawing_a_pixel'</code></li>
-			<li>Change the call to <code>r96_00_basic_window()</code> to <code>r96_01_drawing_a_pixel()</code></li>
-		</ul>
-	</li>
-	<li>In the <code>web/index.html</code> file, add a link to <code>01_drawing_a_pixel.html</code></li>
-	<li>In the <code>CMakeLists.txt</code> file
-		<ul>
-			<li>Add a new executable target in the <code>CMakeLists.txt</code> file after the definition of the <code>r96_00_basic_window</code> executable target:
-			{{post.code("CMakeLists.txt", "cmake",
-`
-add_executable(r96_01_drawing_a_pixel "src/01_drawing_a_pixel.c")
-target_link_libraries(r96_01_drawing_a_pixel LINK_PUBLIC minifb r96)
-`
-			)}}</li>
-			<li>
-				Add the custom <code>r96_web_assets</code> target as a dependency to the <code>r96_01_drawing_a_pixel</code> target, and set the <code>EXPORT_NAME</code> linker flag to <code>r96_01_drawing_a_pixel</code>:
-		{{post.code("CMakeLists.txt", "cmake",
-"
-add_dependencies(r96_01_drawing_a_pixel r96_web_assets)
-target_link_options(r96_00_basic_window PRIVATE -sEXPORT_NAME=r96_01_drawing_a_pixel)
-"
-	)}}
-			</li>
-		</ul>
-	</li>
-</ul>
-
-<p class="note">
-	Going forward, anytime we add a new demo app, we'll repeat the above process. I won't spell it out in detail, but simply state the demo app's name, from which we can derive all the file names and ids needed.
-</p>
-
 <p>
 	Drawing a single pixel is a bit boring, so how about we flood the screen with a gazillion pixels instead?
 </p>
@@ -928,16 +874,6 @@ int main(void) {
 <p>
 	I sure feel all this build up paid off, don't you?
 </p>
-
-<p>
-	You can checkout the <code>babys-first-pixel-01</code> tag and diff it against the <code>babys-first-pixel-00</code> tag to view all the code changes that were made to add this demo.
-</p>
-
-{{post.code("", "bash",
-"
-git checkout babys-first-pixel-01
-"
-)}}
 
 <h2>Mario, WTF</h2>
 <p>
