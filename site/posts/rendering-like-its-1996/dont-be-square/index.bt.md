@@ -17,15 +17,22 @@ metadata = {
 
 --markdown-begin
 
+> To follow along this blog post with running code, make sure you've installed the [prerequisits](https://github.com/badlogic/r96/tree/01-babys-first-pixel#installing-required-tools). Then:
+```
+git clone https://github.com/badlogic/r96
+cd r96
+git checkout 02-dont-be-square
+./tools/download-tools.sh
+code .
+```
+
 [Last time](../babys-first-pixel/), we set up our development environment and explored concepts like pixels, colors, and rasters. Today, we're going to figure out how to draw rectangles. Exciting!
 
 But first, we'll do some housekeeping.
 
-> You can follow along by checking out the `dont-be-square-00` tag in your clone of the [r96](https://github.com/badlogic/r96) repository. `git checkout dont-be-square-00`
-
 ## Putting more stuff into r96.h/r96.c
 
-Let's stuff a few things into [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.h) and [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.c), where re-usable code used by the demo apps lives.
+Let's stuff a few things into [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/02-dont-be-square/src/r96/r96.h) and [`src/r96/r96.h`](https://github.com/badlogic/r96/blob/02-dont-be-square/src/r96/r96.c), where re-usable code used by the demo apps lives.
 
 ### Destructuring colors
 
@@ -125,7 +132,7 @@ We add an initializer function that sets `width` and `height` and allocates memo
 --markdown-end
 {{post.code("src/r96/r96.c", "c",
 "
-void r96_image_init(r96_image *image, uint32_t width, uint32_t height) {
+void r96_image_init(r96_image *image, int32_t width, int32_t height) {
 	assert(width > 0);
 	assert(height > 0);
 
@@ -149,7 +156,7 @@ void r96_image_dispose(r96_image *image) {
 )}}
 --markdown-begin
 
-Creating raster images has never been so easy:
+Creating raster images has never been easier:
 
 --markdown-end
 {{post.code("", "c",
@@ -166,7 +173,7 @@ R96_FREE(heapRaster);
 )}}
 --markdown-begin
 
-As illustrated by the snippet above, we can initialize and dispose both stack and heap allocated `r96_image` instances. Which leads me into a little excurse into memory and resource life-time management.
+As illustrated by the snippet above, we can initialize and dispose both stack and heap allocated `r96_image` instances. Which leads me into a little excursion on memory and resource life-time management.
 
 ### A word on memory and resource life-time management
 
@@ -224,7 +231,7 @@ These functions are slower than manually calculating a pixel address, as they do
 
 ### Demo app: drawing pixels, again
 
-Our new fancy API is put to use in the demo app [`02_image.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/02_image.c).
+Our new fancy API is put to use in the demo app [`02_image.c`](https://github.com/badlogic/r96/blob/02-dont-be-square/src/02_image.c).
 
 --markdown-end
 {{post.code("src/02_image.c", "c",
@@ -262,7 +269,7 @@ int main(void) {
 )}}
 --markdown-begin
 
-In lines 6-8, we create a new `r96_image` instance and initialize it to have 320x240 pixels. We then create a window with twice the size of our image. MiniFB will scale our 320x240 pixels image up to the 640x480 window size in `mfb_update_ex()`. This way, it's easier to see what's going on.
+In lines 6-7, we create a new `r96_image` instance and initialize it to have 320x240 pixels. We then create a window with twice the size of our image. MiniFB will scale our 320x240 pixels image up to the 640x480 window size in `mfb_update_ex()`. This way, it's easier to see what's going on.
 
 The pixel rendering in line 14 now uses `r96_set_pixel()` instead of manually calculating the pixel address.
 
@@ -304,7 +311,7 @@ Finally, we dispose of the image in line 26.
 </script>
 --markdown-begin
 
-Have a look at [`02_image.html`](https://github.com/badlogic/r96/blob/dont-be-square-00/web/02_image.html) to see the magic that gets the `printf()` output into the div below the canvas.
+Have a look at [`02_image.html`](https://github.com/badlogic/r96/blob/02-dont-be-square/web/02_image.html) to see the magic that gets the `printf()` output into the div below the canvas.
 
 ### Clearing an image
 
@@ -345,7 +352,7 @@ Luckily, profiling `r96_clear()` and `r96_clear_with_color()` is comparatively t
 
 > **Note:** At least we keep it trivial. Usually, you'd have to factor in things like what apps are running on your benchmarking machine, cold start vs. warm start, averaging timings over `n` runs, and so on. However, we aren't really going for absolute timing values here, but merely compare relative improvements after code changes. This simplistic approach is good enough for that. Also, use a proper profiler, like [Superluminal](https://superluminal.eu/).
 
-The command line demo app called [`03_clear_profiling.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/03_clear_profiling.c) tests how fast `r96_clear()` and `r96_clear_with_color()` are respectively:
+The command line demo app called [`03_clear_profiling.c`](https://github.com/badlogic/r96/blob/02-dont-be-square/src/03_clear_profiling.c) tests how fast `r96_clear()` and `r96_clear_with_color()` are respectively:
 
 --markdown-end
 {{post.code("src/03_clear_profiling.c", "c",
@@ -358,19 +365,19 @@ int main(void) {
 	const int num_iterations = 200000;
 	r96_image image;
 	r96_image_init(&image, 320, 240);
-	struct mfb_timer *timer = mfb_timer_create();
 
+	struct mfb_timer *timer = mfb_timer_create();
 	mfb_timer_reset(timer);
 	for(int i = 0; i < num_iterations; i++)
 		r96_clear(&image);
-	printf("r96_clear() took %f secs\n", mfb_timer_delta(timer));
+	printf("r96_clear()                 %f secs\n", mfb_timer_delta(timer));
 
 	mfb_timer_reset(timer);
 	for(int i = 0; i < num_iterations; i++)
 		r96_clear_with_color(&image, 0x0);
-	printf("r96_clear_with_color() took %f secs\n", mfb_timer_delta(timer));
+	printf("r96_clear_with_color()      %f secs\n", mfb_timer_delta(timer));
 
-	r96_image_dispose(&image);
+    r96_image_dispose(&image);
 	return 0;
 }
 `
@@ -674,7 +681,7 @@ Once we've clipped a line, we just need to draw all the pixels between and inclu
 
 ### Demo app: horizontal lines, naive version
 
-Let's add a new demo app called [`04_hline.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/04_hline.c):
+Let's add a new demo app called [`04_hline.c`](https://github.com/badlogic/r96/blob/02-dont-be-square/src/04_hline.c):
 
 --markdown-end
 {{post.code("src/04_hline.c", "c",
@@ -737,7 +744,7 @@ We finish the function by drawing all the pixels at and in between the start and
 
 In the `main()` function, we draw `200000` lines at random positions and measure how long it takes to do so. The call to `srand()` sets the seed for the function `rand()`. We'll always get the same sequence of "random" numbers that way.
 
-> **Note:** If we measure something to later improve it, we have to ensure that what we measured is the same each time, even if it involves "fake" randomness.
+> **Note:** If we measure something to later improve it, we have to ensure that what we measured is the same each time, even if it involves "fake" randomness. If we didn't "fix" the randomness in this case, we may draw a different number of pixels each run, which would skew the results.
 
 Here's the output from a release build on my machine:
 
@@ -774,7 +781,7 @@ The `hline()` function already ensures that all pixels we are drawing are inside
 
 And once we know the address of the start pixel at `x1, y`, the address of each subsequent pixel on the line can be calculated by continuously incrementing the address by `1`. Remember: pre-calculate all loop invariants and do as little work in inner loops as possible!
 
-Here's the optimized `hline()` version from [`05_hline_opt.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/05_hline_opt.c):
+Here's the optimized `hline()` version from [`05_hline_opt.c`](https://github.com/badlogic/r96/blob/02-dont-be-square/src/05_hline_opt.c):
 
 --markdown-end
 {{post.code("src/05_hline_opt.c", "c",
@@ -806,7 +813,7 @@ void hline(r96_image *image, int32_t x1, int32_t x2, int32_t y, uint32_t color) 
 
 We keep all the clipping from before, but are a bit smarter regarding our inner loop.
 
-We precalculate the address of the pixel covering out start point at `(x1, y)` in line 16. We also precalculate the number of pixels we are going draw in line 17.
+We precalculate the address of the pixel covering our start point at `(x1, y)` in line 16. We also precalculate the number of pixels we are going draw in line 17.
 
 The inner loop then counts down the number of pixels we've drawn so far, while assigning the color to the current pixel and incrementing the address by one. Pretty tight. On my machine, I get these timings:
 
@@ -854,7 +861,7 @@ A nice improvement! Let's have some live lines to celebrate (click to start)
 </script>
 --markdown-begin
 
-> **Note**: `hline()` is as good as it gets, so it's been added as `r96_hline()` to [`r96.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/r96/r96.c). Going forward, we'll develop other rendering functions in the same way: build a demo app with a naive implementation, improve performance, and finally add it to the `r96` library once it's good enough.
+> **Note**: `hline()` is as good as it gets, so it's been added as `r96_hline()` to [`r96.c`](https://github.com/badlogic/r96/blob/02-dont-be-square/src/r96/r96.c#L38). Going forward, we'll develop other rendering functions in the same way: build a demo app with a naive implementation, improve performance, and finally add it to the `r96` library once it's good enough.
 
 ## Drawing rectangles
 
@@ -948,7 +955,7 @@ Knowing that a rectangle's corner points `(x1, y1)` and `(x2, y2)` are fully ins
 For each y-coordinate `y` between and including `y1` and `y2`, we render a horizontal line from `(x1,y)` to `(x2,y)`. And we already got a function for rendering horizontal lines!
 
 ### Demo app: drawing rectangles, naive version
-Time for another demo app called [`06_rect.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/06_rect.c):
+Time for another demo app called [`06_rect.c`](https://github.com/badlogic/r96/blob/02-dont-be-square/src/06_rect.c):
 
 --markdown-end
 {{post.code("src/06_rect.c", "c",
@@ -1075,7 +1082,7 @@ Took: 0.027851
 
 Indeed, looking at the assembly, the call was eliminated and `r96_hline()` was entirely inlined into `rect()`. But that's not a great solution, as most compilers will manage to inline `r96_hline()` everywhere, which bloats executable size, or may put pressure on the register allocator, thus actually slowing down our code.
 
-As an alternative to gunking up our header files, we can use [link time optimizations](https://johnysswlab.com/link-time-optimizations-new-way-to-do-compiler-optimizations/) as supported by Clang, GCC, and MSVC. Let's update the `CMakeLists.txt` file to turn that on.
+As an alternative to gunking up our header files, we can use [link time optimizations](https://johnysswlab.com/link-time-optimizations-new-way-to-do-compiler-optimizations/) as supported by Clang, GCC, and MSVC. Let's update the [CMakeLists.txt](https://github.com/badlogic/r96/blob/02-dont-be-square/CMakeLists.txt#L13) file to turn that on.
 
 --markdown-end
 
@@ -1110,7 +1117,7 @@ Not bad! The reason this performs better than the inlining done above is that ba
 We can't always rely on LTO to do such a good job though. Let's fix this by getting rid of the call to `r96_hline()` ourselves.
 
 ### Demo app: rectangles, optimized
-Here's what I came up with in the new demo app [`07_rect_opt.c`](https://github.com/badlogic/r96/blob/dont-be-square-00/src/07_rect_opt.c):
+Here's what I came up with in the new demo app [`07_rect_opt.c`](https://github.com/badlogic/r96/blob/02-dont-be-square/src/07_rect_opt.c):
 
 --markdown-end
 {{post.code("src/07_rect_opt.c", "c",
@@ -1136,8 +1143,7 @@ void rect_opt(r96_image *image, int32_t x1, int32_t y1, int32_t width, int32_t h
 	int32_t next_row = image->width - clipped_width;
 	uint32_t *pixel = image->pixels + y1 * image->width + x1;
 	for (int y = y1; y <= y2; y++) {
-		int32_t num_pixels = clipped_width;
-		while(num_pixels--) {
+		for (int i = 0; i < clipped_width; i++) {
 			*pixel++ = color;
 		}
 		pixel += next_row;
@@ -1153,7 +1159,7 @@ In line 18, we calculate the clipped width. We need that in the next line to cal
 
 We also precalculate the address of the first `pixel` we are going to set the color of. It's the pixel of the top-left corner of the rectangle.
 
-Then we start to loop through all rows of the rectangle, from `y1` to `y2`. For each row, we set each of its pixels to the `color`. That's one subtraction (`num_pixels--`), one memory store (`*pixel = color`) and one increment (`pixel++`) per pixel in a row. Pretty OK.
+Then we start to loop through all rows of the rectangle, from `y1` to `y2`. For each row, we set each of its pixels to the `color`. That's one addition (`i++`), one memory store (`*pixel = color`) and one increment (`pixel++`) per pixel in a row. Pretty OK.
 
 Once we've completed rendering the current row, we calculate the address of the first pixel of the next row by adding `next_row` to `pixel`.
 
