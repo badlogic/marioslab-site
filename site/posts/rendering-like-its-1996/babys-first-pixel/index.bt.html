@@ -75,6 +75,10 @@ metadata = {
 	To get the code running in the browser, we'll use <a href="https://emscripten.org/">Emscripten</a> to compile the C code to <a href="https://developer.mozilla.org/en-US/docs/WebAssembly">WASM</a> and a small <code>.js</code> file, which loads the <code>.wasm</code> file and exposes our C functions to JavaScript.
 </p>
 
+<p>
+	In terms of IDE, you are free to use whatever you want. You'll most likely want something that can ingest CMake builds. For this series, I choose VS Code, not because I love it, but because it's free. The project contains a bunch of VS Code specific settings that make working on the project super simple for all supported platforms.
+</p>
+
 <h2>Getting the source code and tools</h2>
 
 <p>
@@ -102,26 +106,27 @@ metadata = {
 </ul>
 
 <p>
-	Once you've installed the above, clone the repository and execute the <code>tools/download-tools.sh</code> script (on Windows, use Git Bash, which comes with Git for Windows):
+	Once you've installed the above, clone the repository (on Windows, use Git Bash, which comes with Git for Windows):
 </p>
 
 {{post.code("", "bash",`
 git clone https://github.com/badlogic/r96
-cd r96 && ./tools/download-tools.sh
+cd r96
 `
 )}}
 
 <p>
-	The <code>download-tools.sh</code> script will download all remaining tools that are needed, like CMake, Ninja, Clang for Windows, Python, a small static file server, Emscripten, and Visual Studio Code extensions needed for C/C++ development. See the <a href="https://github.com/badlogic/r96/blob/main/README.md">README.md</a> for details.
-</p>
-
-<p>
-	Finally, to follow the code of a specific blog post, check out the corresponding tag. For this blog post:
+	Next, checkout the tag for the blog post you want to follow along with, execute the <code>tools/download-tools.sh</code> script:
 </p>
 
 {{post.code("", "bash", `
 git checkout 01-babys-first-pixel
+./tools/download-tools.sh
 `)}}
+
+<p>
+	The <code>download-tools.sh</code> script will download all remaining tools that are needed, like CMake, Ninja, Clang for Windows, Python, a small static file server, Emscripten, and Visual Studio Code extensions needed for C/C++ development. See the <a href="https://github.com/badlogic/r96/blob/main/README.md">README.md</a> for details.
+</p>
 
 <p class="note">
 	<strong>Note:</strong> we may add new tools in future blog posts. After checking out a tag for a blog post, make sure to run <code>tools/download-tools.sh</code> again.
@@ -145,15 +150,21 @@ git checkout 01-babys-first-pixel
 </p>
 
 <p class="note">
-	The first time you open the project in VS Code, you'll be asked to select a configure preset. Choose <code>Desktop debug</code>. We'll discuss what this means below.
+	<strong>Note:</strong> The first time you open the project in VS Code, you'll be asked to select a <a href="https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html">CMake configure preset</a>.
+</p>
+
+<p class="note">
+	<strong>Note:</strong> the first time you open a source file in VS Code, you will be asked if you want to install <code>clangd</code>. Click <code>Yes</code>.
 </p>
 
 <h3>File structure</h3>
 
 {{post.figureMaxWidth("r96-files.png", "", "200px")}}
 
+<p>Let's start in the root folder.</p>
+
 <p>
-	The <code>.gitignore</code>, <code>LICENSE</code>, and <code>README.md</code> files are pretty self-explanatory.
+	The <code>.gitignore</code>, <code>LICENSE</code>, and <code>README.md</code> files are self-explanatory.
 </p>
 
 <p>
@@ -181,29 +192,25 @@ git checkout 01-babys-first-pixel
 	For any demo app we write in the future, we'll add a source file to the <code>src/</code> folder, and a corresponding <code>.html</code> file to the <code>src/web/</code> folder.
 </p>
 
-<p>The <code>src/web/index.html</code> file is just a plain listing linking to all the <code>.html</code> files of our demo apps. The <code>src/web/r96.css</code> file is a CSS style sheet used to make the elements in the demo app <code>.html</code> files a little prettier.</p>
-
 <p>
-	The <code>.vscode/</code> folder contains settings and launch configurations so working on the project is a nice experience.
+	The <code>src/web/index.html</code> file is just a plain listing linking to all the <code>.html</code> files of our demo apps. The <code>src/web/r96.css</code> file is a CSS style sheet used to make the elements in the demo app <code>.html</code> files a little prettier.
 </p>
 
 <p>
-	Finally, the <code>tools/</code> folder contains scripts to download the necessary tools. When executing the <code>tools/download-tools.sh</code> script, some of the tools actually get installed in the <code>tools/</code> folder so they don't clog up your system. The folder also contains scripts and batch files used by the launch configurations to do their work.
+	The <code>.vscode/</code> folder contains settings and launch configurations so working on the project is a nice experience in VS Code.
 </p>
 
 <p>
-	The details of the <code>.vscode</code> and <code>tools</code> folder are all gory and duct tape-y. You can have a look if you must. For the remained of the series, their content doesn't matter much.
+	Finally, the <code>tools/</code> folder contains scripts to download the necessary tools as well as configuration files for a few of those tools. When executing the <code>tools/download-tools.sh</code> script, some of the tools actually get installed in the <code>tools/</code> folder so they don't clog up your system. The folder also contains scripts and batch files used by the launch configurations to do their work.
 </p>
 
-<p class="note">
-	<strong>Note:</strong> the first time you open a source file in VS Code, you will be asked if you want to install <code>clangd</code>. Click <code>Yes</code>.
+<p>
+	The details of the <code>.vscode</code> and <code>tools</code> folder are all gory and duct tape-y. You can have a look if you must. For the remained of the series, their content doesn't matter much. Just know that they are setup in a way to make our lives easy.
 </p>
 
 <h3>Building</h3>
 
-<p>
-	The first time you open the project in VS Code, you'll be asked to select a <a href="https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html">CMake configure preset</a>.
-</p>
+The first time you open the project in VS Code, you're asked to select a configure preset.
 
 {{post.figureMaxWidth("preset.png", "", "400px")}}
 
@@ -255,7 +262,7 @@ cmake --build build/web-release
 
 <h3>Debugging</h3>
 <p>
-	The <a href="https://github.com/badlogic/r96/blob/01-babys-first-pixel/.vscode/launch.json">launch.json</a> file in the <code>.vscode/</code> folder defines launch configurations for each platform. Click the launch button in the status bar to select the launch configuration and start a debugging session. 
+	The <a href="https://github.com/badlogic/r96/blob/01-babies-first-pixel/.vscode/launch.json">launch.json</a> file in the <code>.vscode/</code> folder defines launch configurations for each platform. Click the launch button in the status bar to select the launch configuration and start a debugging session. 
 </p>
 
 {{post.figureMaxWidth("launch.png", "", "300px")}}
@@ -300,15 +307,15 @@ cmake --build build/web-release
 </p>
 
 <p>
-	Debugging the C code compiled to WASM directly in VS Code is not possible. When you start a web debugging session, the respective launch configuration starts a local static file server and opens the `.html` file corresponding to the selected launch target in a browser tab.
+	Debugging the C code compiled to WASM directly in VS Code is not possible. When you start a web debugging session, the respective launch configuration starts a local <a href="https://github.com/badlogic/static-file-server">static file server</a> (downloaded via <code>tools/download-tools.sh</code>) and opens the <code>.html</code> file corresponding to the selected launch target in a browser tab.
 </p>
 
 <p>
-	When you are done "debugging", close the browser tab, and close the debugging session in VS Code by clicking the "Stop" button in the debugger controls.
+	When you are done "debugging" a web build, close the browser tab, and close the debugging session in VS Code by clicking the "Stop" button in the debugger controls.
 </p>
 
 <p>
- If you feel adventurous: it is possible to <a href="https://developer.chrome.com/blog/wasm-debugging-2020/">debug the C and JavaScript code in Chrome</a>
+ If you feel adventurous: it is possible to <a href="https://developer.chrome.com/blog/wasm-debugging-2020/">debug the C and JavaScript code in Chrome.</a>. We'll look into that below.
 </p>
 
 <h3>Dissecting the CMakeLists.txt and CMakePresets.json files</h3>
@@ -344,8 +351,8 @@ The important bits are:
 </p>
 
 <ul>
-	<li><code>generator</code>: we use tell CMake to generate a <a href="https://ninja-build.org">Ninja</a> build.</li>
-	<li><code>binaryDir</code>: specifies the output directory for the build. In this case it maps to <code>build/windows-debig</code> through variable substitution.</li>
+	<li><code>generator</code>: we tell CMake to generate a <a href="https://ninja-build.org">Ninja</a> build.</li>
+	<li><code>binaryDir</code>: specifies the output directory for the build. In this case it maps to <code>build/windows-debug</code> through variable substitution.</li>
 	<li><code>CMAKE_BUILD_TYPE</code>: tells CMake we want the binaries to include debugging information.</li>
 	<li><code>CMAKE_MAKE_PROGRAM</code>: tells CMake were to find the Ninja executable. The <code>tools/download-tools.sh</code> script downloaded the executable to <code>tools/desktop/ninja/</code></li>
 	<li><code>toolchainFile</code>: where to find the compiler and linker. On Windows, we use <a href="https://github.com/mstorsjo/llvm-mingw">Clang with MinGW headers and standard libraries.</a>, which the <code>tools/download-tools.sh</code> script downloads to <code>tools/desktop/clang</code>. The <a href="https://github.com/badlogic/r96/blob/01-babys-first-pixel/tools/desktop/toolchain-clang-mingw.cmake">toolchain file</a> references the compiler and linker in that location and sets up a few other CMake cache variables.</li>
@@ -353,7 +360,7 @@ The important bits are:
 </ul>
 
 <p>
-	The other configure presets are pretty similar and only differ in what operating system they should be available on, as well as the toolchain being used. On macOS and Linux, the default toolchain is used (GCC or Xcode's Clang). On the web, the Emscripten toolchain is used through a toolchain file that ships with Emscripten.
+	The other configure presets are pretty similar and only differ in what operating system they should be available on, as well as the toolchain being used. On macOS and Linux, the default toolchain is used (GCC or Xcode's Clang). For the web, the Emscripten toolchain is used through a toolchain file that ships with Emscripten.
 </p>
 
 <p>
@@ -361,7 +368,7 @@ The important bits are:
 </p>
 
 <p>
-	The <code>CMakeLists.txt</code> file defines the actual build itself, i.e. which source files make up which libraries and executables, and what compiler flags to use. Let's go through it section by section. We start out with this:
+	The <code>CMakeLists.txt</code> file defines the actual build itself, i.e. which source files make up which libraries and executables, and what compiler flags to use. Definitions of libraries and executables are called targets in CMake. Let's go through it section by section. We start out with this:
 </p>
 
 {{post.code("CMakeLists.txt", "cmake", `
@@ -374,7 +381,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 `)}}
 
 <p>
-	We define the minimum CMake version and project name, and enable (and require) C99 support. The final line makes CMake generate a <a href="">compile_commands.json</a> file in the build folder. This is also known as a <a href="https://clang.llvm.org/docs/JSONCompilationDatabase.html">compilation database</a> and used by many IDEs to understand a CMake build. In our case, the file is used by the <a href="https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd">clang VS Code extension</a> to provide us with code completion and other niceities.
+	We define the minimum CMake version and project name, and enable (and require) C99 support. The final line makes CMake generate a <code>compile_commands.json</code> file in the build folder. This is also known as a <a href="https://clang.llvm.org/docs/JSONCompilationDatabase.html">compilation database</a> and used by many IDEs to understand a CMake build. In our case, the file is used by the <a href="https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd">clangd VS Code extension</a> to provide us with code completion and other niceities.
 </p>
 
 {{post.code("CMakeLists.txt", "cmake", `
@@ -395,7 +402,7 @@ add_compile_options(-Wall -Wextra -Wpedantic -Wno-implicit-fallthrough)
 )}}
 
 <p>
-	In the next section, we set the "pedantic warnings are errors" compiler flags again.
+	This section sets the "pedantic warnings are errors" compiler flags. We want the code to be reasonably clean and fail if a warning is generated.
 </p>
 
 {{post.code("", "cmake",
@@ -461,15 +468,19 @@ endforeach()
 )}}
 
 <p>
-	And then stuff gets crazy! The first two lines compiles a list of all demo executable targets. We then iterate through those executable targets and link the <code>r96</code> library target to each of them. If we build for the web, we also add the custom <code>r96_web_assets</code> target to the executable as a dependency, so the <code>.html</code> files get copied over to the output folder. Finally, we add a few Emscripten specific linker options.
+	And then stuff gets crazy! The first two lines compiles a list of all demo executable targets. We then iterate through those executable targets and link the <code>r96</code> library target to each of them. If we build for the web, we also add the custom <code>r96_web_assets</code> target to the executable as a dependency, so the <code>.html</code> files get copied over to the output folder.
 </p>
 
-<p>The purpose of this evil incantation is to reduce the amount of CMake spaghetti needed when adding a new demo. All we need to do is add a single <code>add_executable_target()</code> line, specifiyng the demo name and source files its composed of. The evil incantation will take care it's linked up with all the necessary bits automatically. Nice!</p>
+<p>
+	Finally, we add a few Emscripten specific linker options. These are settings I arrived at after working with WASM for the last 2 years. They are all Emscripten specific and do things like allowing heap memory to grow. You can check out all the options in Emscripten's <a href="https://github.com/emscripten-core/emscripten/blob/main/src/settings.js"><code>settings.js</code></a> file. There's a lot.
+</p>
+
+<p>The purpose of this evil incantation is to reduce the amount of CMake spaghetti needed when adding a new demo. All we need to do is add a single <code>add_executable_target()</code> line, specifiyng the demo name and source files its composed of. The evil incantation will then link the new demo up with all the necessary bits automatically. Nice!</p>
 
 <h2>The first demo app: 00_basic_window</h2>
 
 <p>
-	Before we can get our hands dirty with programmatically creating the most beautiful pixels in the world, we need to understand how MiniFB works and how a demo app is structured in terms of code. With no further ado, here's <code>src/00_basic_window.c</code>:
+	Before we can get our hands dirty with programmatically creating the most beautiful pixels in the world, we need to understand how MiniFB works and how a demo app is structured in terms of code. With no further ado, here's <a href="https://github.com/badlogic/r96/blob/01-babys-first-pixel/src/00_basic_window.c"><code>src/00_basic_window.c</code></a>:
 </p>
 
 {{post.code("00_basic_window.c", "c",
@@ -494,6 +505,14 @@ int main(void) {
 	This is a minimal MiniFB app that opens a window with a drawing area of 320x240 pixels (line 6). It then allocates a buffer of 320x240 <code>unit32_t</code> elements (line 7). Each <code>uint32_t</code> element encodes the color of a pixel. Next, we keep drawing the contents of the buffer to the window via <code>mfb_update_ex()</code> (line 9) until <code>mfb_wait_sync()</code> returns false (line 10), e.g. because the user pressed the ESC key to quit the app. It can't get any simpler.
 </p>
 
+<p>
+	MiniFB has a super minimal API. You can learn more about it <a href="https://github.com/emoon/minifb">here</a>.
+</p>
+
+<p class="note">
+	<strong>Note:</strong> The <code>mfb_update_ex()</code> function also returns a status code which can be used to decide if the app should be exited. We're not using this above for brevity's sake.
+</p>
+
 <h3>Running the demo app on the desktop</h3>
 
 <p>
@@ -503,7 +522,7 @@ int main(void) {
 {{post.figureMaxWidth("desktop.png", "r96_00_basic_window on the desktop.", "320px")}}
 
 <p>
-	Most impressive. You can make changes to the code and just hit <code>F5</code> again to rebuild and restart the demo app.
+	Most impressive. You can make changes to the code and just hit <code>F5</code> again to incrementally rebuild and restart the demo app. You can also set breakpoints, inspect variables and call stacks, and so on.
 </p>
 
 <p>
@@ -527,7 +546,7 @@ int main(void) {
 <h3>How the web version works</h3>
 
 <p>
-	It's kind of magic. Here's how the <code>00_basic_window.html</code> file for the <code>00_basic_window.c</code> demo app looks like:
+	It's kind of magic. Here's how the <a href="https://github.com/badlogic/r96/blob/01-babys-first-pixel/src/web/00_basic_window.html"><code>00_basic_window.html</code></a> file for the <code>00_basic_window.c</code> demo app looks like:
 </p>
 
 {{post.code("00_basic_window.html", "html",
@@ -558,7 +577,9 @@ int main(void) {
 )}}
 
 <p>
-	Ignoring the boring HTML boilerplate, we see that the <code>r96_00_basic_window.js</code> file is loaded via a <code>&lt;script&gt;</code> tag. Then we define a <code>&lt;canvas&gt;</code> with the id <code>00_basic_window</code>. A little JavaScript kicks of a call to <code>r96_00_basic_window()</code> in an asynchronous function. This call will load the <code>r96_00_basic_window.wasm</code> file and run its <code>main()</code> method.
+	Ignoring the boring HTML boilerplate, we see that the <code>r96_00_basic_window.js</code> file is loaded via a <code>&lt;script&gt;</code> tag. This file was generated as part of the build by Emscripten. It contains JavaScript code that loads the WebAssembly file that stores our compiled C code and exports functions with which we can interact with the WebAssembly code.
+<p>
+	Next we define a <code>&lt;canvas&gt;</code> with the id <code>00_basic_window</code>. Finally, a little JavaScript kicks of a call to <code>r96_00_basic_window()</code> (defined in <code>r96_00_basic_window.js</code>) in an asynchronous function. This call will load the <code>r96_00_basic_window.wasm</code> file and run its <code>main()</code> method.
 </p>
 
 <p>
@@ -618,7 +639,11 @@ struct mfb_window *window = mfb_open("00_basic_window", res_x, res_y);
 </p>
 
 <p>
-	Here, we lazily and imprecisely define a pixel as the smallest "atomic" area within a raster for which we can define a color. A raster is a rectangular area made up  of pixels. Each pixel in the raster is assumed to have the same size. The width of a raster equals the number of pixels in a row, the height equals the number of pixels in a column. The below raster has a width of 23 pixels and a height of 20 pixels. To locate a pixel inside the raster, we use an integer coordinate system, with the x-axis pointing to the right, and the y-axis pointing down. The top left pixel in the raster is at coordinate <code>(0, 0)</code>, the top right pixel is at coordinate <code>(22, 0)</code> (or <code>(width - 1, 0)</code>), the bottom right pixel is at coordinate <code>(22, 19)</code> (or <code>(width - 1, height -1)</code>), and so on.
+	Here, we lazily and imprecisely define a pixel as the smallest "atomic" area within a raster for which we can define a color. A raster is a rectangular area made up  of pixels. Each pixel in the raster is assumed to have the same size. The width of a raster equals the number of pixels in a row, the height equals the number of pixels in a column.
+</p>
+
+<p>
+	The below raster has a width of 23 pixels and a height of 20 pixels. To locate a pixel inside the raster, we use an integer coordinate system, with the x-axis pointing to the right, and the y-axis pointing down. The top left pixel in the raster is at coordinate <code>(0, 0)</code>, the top right pixel is at coordinate <code>(22, 0)</code> (or <code>(width - 1, 0)</code>), the bottom right pixel is at coordinate <code>(22, 19)</code> (or <code>(width - 1, height -1)</code>), and so on.
 </p>
 
 {{post.figureMaxWidth("raster.png", "A fishy raster. <a href='https://commons.wikimedia.org/wiki/File:Raster_graphic_fish_20x23squares_sdtv-example.png'>Source: Wikipedia</a>", "320px")}}
@@ -828,7 +853,7 @@ int main(void) {
 		}
 
 		if (mfb_get_mouse_button_buffer(window)[MOUSE_BTN_1]) {
-			memset(pixels, 0, sizeof(uint32_t) * res_x *  res_y);
+			memset(pixels, 0, sizeof(uint32_t) * res_x * res_y);
 		}
 
 		mfb_update_ex(window, pixels, res_x, res_y);
@@ -839,11 +864,15 @@ int main(void) {
 )}}
 
 <p>
-	The interesting bit happens in lines 10 to 15. Each frame, we generate 200 pixels at random coordinates with random colors. We ensure that the coordinates are within the raster bounds by <code>% res_x</code> and <code>% res_y</code>. We also clamp the color components to the range 0-255 via modulo.
+	The interesting bit happens in lines 11 to 15. Each frame, we generate 200 pixels at random coordinates with random colors. We ensure that the coordinates are within the raster bounds by <code>% res_x</code> and <code>% res_y</code>. We also clamp the color components to the range 0-255 via modulo.
 </p>
 
 <p>
 	We also introduce some light input handling by checking if the left mouse button is pressed. If so, we set all pixels to the color black, giving the "user" a way to restart the glorious demo.
+</p>
+
+<p>
+	Finally, we pass the pixels to <code>mfb_update_ex()</code>, which will draw them to the window.
 </p>
 
 <p>
