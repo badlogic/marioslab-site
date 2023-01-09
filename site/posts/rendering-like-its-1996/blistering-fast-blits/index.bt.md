@@ -11,8 +11,11 @@ metadata = {
 {{include "../../../_templates/post_header.bt.html"}}
 {{include "../../../_templates/post_header.bt.html" as post}}
 {{include "../_demo.bt.html" as demo}}
+{{include "../_cfg.bt.html" as cfg}}
 
 {{post.figure("amiga500.jpeg", "Niklas Therning's beige plastic god. Has a fast blitter too!")}}
+
+<script src="../asmcfg.js"></script>
 
 <div class="table_of_contents"></div>
 
@@ -22,148 +25,48 @@ metadata = {
 
 As usual, we'll do some house keeping first.
 
-## Simplifying the CMake build
-Look at the [CMakeLists.txt](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/CMakeLists.txt) file. Here's an excerpt:
+## Adding asset files to the CMake build
+Going forward, many of our demos will consist not only of code, but also of asset files, like images. We'll store those assets in a folder called `assets/` in the root of the project. The CMake build should then copy the files to the output folder, next to the generated executable.
+
+How do we do this? Similarly to the `r96_web_assets` task we've already added to copy the `.html` files.
+
+Here's what needs changing in [CMakeLists.txt](https://github.com/badlogic/r96/blob/03-blistering-fast-blits/CMakeLists.txt#L40-L44)
 
 --markdown-end
 {{post.code("CMakeLists.txt", "cmake",
 `
-add_executable(r96_00_basic_window "src/00_basic_window.c")
-target_link_libraries(r96_00_basic_window LINK_PUBLIC minifb r96)
-
-add_executable(r96_01_drawing_a_pixel "src/01_drawing_a_pixel.c")
-target_link_libraries(r96_01_drawing_a_pixel LINK_PUBLIC minifb r96)
-
-add_executable(r96_02_image "src/02_image.c")
-target_link_libraries(r96_02_image LINK_PUBLIC minifb r96)
-
-add_executable(r96_03_clear_profiling "src/03_clear_profiling.c")
-target_link_libraries(r96_03_clear_profiling LINK_PUBLIC minifb r96)
-
-add_executable(r96_04_hline "src/04_hline.c")
-target_link_libraries(r96_04_hline LINK_PUBLIC minifb r96)
-
-add_executable(r96_05_hline_opt "src/05_hline_opt.c")
-target_link_libraries(r96_05_hline_opt LINK_PUBLIC minifb r96)
-
-add_executable(r96_06_rect "src/06_rect.c")
-target_link_libraries(r96_06_rect LINK_PUBLIC minifb r96)
-
-add_executable(r96_07_rect_opt "src/07_rect_opt.c")
-target_link_libraries(r96_07_rect_opt LINK_PUBLIC minifb r96)
-
-...
-
-    add_dependencies(r96_00_basic_window r96_web_assets)
-    target_link_options(r96_00_basic_window PRIVATE "-sEXPORT_NAME=r96_00_basic_window")
-
-    add_dependencies(r96_01_drawing_a_pixel r96_web_assets)
-    target_link_options(r96_01_drawing_a_pixel PRIVATE "-sEXPORT_NAME=r96_01_drawing_a_pixel")
-
-    add_dependencies(r96_02_image r96_web_assets)
-    target_link_options(r96_02_image PRIVATE "-sEXPORT_NAME=r96_02_image")
-
-    add_dependencies(r96_04_hline r96_web_assets)
-    target_link_options(r96_04_hline PRIVATE "-sEXPORT_NAME=r96_04_hline")
-
-    add_dependencies(r96_05_hline_opt r96_web_assets)
-    target_link_options(r96_05_hline_opt PRIVATE "-sEXPORT_NAME=r96_05_hline_opt")
-
-    add_dependencies(r96_06_rect r96_web_assets)
-    target_link_options(r96_06_rect PRIVATE "-sEXPORT_NAME=r96_06_rect")
-
-    add_dependencies(r96_07_rect_opt r96_web_assets)
-    target_link_options(r96_07_rect_opt PRIVATE "-sEXPORT_NAME=r96_07_rect_opt")
-`)}}
---markdown-begin
-
-Adding a new demo is very tedious. We keep repeating ourselves, so let's fix that.
-
-We start by cleaning-up all our targets:
-
---markdown-end
-{{post.code("CMakeLists.txt", "cmake",`
-add_library(r96 "src/r96/r96.c")
-add_executable(r96_00_basic_window "src/00_basic_window.c")
-add_executable(r96_01_drawing_a_pixel "src/01_drawing_a_pixel.c")
-add_executable(r96_02_image "src/02_image.c")
-add_executable(r96_03_clear_profiling "src/03_clear_profiling.c")
-add_executable(r96_04_hline "src/04_hline.c")
-add_executable(r96_05_hline_opt "src/05_hline_opt.c")
-add_executable(r96_06_rect "src/06_rect.c")
-add_executable(r96_07_rect_opt "src/07_rect_opt.c")
-add_executable(r96_08_image_file "src/08_image_file.c")
-add_executable(r96_09_blit "src/09_blit.c")
-add_executable(r96_10_blit_keyed "src/10_blit_keyed.c")
-
 add_custom_target(r96_assets
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_CURRENT_SOURCE_DIR}/assets
     $<TARGET_FILE_DIR:r96_00_basic_window>/assets
 )
-
-add_custom_target(r96_web_assets
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/web
-    $<TARGET_FILE_DIR:r96_00_basic_window>
-)
 `)}}
 --markdown-begin
 
-How nice! Each demo target is a single line that just specifies its name and the source file(s) its made from.
+We've added a custom target called `r96_assets` which copies the `assets/` folder from the root of the project to the build output folder, next to the executables.
 
-I also moved the `r96_web_assets` target, responsible for copying all `web/*.html` to the build folder, to the top level. And I added a new target called `r96_assets`. It copies anything in the `assets/` folder to the folder where the executable of the `r96_00_basic_window` target will end up in.
+> **Note:** Why not use `${CMAKE_CURRENT_BINARY_DIR}` as the directory to copy too? Because when building with MSVC, the executables will end up in `build/Release` or `build/Debug`. `$<TARGET_FILE_DIR:r96_00_basic_window>` is a way to get that directory. With other toolchains, the directory will be `build/` or `${CMAKE_CURRENT_BINARY_DIR}`. We don't use MSVC, but someone might want to, so let's be nice to them. `¯\_(ツ)_/¯`
 
-> **Note:** Why not use `${CMAKE_CURRENT_BINARY_DIR}` as the directory to copy too? Because when building with MSVC, the executables will end up in `build/Release` or `build/Debug`. `$<TARGET_FILE_DIR:r96_00_basic_window>` is a way to get that directory. With other toolchains, the directory will be `build/` or `${CMAKE_CURRENT_BINARY_DIR}`.
-
-Why do we need that? Going forward, we'll not just generate our data programmatically, but we'll also want to load image files and other data from disk. Any such assets will go in the `assets/` folder, and the target makes sure they will be available next to the executable, so relative paths work.
-
-We also need to link the `minifb` and `r96`library targets to each demo target. And every demo target should depend on the `r96_assets` and `r96_web_assets` targets, so we'll always have up-to-date asset files in the build folder. And if we build with Emscripten, we also need to set linker options, including the `EXPORT_NAME` by which we can resolve the WASM module in JavaScript.
-
-A lot of the repetitiveness in the old `CMakeLists.txt` file came from specifying all that information for every target over and over again. No more! Behold!
+The executable targets also need to depend on the `r96_assets` tasks, so whenever one or all of them are build, the assets are also copied over.
 
 --markdown-end
 {{post.code("CMakeLists.txt", "cmake",`
-get_property(targets DIRECTORY "${_dir}" PROPERTY BUILDSYSTEM_TARGETS)
-list(REMOVE_ITEM targets minifb r96 r96_assets r96_web_assets)
+...
 foreach(target IN LISTS targets)
     target_link_libraries(${target} LINK_PUBLIC minifb r96)
     add_dependencies(${target} r96_assets)
-    if(EMSCRIPTEN)
-        add_dependencies(${target} r96_web_assets)
-        target_link_options(${target} PRIVATE
-                "-sSTRICT=1"
-                "-sENVIRONMENT=web"
-                "-sLLD_REPORT_UNDEFINED"
-                "-sMODULARIZE=1"
-                "-sALLOW_MEMORY_GROWTH=1"
-                "-sALLOW_TABLE_GROWTH"
-                "-sMALLOC=emmalloc"
-                "-sEXPORT_ALL=1"
-                "-sEXPORTED_FUNCTIONS=[\"_malloc\",\"_free\",\"_main\"]"
-                "-sASYNCIFY"
-                "--no-entry"
-                "-sEXPORT_NAME=${target}"
-        )
-    endif()
-endforeach()
+    ...
 `)}}
 --markdown-begin
 
-Recent CMake versions let us list all targets that have been defined in some directory. We do that in the first line and assign the list to `targets`.
-
-Next, we remove the all the non-demo targets from that list.
-
-We then iterate through the remaining demo targets and link them with `minifb` and `r96` and make them depend on the `r96_assets` target. If we build with Emscripten, we also add the `r96_web_assets` target as a dependency, and set the additional linker options needed for Emscripten, including the `EXPORT_NAME` which is just the demo target name.
-
-And bam, we are down from 95 gruesome lines of CMake, to 73. Even better: to add a new demo, we just need to add an `add_executable()` line, specifying the target name and the source file(s) and we're done. Very nice. On with more interesting things.
+And that's it! We can now place files and folders in `assets/` and they'll end up next to our demo executables in the build folder.
 
 ## Reading files from disk (or URL)
 If you've done any file I/O in C previously, you'll likely know where we'll be going: [`fopen()`](https://man7.org/linux/man-pages/man3/fopen.3.html) and friends. That's mostly cross-platform, and we could even [use `fopen()` with Emscripten](https://emscripten.org/docs/getting_started/Tutorial.html#using-files).
 
 But that comes with a few things I don't want: a virtual filesystem and quite an increase in size of the WASM module. Emscripten will link in a bunch of stuff we won't really need.
 
-We role our own file reading! We want to specify a file path and get a bunch of bytes back. We also want to know how many bytes have been read. And we want to wrap that raw pointer to the memory block that holds the read bytes in a resource type. Let's call that type [`r96_byte_buffer`](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/r96/r96.h#L22):
+We role our own file reading! We want to specify a file path and get a bunch of bytes back. We also want to know how many bytes have been read. And we want to wrap that raw pointer to the memory block that holds the read bytes in a resource type. Let's call that type [`r96_byte_buffer`](https://github.com/badlogic/r96/blob/03-blistering-fast-blits/src/r96/r96.h#L22):
 
 --markdown-end
 {{post.code("r96.h", "c", `
@@ -186,7 +89,7 @@ void r96_byte_buffer_dispose(r96_byte_buffer *buffer);
 `)}}
 --markdown-begin
 
-`r96_byte_buffer_init()` can be used if we want to allocate `num_bytes` bytes and keep track of both the pointer and the length of the buffer. We dispose `r96_byte_buffer` instances via, you guessed it, `r96_byte_buffer_dispose()`. I spare you the [implementation details](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/r96/r96.c#LL14-L17C2).
+`r96_byte_buffer_init()` can be used if we want to allocate `num_bytes` bytes and keep track of both the pointer and the length of the buffer. We dispose `r96_byte_buffer` instances via, you guessed it, `r96_byte_buffer_dispose()`. I spare you the [implementation details](https://github.com/badlogic/r96/blob/03-blistering-fast-blits/src/r96/r96.c#LL14-L17C2).
 
 The interesting one is `r96_byte_buffer_init_from_file()`. We need two implementations: one for the desktop and one for the web. Here's the desktop version:
 
@@ -249,7 +152,9 @@ OK, there's JavaScript code in our C code. We got to be strong now. It's how we 
 
 The [`EM_ASYNC_JS()`](https://emscripten.org/docs/porting/asyncify.html#making-async-web-apis-behave-as-if-they-were-synchronous) macro takes a function signature split up into return type, function name, argument list, and the JavaScript implementation of the function. The macro will then generate a sort of trampoline that calls the JavaScript function from within WASM. The arguments are all passed as JavaScript numbers. And return values are numbers too.
 
-The `_ASYNC_` part means, that the JavaScript function we define can use JavaScript's [`await`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await). That will pause execution until the promise we wait for resolves. For our C code, it will look like `r96_byte_buffer_init()` is blocking. In reality, we hand back control to the browser, which will asynchronously download the data from the url (`path`).
+The `_ASYNC_` part means, that the JavaScript function we define can use JavaScript's [`await`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await). That will pause execution of the WASM code until the JavaScript function returns. 
+
+For our C code, it will look like `r96_byte_buffer_init()` is blocking. In reality, we hand back control to the browser, which will asynchronously download the data from the url (`path`).
 
 The implementation itself resolves the passed in pointer `path` to a JavaScript string. We then throw that at [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch) as a URL relative to the URL the WASM module is being run from. `fetch()` will asynchronously download the content from that URL. We then allocate memory on the WASM heap through `_malloc()` and copy the downloaded content over. Then we set the number of read bytes to the memory location specified by `size` and return the pointer. Pretty straight forward!
 
@@ -292,11 +197,11 @@ bool r96_image_init_from_file(r96_image *image, const char *path) {
 The new-fangled `r96_image_init_from_file()` takes an `r96_image` and a file path. We load the file contents via `r96_byte_buffer_init_from_file()`, then call `stbi_load_memory()` to decode the encoded image data to raw ARGB pixels, which get stored in the `r96_image` instance. If the image isn't ARGB, `stb_image` will helpfully convert it to that format for us.
 
 ## Demo: Loading images from files
-Time for a new demo. I've added our first asset file `doom-grunt.png` to the `assets/` folder. Remember this little guy?
+Time for a new demo. I've added our first asset file `grunt.png` to the `assets/` folder. Remember this little guy?
 
 <center><img src="doom-grunt.png" style="margin: auto;"></img></center>
 
-We can't really draw images yet, so we'll write a terminal app called [`08_image_file.c`](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/08_image_file.c) that loads the image and spits out its dimensions:
+We can't really draw images yet, so we'll write a terminal app called [`08_image_file.c`](https://github.com/badlogic/r96/blob/03-blistering-fast-blits/src/08_image_file.c) that loads the image and spits out its dimensions:
 
 --markdown-end
 {{post.code("src/08_image_file.c", "c", `
@@ -304,19 +209,19 @@ We can't really draw images yet, so we'll write a terminal app called [`08_image
 #include "r96/r96.h"
 
 int main(void) {
-    r96_image image;
-    if (!r96_image_init_from_file(&image, "assets/doom-grunt.png")) {
-        printf("Couldn't load file 'assets/doom-grunt.png'\n");
-        return -1;
-    }
-    printf("Loaded file 'assets/doom-grunt.png', %ix%i pixels\n", image.width, image.height);
-    r96_image_dispose(&image);
-    return 0;
+	r96_image image;
+	if (!r96_image_init_from_file(&image, "assets/grunt.png")) {
+		printf("Couldn't load file 'assets/grunt.png'\n");
+		return -1;
+	}
+	printf("Loaded file 'assets/grunt.png', %ix%i pixels\n", image.width, image.height);
+	r96_image_dispose(&image);
+	return 0;
 }
 `)}}
 --markdown-begin
 
-Which, as expected, prints `Loaded file 'assets/doom-grunt.png', 64x64 pixels`, both on the desktop and the web. Let's check if the pixels we loaded actually look like our little buddy above.
+Which, as expected, prints `Loaded file 'assets/grunt.png', 64x64 pixels`, both on the desktop and the web. Let's check if the pixels we loaded actually look like our little buddy above.
 
 ## Blitting images
 [Blitting](https://en.wikipedia.org/wiki/Bit_blit), which stands for bit block transfer, is an age old computer graphics tradition. It's a stand-in verb for when we want to get pixels from one or more images onto another, possibly involving some boolean operations per pixel.
@@ -466,7 +371,7 @@ q5.loop();
 Sounds simple enough, especially since we've already done pretty much everything except copying pixels in `r96_rect()`. Let's put it into code.
 
 ### Demo: blitting DOOM guy
-I've created a new demo called [`09_blit.c`](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/09_blit.c). Here it is in all its glory:
+I've created a new demo called [`09_blit.c`](https://github.com/badlogic/r96/blob/03-blistering-fast-blits/src/09_blit.c). Here it is in all its glory:
 
 --markdown-end
 {{post.code("src/09_blit.c", "c", `
@@ -516,8 +421,8 @@ void blit(r96_image *dst, r96_image *src, int x, int y) {
 
 int main(void) {
 	r96_image image;
-	if (!r96_image_init_from_file(&image, "assets/doom-grunt.png")) {
-		printf("Couldn't load file 'assets/doom-grunt.png'\n");
+	if (!r96_image_init_from_file(&image, "assets/grunt.png")) {
+		printf("Couldn't load file 'assets/grunt.png'\n");
 		return -1;
 	}
 
@@ -538,7 +443,7 @@ int main(void) {
 `)}}
 --markdown-begin
 
-Let's get `main()` out of the way first. We load the `doom-grunt.png` image, set up an output `r96_image` to which we render, and which is later drawn to the window via `mfb_update_ex()`. We create the window and enter the main loop, where we clear the output image, draw the grunt at the center of the output image, and tell `minifb` to show our output pixels in the window. Not very surprising.
+Let's get `main()` out of the way first. We load the `grunt.png` image, set up an output `r96_image` to which we render, and which is later drawn to the window via `mfb_update_ex()`. We create the window and enter the main loop, where we clear the output image, draw the grunt at the center of the output image, and tell `minifb` to show our output pixels in the window. Not very surprising.
 
 The interesting bits are located in the `blit()` function. It takes the destination image, the source image, and the location at which we should render the source image in the destination image.
 
@@ -600,7 +505,7 @@ Little DOOM guy has a bad case of black rectangle background. In the source imag
 Before we write the source pixel color to the destination pixel, we check if it is equal to a color key we specify. If it is, we leave the destination pixel alone, and move on to the next pixel. That's it!
 
 ### Demo: color keying DOOM guy
-Pretty straight forward, as the next demo called `10_blit_keyed.c` shows:
+Pretty straight forward, as the next demo called [`10_blit_keyed.c`](https://github.com/badlogic/r96/blob/03-blistering-fast-blits/src/10_blit_keyed.c) shows:
 
 --markdown-end
 {{post.code("src/10_blit_keyed.c", "c", `
@@ -656,8 +561,8 @@ void blit_keyed(r96_image *dst, r96_image *src, int x, int y, uint32_t color_key
 
 int main(void) {
 	r96_image image;
-	if (!r96_image_init_from_file(&image, "assets/doom-grunt.png")) {
-		printf("Couldn't load file 'assets/doom-grunt.png'\n");
+	if (!r96_image_init_from_file(&image, "assets/grunt.png")) {
+		printf("Couldn't load file 'assets/grunt.png'\n");
 		return -1;
 	}
 
@@ -687,7 +592,7 @@ Now DOOM guy is free from the shackles of his black rectangle background.
 --markdown-begin
 
 ### Demo: shoddy blitting micro benchmark
-How fast are our blitting functions? We can use `r96_rect()` as a base-line. It performs all the same operations, except the look-up of the pixel color in the source image. We can consider it our idealized best case scenario. Here's demo [`11_blit_perf.c`](https://github.com/badlogic/r96/blob/blistering-fast-blits-00/src/11_blit_perf.c) which implements a shoddy micro benchmark.
+How fast are our blitting functions? We can use `r96_rect()` as a base-line. It performs all the same operations, except the look-up of the pixel color in the source image. We can consider it our idealized best case scenario. Here's demo [`11_blit_perf.c`](https://github.com/badlogic/r96/blob/03-blistering-fast-blits/src/11_blit_perf.c) which implements a shoddy micro benchmark.
 
 --markdown-end
 {{post.code("src/11_blit_perf.c", "c", `
@@ -708,8 +613,8 @@ void blit_keyed(r96_image *dst, r96_image *src, int x, int y, uint32_t color_key
 
 int main(void) {
 	r96_image image;
-	if (!r96_image_init_from_file(&image, "assets/doom-grunt.png")) {
-		printf("Couldn't load file 'assets/doom-grunt.png'\n");
+	if (!r96_image_init_from_file(&image, "assets/grunt.png")) {
+		printf("Couldn't load file 'assets/grunt.png'\n");
 		return -1;
 	}
 
@@ -854,11 +759,75 @@ That didn't change anything. Since our `blit_keyed_opt1()` loop is as simple as 
 ### Starring at assembly control flow graphs
 This time however, we'll start by looking at the [control flow graph](https://en.wikipedia.org/wiki/Control-flow_graph) of the generated assembly. That's a bit easier to follow than the linear listing we get from [Godbolt Compiler Explorer](https://godbolt.org).
 
-I'm using the [Hopper](https://www.hopperapp.com/) disassembler to generate those fancy CFG images below from the demo executable `11_blit_perf`.
+Here's the loop in `r96_rect()` as a CFG, courtesy of my [asmcfg library](https://github.com/badlogic/asmcfg):
 
-Here's the loop in `r96_rect()` as a CFG:
-
-<center><img src="rect_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
+{{cfg.r96_cfg("r96_rect", `
+r96_rect:
+		... clipping, etc. ...
+.LBB0_21:                               #   in Loop: Header=BB0_9 Depth=1
+        lea     rdi, [rdi + 4*r8]
+        inc     eax
+        cmp     eax, r10d
+        je      .LBB0_22
+.LBB0_9:                                # =>This Loop Header: Depth=1
+        cmp     r12d, 7
+        jae     .LBB0_11
+        xor     ecx, ecx
+        jmp     .LBB0_19
+.LBB0_11:                               #   in Loop: Header=BB0_9 Depth=1
+        cmp     r14, 24
+        jae     .LBB0_13
+        xor     ecx, ecx
+        jmp     .LBB0_15
+.LBB0_13:                               #   in Loop: Header=BB0_9 Depth=1
+        mov     r15, qword ptr [rsp - 16]       # 8-byte Reload
+        xor     ecx, ecx
+.LBB0_14:                               #   Parent Loop BB0_9 Depth=1
+        movdqu  xmmword ptr [rdi + 4*rcx], xmm0
+        movdqu  xmmword ptr [rdi + 4*rcx + 16], xmm0
+        movdqu  xmmword ptr [rdi + 4*rcx + 32], xmm0
+        movdqu  xmmword ptr [rdi + 4*rcx + 48], xmm0
+        movdqu  xmmword ptr [rdi + 4*rcx + 64], xmm0
+        movdqu  xmmword ptr [rdi + 4*rcx + 80], xmm0
+        movdqu  xmmword ptr [rdi + 4*rcx + 96], xmm0
+        movdqu  xmmword ptr [rdi + 4*rcx + 112], xmm0
+        add     rcx, 32
+        add     r15, -4
+        jne     .LBB0_14
+.LBB0_15:                               #   in Loop: Header=BB0_9 Depth=1
+        test    r13, r13
+        je      .LBB0_18
+        lea     rcx, [rdi + 4*rcx]
+        add     rcx, 16
+        xor     edx, edx
+.LBB0_17:                               #   Parent Loop BB0_9 Depth=1
+        movdqu  xmmword ptr [rcx + rdx - 16], xmm0
+        movdqu  xmmword ptr [rcx + rdx], xmm0
+        add     rdx, 32
+        cmp     rbp, rdx
+        jne     .LBB0_17
+.LBB0_18:                               #   in Loop: Header=BB0_9 Depth=1
+        add     rdi, qword ptr [rsp - 8]        # 8-byte Folded Reload
+        mov     ecx, ebx
+        cmp     r11, rbx
+        je      .LBB0_21
+.LBB0_19:                               #   in Loop: Header=BB0_9 Depth=1
+        add     ecx, esi
+.LBB0_20:                               #   Parent Loop BB0_9 Depth=1
+        mov     dword ptr [rdi], r9d
+        add     rdi, 4
+        inc     ecx
+        jne     .LBB0_20
+        jmp     .LBB0_21
+.LBB0_22:
+        pop     rbx
+        pop     r12
+        pop     r13
+        pop     r14
+        pop     r15
+        pop     rbp
+        ret
+`)}}
 
 At first glance, we see the big fat block of `movdqu` instructions standing out.
 
@@ -870,11 +839,11 @@ For `r96_rect()`, the compiler generated code to fill the 16-bytes of the `xmm0`
 
 There are actually multiple blocks using `movdqu` in the loop. Which one is used depends on how many pixels need to still be written to in a row.
 
-The big one with label `loc_10000ba700` and 16 `movdqu` instructions is for the case where at least 256 bytes (or 64 pixels) are still to be written.
+The big one with label `LBB0_14` and 8 `movdqu` instructions is for the case where at least 128 bytes (or 32 pixels) are still to be written.
 
-The smaller block with label `loc_10000bb20` and two `movdqu` instructions is used when at least 32-bytes (or 8 pixels) are still to be written.
+The smaller block with label `LBB0_17` and two `movdqu` instructions is used when at least 32-bytes (or 8 pixels) are still to be written.
 
-For the case that less than 32-bytes still need to be written, the block with label `loc_10000bb50` is used. This one writes 4 bytes (or 1 pixel) at a time via the `mov` instruction.
+For the case that less than 32-bytes still need to be written, the block with label `LBB0_20` is used. This one writes 4 bytes (or 1 pixel) at a time via the `mov` instruction.
 
 That's pretty good, albeit not optimal. We could rewrite this manually in assembly or use intrinsics to ensure we can use `movdqa` for aligned memory writes, which will generally yield better throughput.
 
@@ -882,9 +851,123 @@ However, as we don't want to drop down to assembly or use CPU architecture speci
 
 Here's what the CFG of the `blit()` loop looks like.
 
-<center><img src="blit_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
-
-It's a CFG for ants! You can open this [PDF](blit_cfg.pdf) if you want the details.
+{{cfg.r96_cfg("cfg2", ` 
+blit:                                   # @blit
+		... clipping, etc. ...
+        jmp     .LBB1_8
+.LBB1_7:                                #   in Loop: Header=BB1_8 Depth=1
+        mov     rdx, qword ptr [rsp - 8]        # 8-byte Reload
+        lea     rdi, [rdi + 4*rdx]
+        lea     rcx, [rcx + 4*r14]
+        inc     eax
+        cmp     eax, r10d
+        je      .LBB1_27
+.LBB1_8:                                # =>This Loop Header: Depth=1
+        cmp     r13d, 7
+        jb      .LBB1_17
+        mov     rsi, rdi
+        sub     rsi, rcx
+        cmp     rsi, 32
+        jb      .LBB1_17
+        cmp     qword ptr [rsp - 24], 0         # 8-byte Folded Reload
+        je      .LBB1_26
+        mov     rbp, qword ptr [rsp - 40]       # 8-byte Reload
+        xor     esi, esi
+.LBB1_12:                               #   Parent Loop BB1_8 Depth=1
+        movups  xmm0, xmmword ptr [rcx + 4*rsi]
+        movups  xmm1, xmmword ptr [rcx + 4*rsi + 16]
+        movups  xmmword ptr [rdi + 4*rsi], xmm0
+        movups  xmmword ptr [rdi + 4*rsi + 16], xmm1
+        movups  xmm0, xmmword ptr [rcx + 4*rsi + 32]
+        movups  xmm1, xmmword ptr [rcx + 4*rsi + 48]
+        movups  xmmword ptr [rdi + 4*rsi + 32], xmm0
+        movups  xmmword ptr [rdi + 4*rsi + 48], xmm1
+        add     rsi, 16
+        add     rbp, -2
+        jne     .LBB1_12
+        test    byte ptr [rsp - 32], 1          # 1-byte Folded Reload
+        je      .LBB1_15
+.LBB1_14:                               #   in Loop: Header=BB1_8 Depth=1
+        movups  xmm0, xmmword ptr [rcx + 4*rsi]
+        movups  xmm1, xmmword ptr [rcx + 4*rsi + 16]
+        movups  xmmword ptr [rdi + 4*rsi], xmm0
+        movups  xmmword ptr [rdi + 4*rsi + 16], xmm1
+.LBB1_15:                               #   in Loop: Header=BB1_8 Depth=1
+        add     rcx, r15
+        add     rdi, r15
+        mov     esi, r12d
+        cmp     qword ptr [rsp - 16], r12       # 8-byte Folded Reload
+        je      .LBB1_7
+        jmp     .LBB1_18
+.LBB1_17:                               #   in Loop: Header=BB1_8 Depth=1
+        xor     esi, esi
+.LBB1_18:                               #   in Loop: Header=BB1_8 Depth=1
+        mov     ebp, r8d
+        sub     ebp, r9d
+        sub     ebp, esi
+        mov     r11d, r13d
+        sub     r11d, esi
+        and     ebp, 7
+        je      .LBB1_22
+        mov     rdx, r9
+        neg     ebp
+        xor     ebx, ebx
+.LBB1_20:                               #   Parent Loop BB1_8 Depth=1
+        mov     r9d, dword ptr [rcx]
+        add     rcx, 4
+        mov     dword ptr [rdi], r9d
+        add     rdi, 4
+        dec     ebx
+        cmp     ebp, ebx
+        jne     .LBB1_20
+        sub     esi, ebx
+        mov     r9, rdx
+.LBB1_22:                               #   in Loop: Header=BB1_8 Depth=1
+        cmp     r11d, 7
+        jb      .LBB1_7
+        mov     edx, dword ptr [rsp - 44]       # 4-byte Reload
+        mov     ebp, edx
+        sub     ebp, esi
+        xor     esi, esi
+        xor     ebx, ebx
+.LBB1_24:                               #   Parent Loop BB1_8 Depth=1
+        mov     edx, dword ptr [rcx + 4*rbx]
+        mov     dword ptr [rdi + 4*rbx], edx
+        mov     edx, dword ptr [rcx + 4*rbx + 4]
+        mov     dword ptr [rdi + 4*rbx + 4], edx
+        mov     edx, dword ptr [rcx + 4*rbx + 8]
+        mov     dword ptr [rdi + 4*rbx + 8], edx
+        mov     edx, dword ptr [rcx + 4*rbx + 12]
+        mov     dword ptr [rdi + 4*rbx + 12], edx
+        mov     edx, dword ptr [rcx + 4*rbx + 16]
+        mov     dword ptr [rdi + 4*rbx + 16], edx
+        mov     edx, dword ptr [rcx + 4*rbx + 20]
+        mov     dword ptr [rdi + 4*rbx + 20], edx
+        mov     edx, dword ptr [rcx + 4*rbx + 24]
+        mov     dword ptr [rdi + 4*rbx + 24], edx
+        mov     edx, dword ptr [rcx + 4*rbx + 28]
+        mov     dword ptr [rdi + 4*rbx + 28], edx
+        add     rbx, 8
+        add     rsi, -32
+        cmp     ebp, ebx
+        jne     .LBB1_24
+        sub     rcx, rsi
+        sub     rdi, rsi
+        jmp     .LBB1_7
+.LBB1_26:                               #   in Loop: Header=BB1_8 Depth=1
+        xor     esi, esi
+        test    byte ptr [rsp - 32], 1          # 1-byte Folded Reload
+        jne     .LBB1_14
+        jmp     .LBB1_15
+.LBB1_27:
+        pop     rbx
+        pop     r12
+        pop     r13
+        pop     r14
+        pop     r15
+        pop     rbp
+        ret
+`)}}
 
 If you squint hard enough, you can see blocks of [`movups`](https://c9x.me/x86/html/file_module_x86_id_208.html) instructions. That instruction is misappropriated by the compiler to move 4 pixel colors read from the source image to the destination image at once, despite the fact that the pixel colors are `uint32_t` and not single-precision floats. Since we don't do any arithmetic on the values, this is fine.
 
@@ -894,13 +977,288 @@ The compiler managed to auto-vectorize the inner loop of `blit()`, yielding perf
 
 So what does our twice as slow `blit_keyed_opt1()`  look like?
 
-<center><img src="blit_keyed_cfg.png" style="width: 90%; margin-bottom: 1em;"></center>
+{{cfg.r96_cfg("cfg3", `
+blit_keyed_opt1:                        # @blit_keyed_opt1
+        push    rbp
+        push    r15
+        push    r14
+        push    r13
+        push    r12
+        push    rbx
+        mov     r14d, dword ptr [rdi]
+        cmp     r14d, edx
+        jle     .LBB3_48
+        mov     ebx, dword ptr [rsi]
+        lea     r10d, [rbx + rdx]
+        test    r10d, r10d
+        jle     .LBB3_48
+        mov     r9d, dword ptr [rdi + 4]
+        cmp     r9d, ecx
+        jle     .LBB3_48
+        mov     eax, dword ptr [rsi + 4]
+        add     eax, ecx
+        test    eax, eax
+        jle     .LBB3_48
+        xor     r15d, r15d
+        test    ecx, ecx
+        mov     r11d, 0
+        cmovg   r11d, ecx
+        cmp     eax, r9d
+        cmovl   r9d, eax
+        cmp     r11d, r9d
+        jge     .LBB3_48
+        test    edx, edx
+        cmovg   r15d, edx
+        cmp     r10d, r14d
+        cmovge  r10d, r14d
+        mov     eax, r10d
+        sub     eax, r15d
+        mov     ebp, r10d
+        sub     ebp, r15d
+        mov     dword ptr [rsp - 16], ebp       # 4-byte Spill
+        jne     .LBB3_6
+.LBB3_48:
+        pop     rbx
+        pop     r12
+        pop     r13
+        pop     r14
+        pop     r15
+        pop     rbp
+        ret
+.LBB3_6:
+        mov     r12d, ebx
+        sub     r12d, eax
+        mov     ebp, r14d
+        sub     ebp, eax
+        movsxd  rbp, ebp
+        movsxd  r13, r12d
+        imul    r14d, r11d
+        movsxd  rax, r14d
+        mov     r14, rbp
+        shl     rax, 2
+        add     rax, qword ptr [rdi + 8]
+        mov     edi, r15d
+        lea     rbp, [rax + 4*rdi]
+        mov     eax, ecx
+        neg     eax
+        sar     ecx, 31
+        and     ecx, eax
+        imul    ecx, ebx
+        movsxd  rax, ecx
+        shl     rax, 2
+        add     rax, qword ptr [rsi + 8]
+        mov     ecx, edx
+        neg     ecx
+        sar     edx, 31
+        and     edx, ecx
+        movsxd  rcx, edx
+        lea     rbx, [rax + 4*rcx]
+        not     r15d
+        add     r10d, r15d
+        lea     rdx, [r10 + 1]
+        mov     qword ptr [rsp - 8], rdx        # 8-byte Spill
+        and     rdx, -8
+        mov     eax, dword ptr [rsp - 16]       # 4-byte Reload
+        sub     eax, edx
+        mov     dword ptr [rsp - 12], eax       # 4-byte Spill
+        lea     r12, [4*rdx]
+        movd    xmm0, r8d
+        pshufd  xmm0, xmm0, 0                   # xmm0 = xmm0[0,0,0,0]
+        pcmpeqd xmm1, xmm1
+        jmp     .LBB3_7
+.LBB3_46:                               #   in Loop: Header=BB3_7 Depth=1
+        sub     rcx, rdi
+        sub     rsi, rdi
+.LBB3_47:                               #   in Loop: Header=BB3_7 Depth=1
+        lea     rbp, [rsi + 4*r14]
+        lea     rbx, [rcx + 4*r13]
+        inc     r11d
+        cmp     r11d, r9d
+        je      .LBB3_48
+.LBB3_7:                                # =>This Loop Header: Depth=1
+        cmp     r10d, 7
+        jb      .LBB3_8
+        mov     rax, rbp
+        sub     rax, rbx
+        cmp     rax, 32
+        jb      .LBB3_8
+        lea     rcx, [rbx + r12]
+        lea     rsi, [r12 + rbp]
+        xor     r15d, r15d
+        jmp     .LBB3_11
+.LBB3_27:                               #   in Loop: Header=BB3_11 Depth=2
+        add     r15, 8
+        cmp     rdx, r15
+        je      .LBB3_28
+.LBB3_11:                               #   Parent Loop BB3_7 Depth=1
+        movdqu  xmm3, xmmword ptr [rbx + 4*r15]
+        movdqu  xmm2, xmmword ptr [rbx + 4*r15 + 16]
+        movdqa  xmm4, xmm3
+        pcmpeqd xmm4, xmm0
+        movd    eax, xmm4
+        not     eax
+        test    al, 1
+        jne     .LBB3_12
+        pxor    xmm4, xmm1
+        pextrw  eax, xmm4, 2
+        test    al, 1
+        jne     .LBB3_14
+.LBB3_15:                               #   in Loop: Header=BB3_11 Depth=2
+        pextrw  eax, xmm4, 4
+        test    al, 1
+        jne     .LBB3_16
+.LBB3_17:                               #   in Loop: Header=BB3_11 Depth=2
+        pextrw  eax, xmm4, 6
+        test    al, 1
+        je      .LBB3_19
+.LBB3_18:                               #   in Loop: Header=BB3_11 Depth=2
+        pshufd  xmm3, xmm3, 255                 # xmm3 = xmm3[3,3,3,3]
+        movd    dword ptr [rbp + 4*r15 + 12], xmm3
+.LBB3_19:                               #   in Loop: Header=BB3_11 Depth=2
+        movdqa  xmm3, xmm2
+        pcmpeqd xmm3, xmm0
+        movd    eax, xmm3
+        not     eax
+        test    al, 1
+        jne     .LBB3_20
+        pxor    xmm3, xmm1
+        pextrw  eax, xmm3, 2
+        test    al, 1
+        jne     .LBB3_22
+.LBB3_23:                               #   in Loop: Header=BB3_11 Depth=2
+        pextrw  eax, xmm3, 4
+        test    al, 1
+        jne     .LBB3_24
+.LBB3_25:                               #   in Loop: Header=BB3_11 Depth=2
+        pextrw  eax, xmm3, 6
+        test    al, 1
+        je      .LBB3_27
+        jmp     .LBB3_26
+.LBB3_12:                               #   in Loop: Header=BB3_11 Depth=2
+        movd    dword ptr [rbp + 4*r15], xmm3
+        pxor    xmm4, xmm1
+        pextrw  eax, xmm4, 2
+        test    al, 1
+        je      .LBB3_15
+.LBB3_14:                               #   in Loop: Header=BB3_11 Depth=2
+        pshufd  xmm5, xmm3, 85                  # xmm5 = xmm3[1,1,1,1]
+        movd    dword ptr [rbp + 4*r15 + 4], xmm5
+        pextrw  eax, xmm4, 4
+        test    al, 1
+        je      .LBB3_17
+.LBB3_16:                               #   in Loop: Header=BB3_11 Depth=2
+        pshufd  xmm5, xmm3, 238                 # xmm5 = xmm3[2,3,2,3]
+        movd    dword ptr [rbp + 4*r15 + 8], xmm5
+        pextrw  eax, xmm4, 6
+        test    al, 1
+        jne     .LBB3_18
+        jmp     .LBB3_19
+.LBB3_20:                               #   in Loop: Header=BB3_11 Depth=2
+        movd    dword ptr [rbp + 4*r15 + 16], xmm2
+        pxor    xmm3, xmm1
+        pextrw  eax, xmm3, 2
+        test    al, 1
+        je      .LBB3_23
+.LBB3_22:                               #   in Loop: Header=BB3_11 Depth=2
+        pshufd  xmm4, xmm2, 85                  # xmm4 = xmm2[1,1,1,1]
+        movd    dword ptr [rbp + 4*r15 + 20], xmm4
+        pextrw  eax, xmm3, 4
+        test    al, 1
+        je      .LBB3_25
+.LBB3_24:                               #   in Loop: Header=BB3_11 Depth=2
+        pshufd  xmm4, xmm2, 238                 # xmm4 = xmm2[2,3,2,3]
+        movd    dword ptr [rbp + 4*r15 + 24], xmm4
+        pextrw  eax, xmm3, 6
+        test    al, 1
+        je      .LBB3_27
+.LBB3_26:                               #   in Loop: Header=BB3_11 Depth=2
+        pshufd  xmm2, xmm2, 255                 # xmm2 = xmm2[3,3,3,3]
+        movd    dword ptr [rbp + 4*r15 + 28], xmm2
+        jmp     .LBB3_27
+.LBB3_8:                                #   in Loop: Header=BB3_7 Depth=1
+        mov     eax, dword ptr [rsp - 16]       # 4-byte Reload
+        mov     rcx, rbx
+        mov     rsi, rbp
+        jmp     .LBB3_29
+.LBB3_28:                               #   in Loop: Header=BB3_7 Depth=1
+        mov     eax, dword ptr [rsp - 12]       # 4-byte Reload
+        cmp     qword ptr [rsp - 8], rdx        # 8-byte Folded Reload
+        je      .LBB3_47
+.LBB3_29:                               #   in Loop: Header=BB3_7 Depth=1
+        lea     r15d, [rax - 1]
+        test    al, 3
+        je      .LBB3_35
+        mov     edi, eax
+        and     edi, 3
+        xor     ebp, ebp
+        jmp     .LBB3_31
+.LBB3_33:                               #   in Loop: Header=BB3_31 Depth=2
+        add     rcx, 4
+        add     rsi, 4
+        inc     rbp
+        cmp     edi, ebp
+        je      .LBB3_34
+.LBB3_31:                               #   Parent Loop BB3_7 Depth=1
+        mov     ebx, dword ptr [rcx]
+        cmp     ebx, r8d
+        je      .LBB3_33
+        mov     dword ptr [rsi], ebx
+        jmp     .LBB3_33
+.LBB3_34:                               #   in Loop: Header=BB3_7 Depth=1
+        sub     eax, ebp
+.LBB3_35:                               #   in Loop: Header=BB3_7 Depth=1
+        cmp     r15d, 3
+        jb      .LBB3_47
+        mov     ebx, eax
+        xor     edi, edi
+        xor     ebp, ebp
+        jmp     .LBB3_37
+.LBB3_45:                               #   in Loop: Header=BB3_37 Depth=2
+        add     rbp, 4
+        add     rdi, -16
+        cmp     ebx, ebp
+        je      .LBB3_46
+.LBB3_37:                               #   Parent Loop BB3_7 Depth=1
+        mov     eax, dword ptr [rcx + 4*rbp]
+        cmp     eax, r8d
+        jne     .LBB3_38
+        mov     eax, dword ptr [rcx + 4*rbp + 4]
+        cmp     eax, r8d
+        jne     .LBB3_40
+.LBB3_41:                               #   in Loop: Header=BB3_37 Depth=2
+        mov     eax, dword ptr [rcx + 4*rbp + 8]
+        cmp     eax, r8d
+        jne     .LBB3_42
+.LBB3_43:                               #   in Loop: Header=BB3_37 Depth=2
+        mov     eax, dword ptr [rcx + 4*rbp + 12]
+        cmp     eax, r8d
+        je      .LBB3_45
+        jmp     .LBB3_44
+.LBB3_38:                               #   in Loop: Header=BB3_37 Depth=2
+        mov     dword ptr [rsi + 4*rbp], eax
+        mov     eax, dword ptr [rcx + 4*rbp + 4]
+        cmp     eax, r8d
+        je      .LBB3_41
+.LBB3_40:                               #   in Loop: Header=BB3_37 Depth=2
+        mov     dword ptr [rsi + 4*rbp + 4], eax
+        mov     eax, dword ptr [rcx + 4*rbp + 8]
+        cmp     eax, r8d
+        je      .LBB3_43
+.LBB3_42:                               #   in Loop: Header=BB3_37 Depth=2
+        mov     dword ptr [rsi + 4*rbp + 8], eax
+        mov     eax, dword ptr [rcx + 4*rbp + 12]
+        cmp     eax, r8d
+        je      .LBB3_45
+.LBB3_44:                               #   in Loop: Header=BB3_37 Depth=2
+        mov     dword ptr [rsi + 4*rbp + 12], eax
+        jmp     .LBB3_45
+`)}}
 
-That's not great. We don't even have to dig deeply into this to see the issue. The compiler generated two big branches.
+That's not great. The graph is so complex, I had to leave in the clipping code so the CFG generator didn't throw up. We don't even have to dig deeply into this to see the issue. The compiler generated two big branches.
 
-The one on the left doesn't use any SIMD instructions, while the one on the right tries its hardest to use SIMD but devolves into a ball of conditional jumps.
+One doesn't use any SIMD instructions, while the other one tries its hardest to use SIMD but devolves into a ball of conditional jumps.
 
-That alone will kill any performance gained from using SIMD to read/write more than 1 pixel at once. Have a look at the [PDF](blit_keyed_cfg.pdf) if you want to see the gory details.
+That alone will kill any performance gained from using SIMD to read/write more than 1 pixel at once. 
 
 Clearly, Clang can't deal with this simple `if` conditional in the inner loop. What about other compilers? And how can we make them generate passable vectorized code?
 
@@ -1229,7 +1587,7 @@ For maintainability's sake, we won't do that though.
 > **Note:* `blit()` and `blit_keyed_opt4()` have been promoted to `r96` library functions and shall henceforth be known as `r96_blit()` and `r96_blit_keyed()`.
 
 ## Next up
-What a journey! It feels like we solved a murder mystery, where MSVC is the murderer. And while we solved one mystery, the mystery of MSVC not being able to vectorize `r96_rect()` nor `blit()` remains.
+What a journey! It feels like we solved a murder mystery, where MSVC is the murderer. And while we solved one mystery, the mystery of MSVC not being able to vectorize `r96_rect()` nor `blit()` remains. As we use Clang on Windows, we don't care much about MSVC though.
 
 Next time, we'll keep things short, I promise! We'll be looking into bitmap fonts, so we no longer need to print to the console.
 

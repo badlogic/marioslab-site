@@ -1,0 +1,35 @@
+{{macro r96_cfg(name, assembly)}}
+<svg id="{{name}}" style="width: 100%; aspect-ratio: 9 / 16; outline: none; background: black"><g/></svg>
+<script>    
+{
+let renderGraph = async (func, svgGraph) => {
+    let graph = await asmcfg.renderGraphlib(func);
+    let edges = await graph.edges();
+    for (let i = 0; i < edges.length; i++) {
+        let edge = edges[i];
+        let fromNode = func.nodes[edge.v];
+        let toNode = func.nodes[edge.w];
+
+        if (toNode.label) {
+            if (fromNode.lines.length > 0 && fromNode.lines[fromNode.lines.length - 1].indexOf(toNode.label) >= 0)
+                graph.setEdge(edge.v, edge.w, { style: "stroke: #00aa00", arrowheadStyle: "stroke: #00aa00; fill: #00aa00;" });
+            else
+                graph.setEdge(edge.v, edge.w, { style: "stroke: #aa0000", arrowheadStyle: "stroke: #aa0000; fill: #aa0000;" });
+        } else {
+            graph.setEdge(edge.v, edge.w, { style: "stroke: #aa0000", arrowheadStyle: "stroke: #aa0000; fill: #aa0000;" });
+        }
+    }
+
+    await asmcfg.renderSvgFromGraphlib(graph, svgGraph);
+    await asmcfg.makeInteractive(svgGraph.querySelector("g"), func);
+}
+
+async function {{name}}_setup() {
+    let functions = asmcfg.parse(`{{assembly}}`);
+    let svgGraph = document.querySelector("#{{name}}");
+    await renderGraph(functions[0], svgGraph);
+};
+{{name}}_setup();
+}
+</script>
+{{end}}

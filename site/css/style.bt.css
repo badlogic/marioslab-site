@@ -280,3 +280,28 @@ html {
 	flex-direction: column;
 	padding: 1em;
 }
+
+/* CFG graphs */
+/* Style node contents */
+.node {
+	white-space: nowrap;
+	font-family: Courier;
+	cursor: pointer;
+	color: #ccc;
+	stroke: none;
+	fill: #ccc;
+}
+
+/* Style node bounding rectangle */
+.node rect {
+	stroke: #ccc;
+	fill: #000;
+	stroke-width: 1.5px;
+}
+
+/* Style edges */
+.edgePath path.path {
+	stroke: #ccc;
+	stroke-width: 1.5px;
+	fill: none;
+}
