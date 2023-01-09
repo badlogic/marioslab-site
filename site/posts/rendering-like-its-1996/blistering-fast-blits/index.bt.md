@@ -21,6 +21,15 @@ metadata = {
 
 --markdown-begin
 
+> To follow along this blog post with running code, make sure you've installed the [prerequisites](https://github.com/badlogic/r96/tree/01-babys-first-pixel#installing-required-tools). Then:
+```
+git clone https://github.com/badlogic/r96
+cd r96
+git checkout 03-blistering-fast-blits
+./tools/download-tools.sh
+code .
+```
+
 [Last time](../dont-be-square/), we drew some horizontal lines and rectangles, and figured out some general optimization approaches. Today, we're going to read files, load images, and draw the images to the screen!
 
 As usual, we'll do some house keeping first.

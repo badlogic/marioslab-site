@@ -17,7 +17,7 @@ metadata = {
 
 --markdown-begin
 
-> To follow along this blog post with running code, make sure you've installed the [prerequisits](https://github.com/badlogic/r96/tree/01-babys-first-pixel#installing-required-tools). Then:
+> To follow along this blog post with running code, make sure you've installed the [prerequisites](https://github.com/badlogic/r96/tree/01-babys-first-pixel#installing-required-tools). Then:
 ```
 git clone https://github.com/badlogic/r96
 cd r96
