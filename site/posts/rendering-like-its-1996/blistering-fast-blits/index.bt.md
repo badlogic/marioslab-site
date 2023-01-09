@@ -1594,6 +1594,6 @@ Next time, we'll keep things short, I promise! We'll be looking into bitmap font
 Discuss this post on [Twitter](https://twitter.com/badlogicgames/status/1603466400424726528) or [Mastodon](https://mastodon.social/@badlogicgames/109519253257304337).
 
 --markdown-end
-<script>tableOfContents()</script>
+<script>tableOfContents()</script> 
 
 {{include "../../../_templates/post_footer.bt.html"}}
