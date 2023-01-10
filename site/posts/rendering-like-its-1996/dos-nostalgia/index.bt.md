@@ -34,23 +34,16 @@ All of that work culminated in a [VS Code extension](https://marketplace.visuals
 
 With all of that out of my system, I built some shell scripts that will help you install (almost) all the tools to compile, run, and debug the `r96` project for desktop, web, and DOS. And I added some VS Code magic so you can comfortably start debugging sessions on each platform.
 
+And to round it all off, I cleaned up the Git repo, so each blog post maps to exactly one commit. And I rewrote the first 3 blog posts in the series. So yeah.
+
 I can now happily continue writing the series. Promise. Unless I'll add Android and iOS support in the future. I currently don't feel that specific masochism piling up inside of me.
 
-Today, we're looking into the new bells and whistles of the `r96` tools setup, check out DOS support, and then load and draw some bitmap fonts.
-
-> You can follow along by checking out the `dos-nostalgia-00` tag in your clone of the [r96](https://github.com/badlogic/r96) repository. `git pull && git checkout dos-nostalgia-00`
-
-## Automated tools installation and launch configs
-I realize that setting up the development environment to get this series' code running may be daunting to some. It doesn't get any better by adding DOS as a supported platform. So I made it really easy (tm).
-
-Please hop over to GitHub and checkout the extensive [README.md](https://github.com/badlogic/r96/blob/main/README.md) that gives you a quick-start as well as detailed information how things work.
-
-Let me know if any of this gives you problems on the [issue tracker](https://github.com/badlogic/r96/issues).
+Today, we're looking DOS support, and then load and draw some bitmap fonts.
 
 ## Demo: Hello DOS
-Now that you've totally read the [README.md](https://github.com/badlogic/r96/issues), and installed the tools to compile, run, and debug `r96` on desktop, web, and DOS, we can add a new demo to celebrate DOS support.
+Alright, go get the latest and greatest from the `r96` repository. Follow the [README.md](https://github.com/badlogic/r96/blob/04-dos-nostalgia/README.md) to install the tools, including the new DOS tools. The README.md will also get you up to speed on how to build and debug everything in VS Code or on the command line. Or, if you want a detailed run-down of the project and its build and IDE support, read the [first entry of the series](posts/rendering-like-its-1996/babys-first-pixel/).
 
-Let's call the new demo [`12_hello_dos.c`](https://github.com/badlogic/r96/blob/main/src/12_hello_dos.c):
+To celebrate DOS support, I've added a new demo called [`12_hello_dos.c`](https://github.com/badlogic/r96/blob/04-dos-nostalgia/src/12_hello_dos.c):
 
 --markdown-end
 {{post.code("12_hello_dos.c", "c",
@@ -242,24 +235,131 @@ Thankfully, there are various libraries that can help us draw text. For translat
 
 We aren't going to do any of that though. We'll be going somewhat old school and draw inspiration from [VGA text mode fonts](https://en.wikipedia.org/wiki/VGA_text_mode#Fonts), but with a 2022 spirit (aka being wasteful).
 
-Our system will be capable of drawing text where each character is encoded as 1 byte. Classic old `char *`. That's a total of 256 characters.
+But before we can look at font pixels, we need to talk about character encodings.
 
- We'll use the  [ISO-8859-1 character set](https://en.wikipedia.org/wiki/ISO/IEC_8859-1) which is sometimes incorrectly referred to as extended [ASCII](https://en.wikipedia.org/wiki/ASCII). The first 128 characters correspond to ASCII. The other 128 characters map to glyphs from various mostly western scripts. The entire character set corresponds to the first 256 Unicode code points. Here are the glyphs we'll support:
+### Character encodings
+Text is composed of characters. When we store text digitally, those characters need to be stored as a sequence of (binary) numbers. When we read characters from a file to draw them to the screen, or translate key strokes to characters, we need to map numbers back to characters. Similarly, when the C compiler encounters a string literal like `const char *text = "Hello world"`, it will convert the characters in the string to a sequence of numbers that gets embedded in the final executable.
+
+Mapping those sequences of numbers to characters and vice versa is what [character encodings](https://en.wikipedia.org/wiki/Character_encoding) are for.
+
+One of the oldest character encodings is [ASCII](https://en.wikipedia.org/wiki/ASCII). Each character is encoded in 1 byte. Well, actually, ASCII only uses the first 7-bits, so it encodes a total of 128 characters. Well, that's not quite true either. Only 95 of these characters are printable. The other 33 "characters" are what's called [control codes](https://en.wikipedia.org/wiki/Control_character). Notable ones are `\t` or `9`, which indicates a tab, and `\n` or `10`, the line feed.
+
+Here are all the printable characters and non-printable control codes contained in ASCII with their (hexa-)decimal codes.
+
+--markdown-end
+{{post.code("", "none", `
+> ascii -d
+Dec Hex    Dec Hex    Dec Hex  Dec Hex  Dec Hex  Dec Hex   Dec Hex   Dec Hex
+  0 00 NUL  16 10 DLE  32 20    48 30 0  64 40 @  80 50 P   96 60 \`  112 70 p
+  1 01 SOH  17 11 DC1  33 21 !  49 31 1  65 41 A  81 51 Q   97 61 a  113 71 q
+  2 02 STX  18 12 DC2  34 22 "  50 32 2  66 42 B  82 52 R   98 62 b  114 72 r
+  3 03 ETX  19 13 DC3  35 23 #  51 33 3  67 43 C  83 53 S   99 63 c  115 73 s
+  4 04 EOT  20 14 DC4  36 24 $  52 34 4  68 44 D  84 54 T  100 64 d  116 74 t
+  5 05 ENQ  21 15 NAK  37 25 %  53 35 5  69 45 E  85 55 U  101 65 e  117 75 u
+  6 06 ACK  22 16 SYN  38 26 &  54 36 6  70 46 F  86 56 V  102 66 f  118 76 v
+  7 07 BEL  23 17 ETB  39 27 '  55 37 7  71 47 G  87 57 W  103 67 g  119 77 w
+  8 08 BS   24 18 CAN  40 28 (  56 38 8  72 48 H  88 58 X  104 68 h  120 78 x
+  9 09 HT   25 19 EM   41 29 )  57 39 9  73 49 I  89 59 Y  105 69 i  121 79 y
+ 10 0A LF   26 1A SUB  42 2A *  58 3A :  74 4A J  90 5A Z  106 6A j  122 7A z
+ 11 0B VT   27 1B ESC  43 2B +  59 3B ;  75 4B K  91 5B [  107 6B k  123 7B {
+ 12 0C FF   28 1C FS   44 2C ,  60 3C <  76 4C L  92 5C \  108 6C l  124 7C |
+ 13 0D CR   29 1D GS   45 2D -  61 3D =  77 4D M  93 5D ]  109 6D m  125 7D }
+ 14 0E SO   30 1E RS   46 2E .  62 3E >  78 4E N  94 5E ^  110 6E n  126 7E ~
+ 15 0F SI   31 1F US   47 2F /  63 3F ?  79 4F O  95 5F _  111 6F o  127 7F DEL
+`)}}
+--markdown-begin
+
+The codes `0-31` are control codes, including the `\t` (`9`) and `\n` (`10`) codes we discussed above. Printable characters start at code 32 (` ` or space) and go to code `126`. The final code `127` is another control code.
+
+ASCII is short for "American Standard Code for Information Interchange". Unsurprisingly, the ASCII encoding really only contains characters used in US English, and by coincidence, some other western scripts.
+
+Now, I'm not 'merican. And based on my server logs, chances are good you aren't 'merican either. What about other fancy characters, like 'ö' or 'ê'? Or characters from the arabic or CJK scripts? Well, that's a lot more complicated and historically involves something called [code pages](https://en.wikipedia.org/wiki/Code_page), which was and still is an utter mess.
+
+The alternative to code pages is [Unicode](https://en.wikipedia.org/wiki/Unicode), which has multiple encodings, like [UTF-8](https://en.wikipedia.org/wiki/UTF-8), [UTF-16](https://en.wikipedia.org/wiki/UTF-16), and so on. Thankfully, the world has now mostly standardized on UTF-8, for [good reasons](http://utf8everywhere.org/).
+
+UTF-8 is a multi-byte encoding. Depending on the character, we may need 1 to 4 bytes to store it. That covers pretty much all the characters used around the world, including all those annoying emojis your older family members send you instead of actual words. Thanks Unicode.
+
+For our demos, we'll store text either in C source code as literals ala `const char *text = "Hello world"`, or in text files in the `assets/` folder of the `r96` project. Both the C sources and text files will be encoded using `UTF-8`. Anything else would be pain. This means we have to deal with UTF-8 when rendering text.
+
+But as I said earlier, we do not want to go full Unicode text rendering, as that'd require us to integrate all the fancy libraries mentioned above. We want a simpler solution. Enter Unicode's first 256 code points. These code points are split up into 2 blocks.
+
+The first block from code point `0-127` is called the [Basic Latin Unicode block](https://en.wikipedia.org/wiki/Basic_Latin_(Unicode_block)). The code points are the exact same codes as used in ASCII, including both non-printable control codes (`0-31` and `127`) and printable characters (`32-126`). When encoding text with UTF-8, the resulting sequence of bytes is backwards compatible with ASCII: the first 128 Unicode code points get encoded as a single byte in UTF-8.
+
+The second block from code point `128-255` is called the [Latin 1 Supplement block](https://en.wikipedia.org/wiki/Latin-1_Supplement). It contains another set of non-printable control codes (`128-159`) called [C1 controls](https://en.wikipedia.org/wiki/C0_and_C1_control_codes#C1_controls), which we can safely ignore for the purpose of rendering text. The remaining code points in the block (`160-255`) include additional characters used in some western scripts. These Unicode code points are encoded with 2 bytes in UTF-8.
+
+Surprise! Those first 256 Unicode code points map directly onto an old code page, namely, the  [ISO-8859-1 character set](https://en.wikipedia.org/wiki/ISO/IEC_8859-1). It is sometimes incorrectly referred to as extended ASCII. Here are the characters contained in the set.
 
 --markdown-end
 {{post.figureMaxWidth("iso-8859-1.png", "The ISO-8859-1 character set <a href='https://en.wikipedia.org/wiki/ISO/IEC_8859-1'>Source: Wikipedia</a>", "80%")}}
 --markdown-begin
 
-The characters from `0-31` are labeled as undefined above. In ASCII, those are non-printable [control characters](https://en.wikipedia.org/wiki/ASCII#Control_characters).
+E.g. `ö` is encoded as `0xF6` or `246` in decimal. The gray blocks are the control codes.
 
-When we render a text, we'll interpret a character with encoding `9` as `\t` (tab), and a character with encoding `10` as `\n` (newline). We'll ignore all other characters in the range `0-31` and `127-159`.
+Alright, we've decided to use the first 2 Unicode blocks spanning code points `0-255`. All our C source code containing string literals will be stored UTF-8 encoded. Any any text files we put into `assets/` to be read by our demos will also be UTF-8 encoded. There are two minor complications.
 
-Each of these characters maps to a glyph image. E.g. the character with encoding `78` (0x4e) maps to the glyph image `H`.
+The first complication is how C compilers handle string literals. When the compiler encounters something like `const char *text = "Hello world"`, it will use a character encoding to turn the literal `"Hello world"` into a sequence of bytes embedded in the executable. Which encoding is chosen, depends on the compiler. By default, Clang and GCC convert the string literal to UTF-8 and embed the corresponding byte sequence. Clang even assumes that the source file encoding is UTF-8 and refuses to compile anything else. [MSVC is ... different](https://pspdfkit.com/blog/2021/string-literals-character-encodings-and-multiplatform-cpp/). Luckily, we do not care for MSVC in this series. If you do care for some reason, just make sure to pass `/utf8` as a compiler flag to ensure MSVC embeds string literals as UTF-8 as well.
 
-In VGA fonts, and most bitamp fonts in general.
+The second complication is actually reading the code points of a UTF-8 encoded text string, whether it comes from a C string literal or a UTF-8 encoded file read from disk. We have to deal with the multi-byte nature of the UTF-8 encoding, as code points above `127` are encoded as two bytes. Luckily, I've taken care of that with the function [`r96_next_utf8_character()`](https://github.com/badlogic/r96/blob/04-dos-nostalgia/src/r96/r96.c#L15-L31):
 
- What glyph image we use for each character is entirely up to us, but we'll stick to a standard.
+--markdown-end
+{{post.code("r96.c", "c", `
+uint32_t r96_next_utf8_codepoint(const char *data, uint32_t *index, uint32_t end) {
+	static const uint32_t utf8_offsets[6] = {
+			0x00000000UL, 0x00003080UL, 0x000E2080UL,
+			0x03C82080UL, 0xFA082080UL, 0x82082080UL};
 
+	uint32_t character = 0;
+	const unsigned char *bytes = (const unsigned char *) data;
+	int num_bytes = 0;
+	do {
+		character <<= 6;
+		character += bytes[(*index)++];
+		num_bytes++;
+	} while (*index != end && ((bytes[*index]) & 0xC0) == 0x80);
+	character -= utf8_offsets[num_bytes - 1];
+
+	return character;
+}
+`)}}
+--markdown-begin
+
+This function takes a sequence of bytes (`data`) encoding a UTF-8 string, an index into the byte sequence, and the last valid index (`end`). Both indices are byte offsets, not character offsets!
+
+The function then reads the next UTF-8 character, which may be 1 to 4 bytes long, and returns its code point. Additionally, it increments the `index` accordingly, so we know at what byte offset the next character starts.
+
+> **Note:** I stole the original of this function many years ago from ... somewhere. I can not remember anymore. I've since modified it to my needs. To the original author: I'm deeply sorry I forgot who you are.
+
+We can use this function to iterate all UTF-8 characters in a byte sequence and get their code points:
+
+--markdown-end
+{{post.code("", "c", `
+const char *utf8_text = "¡ÄÖ$\n\t";
+uint32_t index = 0;
+uint32_t end = strlen(utf8_text);
+while (index != end) {
+	uint32_t code_point = r96_next_utf8_codepoint(utf8_text, &index, end);
+	printf("code point: %i/%x\n", code_point, code_point);
+}
+`)}}
+--markdown-begin
+
+Which prints the code point of each character in decimal and hexadecimal.
+
+```
+code point: 161/a1
+code point: 196/c4
+code point: 214/d6
+code point: 36/24
+code point: 10/a
+code point: 9/9
+```
+
+As expected. Compare the output to the ISO-8859-1 chart above for validation.
+
+This function can deal with any valid UTF-8 byte sequence and returns code points as a 32-bit unsigned integer. For our purposes, we are only interested in code points `0-255` and will ignore any other code points.
+
+## Generating a glyph atlas
+Alright, we have all our encoding bases covered. The next question is: how do we turn a code point like `64` (`0x41`) into the corresponding glyph image for the character `A` so we can blit it onto the screen?
 
 
 
