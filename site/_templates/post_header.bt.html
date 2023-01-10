@@ -14,6 +14,13 @@
 </div>
 {{end}}
 
+{{macro figureMaxWidthCrisp(src, caption, maxWidth)}}
+<div class="figure" style="max-width: {{maxWidth}}; margin-left: auto; margin-right: auto;">
+	<img src="{{src}}" style="border: none; image-rendering: pixelated; border-radius: 0px;">
+	<span>{{caption}}</span>
+</div>
+{{end}}
+
 {{macro code(filename, lang, src)}}
 <div class="codeblock">
 	<pre><code class="language-{{lang}}">{{src.trim().replace("<", "&lt;").replace(">", "&gt;")}}</code></pre>

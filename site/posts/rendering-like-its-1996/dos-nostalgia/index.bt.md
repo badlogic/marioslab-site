@@ -323,7 +323,7 @@ uint32_t r96_next_utf8_codepoint(const char *data, uint32_t *index, uint32_t end
 `)}}
 --markdown-begin
 
-This function takes a sequence of bytes (`data`) encoding a UTF-8 string, an index into the byte sequence, and the last valid index (`end`). Both indices are byte offsets, not character offsets!
+This function takes a sequence of bytes (`data`) encoding a UTF-8 string, an `index` into the byte sequence, and the last valid index (`end`). Both indices are byte offsets, not character offsets!
 
 The function then reads the next UTF-8 character, which may be 1 to 4 bytes long, and returns its code point. Additionally, it increments the `index` accordingly, so we know at what byte offset the next character starts.
 
@@ -358,10 +358,180 @@ As expected. Compare the output to the ISO-8859-1 chart above for validation.
 
 This function can deal with any valid UTF-8 byte sequence and returns code points as a 32-bit unsigned integer. For our purposes, we are only interested in code points `0-255` and will ignore any other code points.
 
-## Generating a glyph atlas
-Alright, we have all our encoding bases covered. The next question is: how do we turn a code point like `64` (`0x41`) into the corresponding glyph image for the character `A` so we can blit it onto the screen?
+### The glyph atlas
+Alright, we have all our encoding bases covered. The next question is: how do we turn a code point like `64` (`0x41`) into the corresponding glyph image for the character `A` from a font, so we can blit it onto the screen?
 
+To make things easy for us, we'll define some limits:
 
+* We'll only render the printable Unicode code points between `0-255` as described above.
+* We'll only use fixed-width or [monospaced fonts](https://en.wikipedia.org/wiki/Monospaced_font). Each glyph in such a font has the same width. We can entirely ignore things like kerning this way.
+* The font size is fixed.
+
+With these limits in place, the basic idea of a glyph atlas goes like this:
+* Pick a monospaced font, like the original [IBM VGA 8x16](https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_8x16) font.
+* Use a glyph rendering library like [FreeType](http://freetype.org/) to load the font and render out a glyph image for each printable Unicode code point between `0-255`.
+* Pack those glyph images into a single image called the glyph atlas in some order which makes mapping from a code point to the glyph image coordinates inside the glyph atlas trivial.
+
+Here's an example of what such a glyph atlas could look like.
+
+{{post.figureMaxWidthCrisp("glyphatlas.png", "", "256px")}}
+
+I've super-imposed a red grid demarking each glyph's boundaries. An atlas we can use would not have that grid on it.
+
+The atlas contains glyph images from the IBM VGA 8x16 font for the Unicode code points `0-255`. Each glyph is 8x16 pixels in size. Each row consists of 16 glyphs. There are 16 rows in total, so 256 glyphs in total, one for each code point.
+
+The glyphs in the first row map to code points `0-15`, the glyphs in the second row map to code points `16-31`, and so on. The first, second, ninth, and tenth row are empty, as these are the glyphs for non-printable control characters. The other rows contain the glyphs for all printable characters.
+
+If you compare this glyph atlas with the ISO-8859-1 table above, you'll see that they are equivalent, except that the last glyph in the bottom right corner is missing from the atlas. The IBM VGA 8x16 font simply does not have a glyph for that code point.
+
+So how do we generate this atlas? We don't. I've already written we web tool based on FreeType that does exactly what we need. It's called [`Mario's (B)it(m)ap (F)ont (G)enerator`](https://github.com/badlogic/bmfg) and you can run it in your browser [here](https://marioslab.io/projects/bmfg/).
+
+The tool lets you load a monospaced font, set the pixel height of the glyphs you want, and spits out a 16x14 grid of glyph images for the code points `32-255`. It omits the code points `0-31` and thus the first two rows of the atlas as those are non-printable control codes anyways. The above atlas thus becomes this:
+
+{{post.figureMaxWidthCrisp("glyphatlas-trimmed.png", "", "256px")}}
+
+We're still wasting two rows in the middle for the second set of control codes. But keeping them around makes converting code points to glyph image coordinates easier.
+
+We can store the generated glyph atlas as a `.png` file in the `assets/` folder. I did just that using the file name [`assets/ibmvga.png`](https://github.com/badlogic/r96/blob/04-dos-nostalgia/assets/ibmvga.png). The generator also tells us that each glyph has a size of 8x16 pixels. We'll need to remember that for when we actually draw text later.
+
+> **Note:** We could put both the atlas and the glyph size information into some custom file format. I decided that's not worth it, so we'll go with a `.png` and some hard coded glyph sizes in the code.
+
+### Mapping code points to glyph atlas pixel coordinates
+How can we map a code point to the pixel coordinates of the top left corner of a glyph image in the atlas?
+
+Before we resolve pixel coordinates for a code point, it's actually easier to use a different coordinate system. Let's give each glyph in the atlas an x- and y-coordinate. The top-left glyph image has coordinate `(0, 0)` and the bottom-right glyph image has coordinate `(15, 13)`. We can define a simple equation that goes from glyph coordinates to code point, just like we did for pixel coordinates to pixel address:
+
+```
+code_point - 32 = glyph_x + glyph_y * glyphs_per_row
+```
+
+Why the `- 32`? Because the first glyph has code point `32` (space), but for mapping purposes, we need to pretend the code point is `0`.
+
+We can reverse this glyph coordinates to code point mapping as follows:
+
+```
+glyph_x = (code_point - 32) % glyphs_per_row;
+glyph_y = (code_point - 32 - glyph_x) / glyphs_per_row;
+```
+
+The `% glyphs_per_row` basically strips the `glyph_y * glyphs_per_row` component from the original equation above, leaving us with the glyph x-coordinate.
+
+To calculate `glyph_x`, we can then subtract the just calculated `glyph_x`, which gives us the code point of the first glyph in the row, and divide by `glyphs_per_row` to arrive at the `glyph_y` coordinate.
+
+All that's left to get the pixel coordinate of the top left corner of a glyph is to multiply the glyph coordinates by the glyph pixel width and height of the font, `8` and `16` in the example above.
+
+```
+glyph_pixel_x = glyph_x * glyph_width;
+glyph_pixel_y = glyph_x * glyph_height;
+```
+
+### Blitting regions
+
+Alright, we can generate glyph atlases for the first 255 Unicode code points, and we can calculate the pixel coordinates of a glyph image in the atlas corresponding to a code point. We also know the size of each glyph in pixels, as we specified that when generating the glyph atlas.
+
+But we have one problem: our current blitting functions can only blit an entire `r96_image`. What we need is blitting functions that blit just a region from a `r96_image`. Luckily, that's trivial, given our existing blitting functions! Here's a blitting function that blits a region from one `r96_image` to another.
+
+--markdown-end
+{{post.code("r96.c", "c", `
+void r96_blit_region(r96_image *dst, r96_image *src, int32_t dst_x, int32_t dst_y, int32_t src_x, int32_t src_y, int32_t src_width, int32_t src_height) {
+	assert(src_x + src_width - 1 < src->width);
+	assert(src_y + src_height - 1 < src->height);
+
+	int32_t dst_x1 = dst_x;
+	int32_t dst_y1 = dst_y;
+	int32_t dst_x2 = dst_x + src_width - 1;
+	int32_t dst_y2 = dst_y + src_height - 1;
+	int32_t src_x1 = src_x;
+	int32_t src_y1 = src_y;
+
+	if (dst_x1 >= dst->width) return;
+	if (dst_x2 < 0) return;
+	if (dst_y1 >= dst->height) return;
+	if (dst_y2 < 0) return;
+
+	if (dst_x1 < 0) {
+		src_x1 -= dst_x1;
+		dst_x1 = 0;
+	}
+	if (dst_y1 < 0) {
+		src_y1 -= dst_y1;
+		dst_y1 = 0;
+	}
+	if (dst_x2 >= dst->width) dst_x2 = dst->width - 1;
+	if (dst_y2 >= dst->height) dst_y2 = dst->height - 1;
+
+	int32_t clipped_width = dst_x2 - dst_x1 + 1;
+	int32_t dst_next_row = dst->width - clipped_width;
+	int32_t src_next_row = src->width - clipped_width;
+	uint32_t *dst_pixel = dst->pixels + dst_y1 * dst->width + dst_x1;
+	uint32_t *src_pixel = src->pixels + src_y1 * src->width + src_x1;
+	for (int32_t y = dst_y1; y <= dst_y2; y++) {
+		for (int32_t i = 0; i < clipped_width; i++) {
+			*dst_pixel++ = *src_pixel++;
+		}
+		dst_pixel += dst_next_row;
+		src_pixel += src_next_row;
+	}
+}
+`)}}
+--markdown-begin
+
+This is basically our old [`r96_blit()`](https://github.com/badlogic/r96/blob/04-dos-nostalgia/src/r96/r96.c#L228-L264) function with additional arguments. In addition to the source and destination image, and the destination coordinates, we now also specify the coordinates and width and height of the region in the source image we want to blit. The implementation itself then only has three minor modifications compared to `r96_blit()`. 
+
+The function starts with two asserts that ensure that the source region is valid. Next, `dst_x2` and `dst_y2` are calculated using the source region width and height instead of the source image width and height. Finally, `src_x1` and `src_y1` aren't initialized to `0`, but to `src_x` and `src_y`.
+
+That's it! The rest, including the clipping, is exactly the same as `r96_blit()`. We can already use this function to blit glyph images from the glyph atlas. However, that's result in a black background around the actual glyph pixels. Just like we saw with the DOOM grunt in the precious blog post.
+
+We also need to be able to blit a region using color keying. Easy, just copy [`r96_blit_keyed()`](https://github.com/badlogic/r96/blob/04-dos-nostalgia/src/r96/r96.c#L266-L306) and apply the same modifications as we just did.
+
+--markdown-end
+{{post.code("r96.c", "c", `
+void r96_blit_region_keyed(r96_image *dst, r96_image *src, int32_t dst_x, int32_t dst_y, int32_t src_x, int32_t src_y, int32_t src_width, int32_t src_height, uint32_t color_key) {
+	assert(src_x + src_width - 1 < src->width);
+	assert(src_y + src_height - 1 < src->height);
+
+	int32_t dst_x1 = dst_x;
+	int32_t dst_y1 = dst_y;
+	int32_t dst_x2 = dst_x + src_width - 1;
+	int32_t dst_y2 = dst_y + src_height - 1;
+	int32_t src_x1 = src_x;
+	int32_t src_y1 = src_y;
+
+	if (dst_x1 >= dst->width) return;
+	if (dst_x2 < 0) return;
+	if (dst_y1 >= dst->height) return;
+	if (dst_y2 < 0) return;
+
+	if (dst_x1 < 0) {
+		src_x1 -= dst_x1;
+		dst_x1 = 0;
+	}
+	if (dst_y1 < 0) {
+		src_y1 -= dst_y1;
+		dst_y1 = 0;
+	}
+	if (dst_x2 >= dst->width) dst_x2 = dst->width - 1;
+	if (dst_y2 >= dst->height) dst_y2 = dst->height - 1;
+
+	int32_t clipped_width = dst_x2 - dst_x1 + 1;
+	int32_t dst_next_row = dst->width - clipped_width;
+	int32_t src_next_row = src->width - clipped_width;
+	uint32_t *dst_pixel = dst->pixels + dst_y1 * dst->width + dst_x1;
+	uint32_t *src_pixel = src->pixels + src_y1 * src->width + src_x1;
+	for (dst_y = dst_y1; dst_y <= dst_y2; dst_y++) {
+		for (int32_t i = 0; i < clipped_width; i++) {
+			uint32_t src_color = *src_pixel;
+			uint32_t dst_color = *dst_pixel;
+			*dst_pixel = src_color != color_key ? src_color : dst_color;
+			src_pixel++;
+			dst_pixel++;
+		}
+		dst_pixel += dst_next_row;
+		src_pixel += src_next_row;
+	}
+}
+`)}}
+--markdown-begin
 
 ## Next time on "Mario writes a lot of words"
 
