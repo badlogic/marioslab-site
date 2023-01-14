@@ -1,100 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bitmap Font Generator</title>
-    <script src="/js/code.js"></script>
-    <link rel='stylesheet' href='r96.css'>
-</head>
-<body>
+    <title>BMFG</title>
+    <script type="module" src="index.js"></script>
+
     <style>
-        input {
+        body {
+            background: #232729;
+            font: 200 16px/1.5 monospace;
+            font-feature-settings: "kern" 1;
+            font-kerning: normal;
+            font-weight: 400;
             font-size: 16px;
+            color: #bbbbbb;
+            margin: 0;
+            padding: 0;
+        }
+
+        a,
+        a:visited {
+            color: rgb(254, 121, 5);
+            text-decoration: none;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        canvas {
+            background: #000;
         }
     </style>
-    <center>
-    <div class="r96_content" style="max-width: 600px">
+</head>
+
+<body>
+    <div class="content">
         <h2>Mario's BMFG</h2>
-        <p>Load a fixed-width TTF or WOFF file, e.g. <a href="https://github.com/sunaku/tamzen-font/tree/master/ttf">Tamzen 8x16r</a> or <a href="https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_8x16">IMB VGA 8x16</a>. Select a font height. Right click the glyph image, "Save Image as ...", and enjoy your bitmap font.</a>
+        <p>Load a fixed-width TTF file, e.g. <a href="https://github.com/sunaku/tamzen-font/tree/master/ttf">Tamzen
+                8x16r</a> or <a href="https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_8x16">IMB VGA
+                8x16</a>. Select a font
+            height. Right click the glyph image, "Save Image as ...", and enjoy your bitmap font.</a>
         </p>
-        <p style="font-size:0.6em">Sorry, Firefox users. Firefox doesn't have the needed CSS and API support to do this properly. It's all a blur.</p>
-        <p>The image consists of 15x15 glyphs, from ASCII code 32 to extended ASCII code 255. Each glyph is <span id="info" style="color: #0e0;"></span> pixels in size.</p>
+        <p>The image consists of 16x14 glyphs, from Unicode codepoint 32 to codepoint 255. Each glyph is <span
+                id="info" style="color: #0e0;"></span> pixels in size.</p>
         <div style="margin-bottom: 1em;">
             <button id="load">Load font file</button>
-            <label style="margin-bottom: 1em;">Font height (px): <input id="height" type="number" min="8" max="72" value="16"></label>
+            <label style="margin-bottom: 1em;">Font height (px): <input id="height" type="number" min="8" max="72"
+                    value="16"></label>
         </div>
-        <canvas id="output" style="image-rendering: pixelated; -webkit-font-smoothing: none; -moz-osx-font-smoothing: none;"></canvas>
+        <canvas id="output"
+            style="image-rendering: pixelated; -webkit-font-smoothing: none; -moz-osx-font-smoothing: none; margin-bottom: 1em;"></canvas>
 
+        <div>View sources on <a href="https://github.com/badlogic/bmfg">GitHub</a></div>
         <input id="file" type="file" style="display: none;" accept=".ttf,.woff">
     </div>
-    </center>
-<script>
-    let fontLoaded = false;
-    let fileInput = document.querySelector("#file");
-    fileInput.onchange = async function () {
-        let reader = new FileReader();
-        reader.onload = async function() {
-            loadFont(this.result);
-        }
-        reader.readAsArrayBuffer(fileInput.files[0]);
-    }
-    document.querySelector("#load").onclick = () => fileInput.click();
-    fontHeight = document.querySelector("#height");
-    fontHeight.onchange = () => {
-        if (fontLoaded) draw();
-    }
-
-    async function loadFont(urlOrBuffer) {
-        let font = new FontFace("LoadedFont", urlOrBuffer);
-        await font.load();
-        document.fonts.add(font);
-        fontLoaded = true;
-        draw();
-    }
-
-    function draw () {
-        let canvas = document.querySelector("#output");
-        let ctx = canvas.getContext("2d");
-
-        ctx.font = fontHeight.value + "px LoadedFont";
-        let metrics = ctx.measureText("X");
-        let charWidth = Math.ceil(metrics.width);
-        let charHeight = Math.ceil(metrics.fontBoundingBoxAscent === undefined ? Number.parseInt(fontHeight.value) : metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent);
-        let ascent = metrics.fontBoundingBoxAscent === undefined ? metrics.actualBoundingBoxAscent : metrics.fontBoundingBoxAscent;
-        let info = document.querySelector("#info");
-        info.textContent = charWidth + "x" + charHeight;
-        console.log(metrics);
-
-        canvas.width = charWidth * 15;
-        canvas.height = Number.parseInt(fontHeight.value) * 15;
-        ctx.font = fontHeight.value + "px LoadedFont";
-
-        ctx.fillStyle = "rgba(0, 0, 0, 0)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "white";
-        ctx.strokeStyle = "red";
-        ctx.textRendering = "geometricPrecision";
-
-        let c = 32
-        for (let y = 0; y < 15; y++) {
-            let cStr = "";
-            for (let i = 0; i < 15 && c <= 255; i++, c++) {
-                cStr += String.fromCharCode(c);
-            }
-            ctx.fillText(cStr, 0, y * charHeight + ascent);
-
-            /*for (let x = 0; x < 15; x++) {
-                ctx.rect(x * charWidth, y * charHeight, charWidth, charHeight);
-                ctx.stroke()
-            }*/
-        }
-    }
-
-    // loadFont("url(Tamzen8x16r.ttf)");
-    loadFont("url(web_ibm_vga_8x16.woff)");
-
-</script>
 </body>
+
 </html>
