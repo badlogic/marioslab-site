@@ -206,7 +206,7 @@ Yes, we could probably squeeze a lot of cycles out of the blitting functions if 
 ### Excursion: DOS debugging support
 When we debug the demo on the desktop, the debugger will spawn the demo process and use system APIs to stop, resume, inspect, and otherwise manipulate the process.
 
-For DOS applications running in DOSBox-x or on a real machine, we do not have the luxury of a debugger. Instead, we use a piece of code called [GDB stub](https://sourceware.org/gdb/onlinedocs/gdb/Remote-Stub.html). Here's how that works.
+For DOS applications running in DOSBox-x or on a real machine, we do not have the luxury of a debugger. Instead, we use a piece of code called [GDB stub](https://sourceware.org/gdb/onlinedocs/gdb/Remote-Stub.html) that we integrate in our program. Here's how that works in `12_hello_dos.c`.
 
 Of note are 3 pieces of code in the demo above, which do nothing on any platform other than DOS. In lines 7-8 we have:
 
