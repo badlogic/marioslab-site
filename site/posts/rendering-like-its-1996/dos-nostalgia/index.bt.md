@@ -820,7 +820,7 @@ The function takes the `image` we want to render the text to, the `font` to rend
 
 Inside the function, we keep track of the position to render the next glyph at in `cursor_x` and `cursor_y`. We also keep track of the text length in bytes and the byte `index` from which we'll read the next Unicode code point from the `text`.
 
-The loop then iterates over all code points in the text via `r96_next_utf8_code_point()`. In case we encounter `\t`, we advance the cursor position by `font->tab_size * font->glyph_width` and continue on to the next glyph. In case of `\t`, we reset `cursor_x` to the original `x`, essentially moving the cursor to the beginning of the text line. We then increase `cursor_y` by the glyph height to move it to the next line below. Yay, multi-line rendering!
+The loop then iterates over all code points in the text via `r96_next_utf8_code_point()`. In case we encounter `\t`, we advance the cursor position by `font->tab_size * font->glyph_width` and continue on to the next glyph. In case of `\n`, we reset `cursor_x` to the original `x`, essentially moving the cursor to the beginning of the text line. We then increase `cursor_y` by the glyph height to move it to the next line below. Yay, multi-line rendering!
 
 Before we actually render the glyph for the current code point, we also check that the code point is within `32-255`, so we don't try to draw a glyph that's not inside the glyph atlas.
 
