@@ -935,7 +935,7 @@ Each font is basically just a glyph atlas. However, the atlas layout doesn't mat
 
 For the font I picked, we see that it only contains glyphs for the first few code points. Instead of 16 glyphs, it contains 20 glyphs per row. Thankfully, `r96_init_font()` can deal with this by calculating the number of glyphs per row based on the glyph atlas width and glyph width. The only thing we need to watch out for is to not use any code points that go above `Z` in our text strings.
 
-This demo doesn't come with an explanation. Consider it to be a puzzle for your brain noggins! Can you figure out how it works?
+This demo doesn't come with an explanation. Consider it to be a puzzle for your brain noggins! Can you figure out how it works? [`15_font_fun.c`](https://github.com/badlogic/r96/blob/04-dos-nostalgia/src/15_font_fun.c):
 
 --markdown-end
 {{post.code("15_font_fun.c", "c", `
@@ -988,7 +988,7 @@ And here it is in action.
 ## Next time on "Mario writes a lot of words"
 Our little code base is shaping up to be kinda useful. Next time, we're going to look into drawing lines. Possibly with sub-pixel precision. Unless I can't figure that out.
 
-Discuss this post on [Twitter]() or [Mastodon]().
+Discuss this post on [Twitter](https://twitter.com/badlogicgames/status/1614607123475992577) or [Mastodon]().
 
 --markdown-end
 <script>
