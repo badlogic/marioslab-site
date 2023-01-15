@@ -286,7 +286,7 @@ ASCII is short for "American Standard Code for Information Interchange". Unsurpr
 
 Now, I'm not 'merican. And based on my server logs, chances are good you aren't 'merican either. What about other fancy characters, like 'ö' or 'ê'? Or characters from the arabic or CJK scripts? Well, that's a lot more complicated and historically involves something called [code pages](https://en.wikipedia.org/wiki/Code_page), which was and still is an utter mess.
 
-The alternative to code pages is [Unicode](https://en.wikipedia.org/wiki/Unicode). Unicode defines codes (or code points in Unicode parlance) for almost 150,000 used by scripts used all around the worlds, including historic ones. It also includes emojis, for better or worse. Your parents' brains have probably also switched to emoji only instant messaging communication. And they said computers would make us kids dumb. Thanks, Unicode.
+The alternative to code pages is [Unicode](https://en.wikipedia.org/wiki/Unicode). Unicode defines codes (or code points in Unicode parlance) for almost 150,000 characters used in scripts from all around the world, including historic ones. It also includes emojis, for better or worse. Your parents' brains have probably also switched to emoji only instant messaging communication. And they said computers would make us kids dumb. Thanks, Unicode.
 
 Unicode has multiple encodings, like [UTF-8](https://en.wikipedia.org/wiki/UTF-8), [UTF-16](https://en.wikipedia.org/wiki/UTF-16), and so on. Thankfully, the world has now mostly standardized on UTF-8, for [good reasons](http://utf8everywhere.org/). UTF-8 is a multi-byte encoding. Depending on the character, we may need 1 to 4 bytes to store it.
 
