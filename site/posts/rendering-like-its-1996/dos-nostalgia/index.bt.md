@@ -986,6 +986,7 @@ And here it is in action.
 --markdown-begin
 
 ## Next time on "Mario writes a lot of words"
+Our little code base is shaping up to be kinda useful. Next time, we're going to look into drawing lines. Possibly with sub-pixel precision. Unless I can't figure that out.
 
 Discuss this post on [Twitter]() or [Mastodon]().
 
