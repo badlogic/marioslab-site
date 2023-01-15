@@ -600,6 +600,7 @@ Here's the final region blitting routine, which takes both a color key and a tin
 
 --markdown-end
 {{post.code("r96.c", "c", `
+void r96_blit_region_keyed_tinted(r96_image *dst, r96_image *src, int32_t dst_x, int32_t dst_y, int32_t src_x, int32_t src_y, int32_t src_width, int32_t src_height, uint32_t color_key, uint32_t tint) {
 	assert(src_x + src_width - 1 < src->width);
 	assert(src_y + src_height - 1 < src->height);
 
