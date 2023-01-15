@@ -523,7 +523,7 @@ void r96_blit_region(r96_image *dst, r96_image *src, int32_t dst_x, int32_t dst_
 `)}}
 --markdown-begin
 
-This is basically our old [`r96_blit()`](https://github.com/badlogic/r96/blob/04-dos-nostalgia/src/r96/r96.c#L228-L264) function with additional arguments. We sepcify the destination (`dst`) and source (`src`) image as before. We also specify the coordinates (`dst_x`, `dst_y`) at which the source image should be blitted in the destination image. Those used to be called `x` and `y`. Finally, we specify the region from the source image we want to blit, given as its top-left corner (`src_x`, `src_y`) and width and height (`src_width`, `src_height`).
+This is basically our old [`r96_blit()`](https://github.com/badlogic/r96/blob/04-dos-nostalgia/src/r96/r96.c#L222-L258) function with additional arguments. We sepcify the destination (`dst`) and source (`src`) image as before. We also specify the coordinates (`dst_x`, `dst_y`) at which the source image should be blitted in the destination image. Those used to be called `x` and `y`. Finally, we specify the region from the source image we want to blit, given as its top-left corner (`src_x`, `src_y`) and width and height (`src_width`, `src_height`).
 
 The implementation itself then only has three minor modifications compared to `r96_blit()`. 
 
@@ -533,7 +533,7 @@ That's it! The rest, including the clipping, is exactly the same as `r96_blit()`
 
 However, if we only want to blit the white pixels of a glyph and ignore it's background pixels, we need color keying.
 
-Easy, just copy [`r96_blit_keyed()`](https://github.com/badlogic/r96/blob/04-dos-nostalgia/src/r96/r96.c#L266-L306) and apply the same modifications.
+Easy, just copy [`r96_blit_keyed()`](https://github.com/badlogic/r96/blob/04-dos-nostalgia/src/r96/r96.c#L260-L300) and apply the same modifications.
 
 --markdown-end
 {{post.code("r96.c", "c", `
