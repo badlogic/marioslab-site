@@ -129,7 +129,7 @@ int main(void) {
 
 This is our first animated demo!
 
-The demo draws 100 moving grunts, that bounce off of the screen boundaries. Each grunt is stored in a simple `grunt` struct, which in turn stores the grunt's position (`x`, `y`) and velocity on the x- and y-axis (`vx`, `vy`) in pixels per frame. During initialization, we give each grunt a random position within the screen boundaries and set their velocity on each axis to `1` (lines 29-35).
+The demo draws 100 moving grunts, that bounce off of the screen boundaries. Each grunt is stored in a simple `grunt` struct, which in turn stores the grunt's position (`x`, `y`) and velocity on the x- and y-axis (`vx`, `vy`) in pixels per frame. During initialization, we give each grunt a random position within the screen boundaries and set its velocity on each axis to `1` (lines 29-35).
 
 What's a frame you may ask? A frame can be many things, but in our case, a frame is simply one iteration of the main loop of your program (lines 36-62). In each frame, we check whether each grunt is still inside the screen boundaries. If a grunt is outside the screen boundaries on the x- or y-axis (or both), we move them back inside the bounds and negate their velocity on the axis they left the screen on.
 
