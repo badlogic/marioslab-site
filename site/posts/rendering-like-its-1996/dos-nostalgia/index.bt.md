@@ -50,7 +50,7 @@ I can now happily continue writing the series. Promise. Unless I'll add Android 
 Today, we're looking at DOS support, and then load and draw some bitmap fonts.
 
 ## Demo: Hello DOS
-Alright, go get the latest and greatest from the `r96` repository. Follow the [README.md](https://github.com/badlogic/r96/blob/04-dos-nostalgia/README.md) to install the tools, including the new DOS tools. The README.md will also get you up to speed on how to build and debug everything in VS Code or on the command line. Or, if you want a detailed run-down of the project and its build and IDE support, read the [first entry of the series](posts/rendering-like-its-1996/babys-first-pixel/).
+Alright, go get the latest and greatest from the `r96` repository. Follow the [README.md](https://github.com/badlogic/r96/blob/04-dos-nostalgia/README.md) to install the tools, including the new DOS tools. The README.md will also get you up to speed on how to build and debug everything in VS Code or on the command line. Or, if you want a detailed run-down of the project and its build and IDE support, read the [first entry of the series](/posts/rendering-like-its-1996/babys-first-pixel/).
 
 To celebrate DOS support, I've added a new demo called [`12_hello_dos.c`](https://github.com/badlogic/r96/blob/04-dos-nostalgia/src/12_hello_dos.c):
 
