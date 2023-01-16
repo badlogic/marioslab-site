@@ -195,7 +195,7 @@ In our demo above, we render to a 320x240 output `r96_image`. The call to `r96_c
 
 That's one of the reasons pretty much all older DOS games targeting 386 or 486 would use [mode 13h](https://en.wikipedia.org/wiki/Mode_13h) or derivatives like [Mode X](https://en.wikipedia.org/wiki/Mode_X). Both of these video modes use 8 bits to encode a pixel's color. But instead of directly encoding the color's red, green and blue component, the 8-bit value is an index into a palette with a total of 256 colors. That cuts down on memory and bandwidth needs considerably.
 
-If we went mode 13h on our demo, we'd go from `3.8MB` to `0.95MB` of data per frame. That translates to 12-20 frames per second, which is still not great, but often playable enough. That's about the frame rate I got when playing [MicroProse's Formula One Grand Prix](https://www.youtube.com/watch?v=qATaCWHLAxw) on my 486.
+If we went mode 13h in our demo, we'd go from `3.8MB` to `0.95MB` of data per frame. That translates to 12-20 frames per second, which is still not great, but often playable enough. That's about the frame rate I got when playing [MicroProse's Formula One Grand Prix](https://www.youtube.com/watch?v=qATaCWHLAxw) on my 486.
 
 So what's the solution? Draw less each frame! DOOM and Quake relied on various techniques like [binary space partitioning](https://twobithistory.org/2019/11/06/doom-bsp.html) to avoid drawing things that are invisible or occluded. Drawing less means touching less memory. Consider that 100 grunts are about 5.3 screens worth of pixels. That's a lot of overdraw.
 
