@@ -189,7 +189,7 @@ This works pretty well from Pentium class machines onwards, if the (emulated) vi
 <video style="margin: auto; max-width: 100%;" src="86box-pentium.mp4" autoplay=true loop=true controls=true></video>
 --markdown-begin
 
-A 486 may support 24-bit and 32-bit color depth video modes, depending on the graphics cards. Mine did. However, that doesn't mean the system is fast enough to actually deal with that amount of data. A run of the mill 486 would have memory throughput somewhere in the range of 10-25MB/s. You read that right.
+A 486 may support 24-bit and 32-bit color depth video modes, depending on the graphics card. Mine did. However, that doesn't mean the system is fast enough to actually deal with that amount of data. A run of the mill 486 would have memory throughput somewhere in the range of 10-25MB/s. You read that right.
 
 In our demo above, we render to a 320x240 output `r96_image`. The call to `r96_clear_with_color()` has to touch `0.3M` worth of pixels. Rendering a single grunt means reading 64x64x4 bytes from the grunt image and writing them to a 64x64x4 bytes big region in the output `r96_image`. For 100 grunts, that's reading `1.6MB` and writing `1.6MB`. Finally, the output `r96_image` is transferred to the VESA linear buffer, a memory mapped region from which the graphics card will read what it should output to the display. That's another 320x240x4 bytes, or `0.3MB`. Each frame we thus touch `0.3 + 1.6 + 1.6 + 0.3 = 3.8MB` of memory. And while this simple analysis doesn't account for memory caches, it does align with what we experience when running the demo on a (emulated) 486. We do indeed only get something like 3-5 frames per second, which is `11.4-19MB` of data pushed by the demo per second.
 
