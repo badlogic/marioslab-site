@@ -3,7 +3,7 @@ metadata = {
 	title: "Rendering like it's 1996 - Bitmap fonts and DOS",
 	summary: "On drawing bitmap fonts and getting all of this running in DOS.",
 	image: "dos-nostalgia.png",
-	date: parseDate("2022/12/7 21:00"),
+	date: parseDate("2023/01/7 21:00"),
 	published: true,
 }
 }}
