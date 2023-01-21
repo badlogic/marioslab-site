@@ -4,7 +4,7 @@ metadata = {
 	summary: "On drawing bitmap fonts and getting all of this running in DOS.",
 	image: "dos-nostalgia.png",
 	date: parseDate("2022/12/7 21:00"),
-	published: false,
+	published: true,
 }
 }}
 
