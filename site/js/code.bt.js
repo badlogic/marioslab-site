@@ -111,3 +111,159 @@ function q5Diagram(width, height, divId) {
 
 	return q5;
 }
+
+function line(canvas, x1, y1, x2, y2, color) {
+	ctx = canvas.getContext("2d");
+	ctx.strokeStyle = color;
+	ctx.beginPath();
+	ctx.moveTo(x1 * devicePixelRatio, y1 * devicePixelRatio);
+	ctx.lineTo(x2 * devicePixelRatio, y2 * devicePixelRatio);
+	ctx.stroke();
+}
+
+function rect(canvas, x, y, width, height, color) {
+	ctx = canvas.getContext("2d");
+	ctx.strokeStyle = color;
+	ctx.beginPath();
+	ctx.rect(x * devicePixelRatio, y * devicePixelRatio, width * devicePixelRatio, height * devicePixelRatio);
+	ctx.stroke();
+}
+
+function fillRect(canvas, x, y, width, height, color) {
+	ctx = canvas.getContext("2d");
+	ctx.fillStyle = color;
+	ctx.beginPath();
+	ctx.rect(x * devicePixelRatio, y * devicePixelRatio, width * devicePixelRatio, height * devicePixelRatio);
+	ctx.fill();
+}
+
+function circle(canvas, x, y, radius, color) {
+	ctx = canvas.getContext("2d");
+	ctx.strokeStyle = color;
+	ctx.beginPath();
+	ctx.arc(x * devicePixelRatio, y * devicePixelRatio, radius * devicePixelRatio, 0, 2 * Math.PI);
+	ctx.stroke();
+}
+
+function grid(canvas, gridSize, color) {
+	ctx = canvas.getContext("2d");
+	ctx.strokeStyle = color;
+	ctx.beginPath();
+	for (let y = 0; y < canvas.height; y += gridSize) {
+	   for (let x = 0; x < canvas.width; x += gridSize) {		  
+		  ctx.rect(x * devicePixelRatio, y * devicePixelRatio, gridSize * devicePixelRatio, gridSize * devicePixelRatio);
+	   }
+	}
+	ctx.stroke();
+}
+
+function text(canvas, text, x, y, color, center) {
+	ctx = canvas.getContext("2d");
+	ctx.fillStyle = color;	
+	if (center) {
+		let textMeasure = ctx.measureText(text);
+		ctx.fillText(text, x * devicePixelRatio - textMeasure.width / 2, y * devicePixelRatio);	
+	} else {
+		ctx.fillText(text, x * devicePixelRatio, y * devicePixelRatio);
+	}
+}
+
+function makeObjectsDraggable(canvas, objects, mouseToWorld, dragged, redraw) {
+	let dragStart = { x: 0, y: 0 };
+	let draggedObject = null;	
+
+	function findClosestObject(x, y) {
+		let closest = null;
+		let closestDist = Number.MAX_VALUE;
+		for (let object of objects) {
+			if (object.hasOwnProperty("radius")) {
+				let dist = Math.sqrt((object.x - x) * (object.x - x) + (object.y - y) * (object.y - y));
+				if (dist < object.radius) {
+					if (dist < closestDist) {
+						closest = object;
+						closestDist = dist;
+					}
+				}
+			} else if (object.hasOwnPropery("width")) {
+				let cx = object.x + object.width / 2;
+				let cy = object.y + object.height / 2;
+				if (x >= object.x && x < object.x + object.width && y >= object.y && y <= object.y + object.height) {
+					let dist = Math.sqrt((cx - x) * (cx - x) + (cy - y) * (cy - y));
+					if (dist < closestDist) {
+						closest = object;
+						closestDist = dist;
+					}
+				}
+			}
+		}
+
+		return closest;
+	}
+
+	function down(x, y) {
+		draggedObject = findClosestObject(x, y);		
+		dragStart.x = x;
+		dragStart.y = y;
+		requestAnimationFrame(redraw);
+	}
+
+	function move(x, y) {
+		if (draggedObject) {
+			let deltaX = x - dragStart.x;
+			let deltaY = y - dragStart.y;
+			draggedObject.x += deltaX;
+			draggedObject.y += deltaY;
+			dragStart.x = x;
+			dragStart.y = y;
+			if (!dragged(draggedObject)) {
+				draggedObject = null;
+			}
+		}
+		requestAnimationFrame(redraw);
+	}
+
+	canvas.addEventListener("mousedown", function (mouseEvent) {
+		let pos = mouseToWorld(mouseEvent.offsetX, mouseEvent.offsetY);
+		down(pos.x, pos.y);
+	}, false);
+
+	canvas.addEventListener("touchstart", function (touchEvent) {
+		touchEvent.preventDefault();
+		const touch = touchEvent.targetTouches[0];
+		let rect = touchEvent.target.getBoundingClientRect();
+		let x = touch.pageX - rect.left;
+		let y = touch.pageY - rect.top;
+		let pos = mouseToWorld(x, y);
+		down(pos.x, pos.y);
+	})
+
+	canvas.addEventListener("mousemove", function (mouseEvent) {
+		let pos = mouseToWorld(mouseEvent.offsetX, mouseEvent.offsetY);
+		move(pos.x, pos.y);
+	});
+
+	canvas.addEventListener("touchmove", function (touchEvent) {
+		touchEvent.preventDefault();
+		const touch = touchEvent.targetTouches[0];
+		let rect = touchEvent.target.getBoundingClientRect();
+		let x = touch.pageX - rect.left;
+		let y = touch.pageY - rect.top;
+		let pos = mouseToWorld(mouseEvent.offsetX, mouseEvent.offsetY);
+		move(pos.x, pos.y);
+	})
+
+	canvas.addEventListener("mouseup", function (mouseEvent) {
+		if (draggedObject) dragged(draggedObject, true);	
+		draggedObject = null;
+	}, false);
+
+	canvas.addEventListener("mouseleave", function () {
+		if (draggedObject) dragged(draggedObject, true);	
+		draggedObject = null;		
+	})
+
+	canvas.addEventListener("touchend", () => {
+		if (draggedObject) dragged(draggedObject, true);	
+		draggedObject = null;
+	});
+}

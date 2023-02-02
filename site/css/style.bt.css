@@ -230,9 +230,10 @@ ul {
     margin: 0;
     font-size: 85%;
 	border-radius: 3px;
-	border: 1px solid rgb(196 196 196);
+	/* border: 1px solid rgb(196 196 196); */
 	font-family: "fira mono",monospace;
 	white-space: pre;
+	background: #050505;
 }
 
 a > code {
@@ -279,6 +280,7 @@ html {
 	display: flex;
 	flex-direction: column;
 	padding: 1em;
+	background: #222222;
 }
 
 /* CFG graphs */
@@ -304,4 +306,10 @@ html {
 	stroke: #ccc;
 	stroke-width: 1.5px;
 	fill: none;
+}
+
+mjx-math {
+	background: black;
+	padding: 0.5em !important;
+	border-radius: 3px;
 }
