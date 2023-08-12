@@ -284,6 +284,8 @@ If we step by 1 pixel in `x`, then `y` always increases by the same amount! And 
 
 Not so naive after all!
 
+> **Note:** the quantities `dy / dx` and `dx / dx` are commonly referred to as [slope](https://en.wikipedia.org/wiki/Slope). You may have heard that term in your math class many moons ago, although there you usually only hear about `dy / dx`. `dy` and `dx` may also be called `rise` or `run` in some contexts.
+
 ## Demo: Digital Differential Analyzer
 Here's a little demo called [16_naive_line.c]():
 
